@@ -8,5 +8,9 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "mongodb": "^4.9.1",
+    "redis": "^4.3.1"
+  }
 }
