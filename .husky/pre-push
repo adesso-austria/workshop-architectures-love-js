@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+npm run test -- --changedSince $(git show @{u} -s --pretty=%H)
+
