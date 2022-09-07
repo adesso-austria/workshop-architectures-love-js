@@ -11,7 +11,7 @@ export const getTodo = (
   id: string
 ): taskEither.TaskEither<"db error" | "not found", Domain.Todo.Todo> =>
   pipe(
-    repository.getTodo(id),
+    repository.todo.getTodo(id),
     taskEither.mapLeft(() => "db error" as const),
     taskEither.chain(
       option.match(

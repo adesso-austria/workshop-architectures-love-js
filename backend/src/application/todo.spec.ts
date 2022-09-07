@@ -17,7 +17,9 @@ describe("todo", () => {
       pipe(
         getTodo(
           TestData.Repository.create({
-            getTodo: () => taskEither.left(new Error("something's up")),
+            todo: {
+              getTodo: () => taskEither.left(new Error("something's up")),
+            },
           }),
           "foo"
         ),
@@ -30,7 +32,9 @@ describe("todo", () => {
       pipe(
         getTodo(
           TestData.Repository.create({
-            getTodo: () => taskEither.right(option.none),
+            todo: {
+              getTodo: () => taskEither.right(option.none),
+            },
           }),
           "foo"
         ),
@@ -43,8 +47,10 @@ describe("todo", () => {
       pipe(
         getTodo(
           TestData.Repository.create({
-            getTodo: () =>
-              taskEither.right(option.some(TestData.Todo.buyIcecream)),
+            todo: {
+              getTodo: () =>
+                taskEither.right(option.some(TestData.Todo.buyIcecream)),
+            },
           }),
           "foo"
         ),
@@ -55,7 +61,7 @@ describe("todo", () => {
 
   describe("routes", () => {
     Jest.testGivenThen<
-      ReturnType<Repository["getTodo"]>,
+      ReturnType<Repository["todo"]["getTodo"]>,
       (response: LightMyRequestResponse) => void
     >(
       "/todo",
@@ -63,7 +69,9 @@ describe("todo", () => {
         const root = Root.create(
           Env.create(
             TestData.Repository.create({
-              getTodo: () => givenTodoReturn,
+              todo: {
+                getTodo: () => givenTodoReturn,
+              },
             })
           )
         );
