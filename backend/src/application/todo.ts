@@ -3,6 +3,7 @@ import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { match } from "ts-pattern";
 import { Repository } from "../repository";
+import * as Boundary from "../boundary";
 import * as Domain from "../domain";
 import { Env } from "./env";
 
@@ -60,7 +61,7 @@ export const routes: FastifyPluginCallback<Env> = async (app, options) => {
                 })
               )
               .exhaustive(),
-          (todo) => Promise.resolve(todo)
+          (todo) => Promise.resolve(Boundary.Todo.fromDomain(todo))
         )
       );
       return task();
