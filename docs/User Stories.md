@@ -1,4 +1,5 @@
 # Adding a Todo
+# Editing a Todo
 # Fetching an overview of Todos
 # Viewing the details of a Todo
 # Deleting a Todo
