@@ -2,9 +2,10 @@
   "name": "contracts",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "build/openapi.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "gen:contracts": "openapi-typescript openapi.yml --output=src/openapi.ts",
+    "gen:contracts:watch": "nodemon -w ./openapi.yml -x 'npm run gen:contracts'"
   },
   "keywords": [],
   "author": "",

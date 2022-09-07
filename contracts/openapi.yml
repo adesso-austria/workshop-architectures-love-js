@@ -1,0 +1,84 @@
+openapi: 3.1.0
+info:
+  title: todos api
+  version: 0.0.1
+servers:
+  - url: http://localhost:8080/_api
+    description: local development server
+paths:
+  /todos:
+    get:
+      summary: listing of todos
+      description: retrieves all todos
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Todo"
+  /todo:
+    get:
+      summary: get a todo by id
+      description: Retrieve a todo by id
+      parameters:
+        - name: id
+          in: query
+          description: id of the event you want to retrieve
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Todo"
+        "404":
+          description: Not found
+          content:
+            text/plain: {}
+    post:
+      summary: create a new todo
+      description: creates a new todo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Todo"
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: string
+components:
+  schemas:
+    Todo:
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: true
+        title: 
+          type: string
+        content:
+          type: "#/components/schemas/Identifier"
+      required:
+        - id
+        - title
+        - content
+    Identifier:
+      type: object
+      properties:
+        href:
+          type: string
+        rel:
+          type: string
+      required:
+        - href
+        - rel
