@@ -1,8 +1,8 @@
 ```mermaid
 flowchart LR
 repository-->domain
-server-->domain
-server-->repository
+application-->domain & repository & boundary
+boundary-->domain & contracts
 ```
 # Repository
 ```mermaid
