@@ -4,3 +4,4 @@ bundle
 node_modules
 docs/.obsidian/workspace
 tsconfig.tsbuildinfo
+coverage
