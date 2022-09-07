@@ -1,0 +1,5 @@
+.git
+build
+bundle
+node_modules
+docs/.obsidian/workspace
