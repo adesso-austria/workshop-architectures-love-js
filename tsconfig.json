@@ -2,7 +2,6 @@
   "files": [],
   "references": [
     { "path": "./frontend" },
-    { "path": "./broker" },
     { "path": "./backend" },
     { "path": "./contracts" },
     { "path": "./utils" }
