@@ -1,12 +1,21 @@
 {
   "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/eslintrc.json",
-  "rules": {
-    "import/no-internal-modules": [
-      "error",
-      {
-        "allow": ["fp-ts/lib/function", "date-fns/fp", "react-icons/*"]
+  "overrides": [
+    {
+      "files": [
+        "src/**/*.{spec,e2e,demoize}.{ts,tsx}",
+        "src/utils/test-utils.tsx",
+        "src/test-data/**/*.{ts,tsx}",
+        "esbuild.js",
+        "tailwind.config.cjs"
+      ],
+      "rules": {
+        "import/no-internal-modules": "off",
+        "import/no-restricted-paths": "off"
       }
-    ],
+    }
+  ],
+  "rules": {
     "import/no-restricted-paths": [
       "error",
       {

@@ -1,10 +1,11 @@
 import { describe, it } from "@jest/globals";
-import * as App from "./app";
+import * as TestData from "../test-data";
+import * as Root from "./root";
 
 describe("app", () => {
   describe("heartbeat", () => {
     it("should return online", async () => {
-      const app = App.create();
+      const app = Root.create(TestData.Env.defaultEnv);
       app.inject;
     });
   });

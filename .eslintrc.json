@@ -20,6 +20,12 @@
   "rules": {
     "import/order": "error",
     "import/namespace": "off",
+    "import/no-internal-modules": [
+      "error",
+      {
+        "allow": ["fp-ts/lib/function", "date-fns/fp", "react-icons/*"]
+      }
+    ],
     "no-restricted-imports": [
       "error",
       {
