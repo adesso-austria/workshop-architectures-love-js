@@ -1,11 +1,31 @@
 {
+  "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/eslintrc.json",
   "extends": [
     "eslint:recommended",
-    "plugin:@typescript-eslint/recommended"
+    "plugin:@typescript-eslint/recommended",
+    "plugin:import/recommended",
+    "plugin:import/typescript"
   ],
   "parser": "@typescript-eslint/parser",
   "plugins": [
     "@typescript-eslint"
   ],
-  "root": true
+  "settings": {
+    "import/resolver": {
+      "typescript": true,
+      "node": true
+    }
+  },
+  "root": true,
+  "rules": {
+    "import/order": "error",
+    "import/namespace": "off",
+    "no-restricted-imports": [
+      "error",
+      {
+        "name": "date-fns",
+        "message": "use date-fns/fp instead"
+      }
+    ]
+  }
 }
