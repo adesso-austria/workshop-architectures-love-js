@@ -5,7 +5,6 @@
   "workspaces": [
     "./frontend",
     "./backend",
-    "./broker",
     "./contracts",
     "./utils"
   ],

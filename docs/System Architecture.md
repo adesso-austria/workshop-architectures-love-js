@@ -1,7 +1,7 @@
 ```mermaid
 flowchart LR
-Frontend-->Broker
-Backend-->Frontend
-Broker-->Backend
+Frontend-->Backend-->Frontend
+Backend-->Broker-->Backend
 ```
+
 
