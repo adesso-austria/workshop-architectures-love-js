@@ -11,5 +11,8 @@
     {
       "path": "../utils"
     }
+  ],
+  "include": [
+    "src"
   ]
 }

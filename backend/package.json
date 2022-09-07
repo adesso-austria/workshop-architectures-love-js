@@ -3,14 +3,16 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "keywords": [],
+  "scripts": {
+    "start": "NODE_OPTIONS='--experimental-specifier-resolution=node' nodemon -w build -d 10ms -x 'node build/server.js'"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "fastify": "^4.5.3",
     "mongodb": "^4.9.1",
     "redis": "^4.3.1"
-  }
+  },
+  "type": "module"
 }
