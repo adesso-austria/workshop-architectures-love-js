@@ -13,6 +13,7 @@
     "build": "tsc -b",
     "build:watch": "tsc -b --watch",
     "prepare": "husky install",
+    "lint": "eslint .",
     "lint:file-casing": "node scripts/check-file-casing.js"
   },
   "keywords": [],
