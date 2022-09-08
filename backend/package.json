@@ -5,7 +5,9 @@
   "main": "index.js",
   "keywords": [],
   "scripts": {
-    "start": "NODE_OPTIONS='--experimental-specifier-resolution=node' nodemon -w build -d 10ms -x 'node build/server.js'"
+    "prestart": "docker-compose up",
+    "start": "NODE_OPTIONS='--experimental-specifier-resolution=node' nodemon -w build -d 10ms -x 'node build/server.js'",
+    "poststart": "docker-compose down"
   },
   "author": "",
   "license": "ISC",
