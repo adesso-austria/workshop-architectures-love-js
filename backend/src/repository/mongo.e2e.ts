@@ -5,6 +5,17 @@ import { pipe } from "fp-ts/lib/function";
 import { ignore, throwException } from "utils";
 import { connect, ErrorCode } from "./mongo";
 
+const cleanConnect = (url: string) =>
+  pipe(
+    connect(url, "testdb"),
+    taskEither.chain((client) =>
+      pipe(
+        client.flush(),
+        taskEither.map(() => client)
+      )
+    )
+  );
+
 describe("mongo", () => {
   const defaultUrl = "mongodb://localhost:27017";
 
@@ -54,5 +65,24 @@ describe("mongo", () => {
       );
       expect(await task()).toEqual(either.right("bla"));
     });
+  });
+
+  describe("setLastKnownEventId", () => {
+    it(
+      "should return right",
+      pipe(
+        cleanConnect(defaultUrl),
+        taskEither.chain((client) =>
+          pipe(
+            client.setLastKnownEventId("foo"),
+            taskEither.chain(() => client.getLastKnownEventId())
+          )
+        ),
+        taskEither.match(
+          () => throwException("expected a right"),
+          (id) => expect(id).toEqual("foo")
+        )
+      )
+    );
   });
 });

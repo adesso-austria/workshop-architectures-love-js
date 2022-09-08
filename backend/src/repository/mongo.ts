@@ -14,21 +14,34 @@ export enum ErrorCode {
   EACCESS_kv = "could not access kv collection",
   EACCESS_todo = "could not access todo collection",
   EUPDATE_lastKnownEventId = "could not update last known event id",
+  EDROP_db = "could not drop db",
 }
 
 type Error = [ErrorCode, unknown?];
 
 export type Client = {
+  flush: () => taskEither.TaskEither<Error, void>;
   getLastKnownEventId: () => taskEither.TaskEither<Error, string>;
   setLastKnownEventId: (id: string) => taskEither.TaskEither<Error, void>;
+  // getTodo: (id: string) => taskEither.TaskEither<Error, Domain.Todo.Todo>;
+  // addTodo: (todo: Domain.Todo.Todo) => taskEither.TaskEither<Error, void>;
 };
 
 type KVEntry = { key: string; value: string };
 
 type Db = {
+  _db: Mongo.Db;
   kv: Mongo.Collection<KVEntry>;
   todo: Mongo.Collection<Domain.Todo.Todo>;
 };
+
+const flush =
+  ({ _db }: Db): Client["flush"] =>
+  () =>
+    taskEither.tryCatch(
+      () => _db.dropDatabase().then(ignore),
+      (reason): Error => [ErrorCode.EDROP_db, reason]
+    );
 
 const getLastKnownEventId =
   ({ kv }: Db): Client["getLastKnownEventId"] =>
@@ -106,11 +119,16 @@ export const connect = (
             (reason): Error => [ErrorCode.EACCESS_todo, reason]
           )
         ),
-        taskEither.fromIOEither
+        taskEither.fromIOEither,
+        taskEither.map((collections) => ({
+          ...collections,
+          _db: db,
+        }))
       )
     ),
     taskEither.map(
       (db): Client => ({
+        flush: flush(db),
         getLastKnownEventId: getLastKnownEventId(db),
         setLastKnownEventId: setLastKnownEventId(db),
       })
