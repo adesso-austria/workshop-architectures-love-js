@@ -1,8 +1,9 @@
 import * as Crypto from "crypto";
 import { describe, it, expect } from "@jest/globals";
-import { either, ioEither, taskEither } from "fp-ts";
+import { either, ioEither, option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { ignore, throwException } from "utils";
+import * as TestData from "../test-data";
 import { connect, ErrorCode } from "./mongo";
 
 const cleanConnect = (url: string) =>
@@ -81,6 +82,37 @@ describe("mongo", () => {
         taskEither.match(
           () => throwException("expected a right"),
           (id) => expect(id).toEqual("foo")
+        )
+      )
+    );
+  });
+
+  describe("getTodo", () => {
+    it(
+      "should return right none for an unknown todo",
+      pipe(
+        cleanConnect(defaultUrl),
+        taskEither.chain((client) => client.getTodo("foo")),
+        taskEither.match(
+          () => throwException("expected a right"),
+          (todo) => expect(todo).toEqual(option.none)
+        )
+      )
+    );
+
+    it(
+      "should find a todo that has been added",
+      pipe(
+        cleanConnect(defaultUrl),
+        taskEither.chain((client) =>
+          pipe(
+            client.addTodo(TestData.Todo.buyIcecream),
+            taskEither.chain(() => client.getTodo(TestData.Todo.buyIcecream.id))
+          )
+        ),
+        taskEither.match(
+          () => throwException("expected a right"),
+          (todo) => expect(todo).toEqual(option.some(TestData.Todo.buyIcecream))
         )
       )
     );

@@ -1,4 +1,4 @@
-import { ioEither, taskEither } from "fp-ts";
+import { ioEither, option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Mongo from "mongodb";
 import { ignore } from "utils";
@@ -15,6 +15,8 @@ export enum ErrorCode {
   EACCESS_todo = "could not access todo collection",
   EUPDATE_lastKnownEventId = "could not update last known event id",
   EDROP_db = "could not drop db",
+  ENOTFOUND_todo = "could not find todo",
+  EINSERT_todo = "could not insert todo",
 }
 
 type Error = [ErrorCode, unknown?];
@@ -23,8 +25,10 @@ export type Client = {
   flush: () => taskEither.TaskEither<Error, void>;
   getLastKnownEventId: () => taskEither.TaskEither<Error, string>;
   setLastKnownEventId: (id: string) => taskEither.TaskEither<Error, void>;
-  // getTodo: (id: string) => taskEither.TaskEither<Error, Domain.Todo.Todo>;
-  // addTodo: (todo: Domain.Todo.Todo) => taskEither.TaskEither<Error, void>;
+  getTodo: (
+    id: string
+  ) => taskEither.TaskEither<Error, option.Option<Domain.Todo.Todo>>;
+  addTodo: (todo: Domain.Todo.Todo) => taskEither.TaskEither<Error, void>;
 };
 
 type KVEntry = { key: string; value: string };
@@ -72,6 +76,22 @@ const setLastKnownEventId =
           )
           .then(ignore),
       (reason): Error => [ErrorCode.EUPDATE_lastKnownEventId, reason]
+    );
+
+const getTodo =
+  ({ todo }: Db): Client["getTodo"] =>
+  (id) =>
+    taskEither.tryCatch(
+      () => todo.findOne({ id }).then(option.fromNullable),
+      (reason): Error => [ErrorCode.ENOTFOUND_todo, reason]
+    );
+
+const addTodo =
+  (db: Db): Client["addTodo"] =>
+  (todo) =>
+    taskEither.tryCatch(
+      () => db.todo.insertOne(todo).then(ignore),
+      (reason): Error => [ErrorCode.EINSERT_todo, reason]
     );
 
 export const connect = (
@@ -131,6 +151,8 @@ export const connect = (
         flush: flush(db),
         getLastKnownEventId: getLastKnownEventId(db),
         setLastKnownEventId: setLastKnownEventId(db),
+        getTodo: getTodo(db),
+        addTodo: addTodo(db),
       })
     )
   );
