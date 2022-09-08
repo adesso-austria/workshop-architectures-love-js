@@ -4,7 +4,7 @@
     {
       "files": [
         "src/**/*.{spec,e2e,demoize}.{ts,tsx}",
-        "src/utils/test-utils.tsx",
+        "src/test-utils/**/*.{ts,tsx}",
         "src/test-data/**/*.{ts,tsx}",
         "esbuild.js",
         "tailwind.config.cjs"
