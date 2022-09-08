@@ -44,7 +44,7 @@ type Op<
           }
             ? Content extends { "application/json": infer JsonContent }
               ? JsonContent
-              : Content extends { "text/plain": any }
+              : Content extends { "text/plain": unknown }
               ? string
               : unknown
             : unknown
