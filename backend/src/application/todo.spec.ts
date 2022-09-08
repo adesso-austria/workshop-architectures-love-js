@@ -18,7 +18,7 @@ describe("todo", () => {
         getTodo(
           TestData.Repository.create({
             todo: {
-              getTodo: () => taskEither.left(new Error("something's up")),
+              getTodo: () => taskEither.left("something's up"),
             },
           }),
           "foo"
@@ -86,7 +86,7 @@ describe("todo", () => {
       [
         Jest.givenThen(
           "should return status 500 if the repository threw an error",
-          taskEither.left(new Error("something's up")),
+          taskEither.left("something's up"),
           (response) => {
             expect(response.statusCode).toEqual(500);
           }

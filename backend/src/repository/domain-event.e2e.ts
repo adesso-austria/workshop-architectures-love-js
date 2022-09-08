@@ -1,4 +1,4 @@
-import { describe, it, expect } from "@jest/globals";
+import { describe, it } from "@jest/globals";
 import { taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Domain from "../domain";

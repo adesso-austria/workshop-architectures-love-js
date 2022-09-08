@@ -2,26 +2,13 @@ import { describe, it, expect } from "@jest/globals";
 import { taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { ignore, throwException } from "utils";
-import { connect } from "./redis";
-
-const connectClean = (url: string) =>
-  pipe(
-    connect({ url, db: 1 }),
-    taskEither.chain((client) =>
-      pipe(
-        client.flush(),
-        taskEither.map(() => client)
-      )
-    )
-  );
+import * as TestUtils from "../test-utils";
 
 describe("redis", () => {
-  const defaultUrl = "redis://localhost:6379";
-
   it(
     "should return left if invalid connection url is given",
     pipe(
-      connectClean("fuytnwrt"),
+      TestUtils.Redis.connect("fuytnwrt"),
       taskEither.match(ignore, () => throwException("expected a left"))
     )
   );
@@ -29,7 +16,7 @@ describe("redis", () => {
   it(
     "should return a right if a valid url is given",
     pipe(
-      connectClean(defaultUrl),
+      TestUtils.Redis.connect(),
       taskEither.match(() => throwException("expected a right"), ignore)
     )
   );
@@ -38,7 +25,7 @@ describe("redis", () => {
     it(
       "should return the last event id",
       pipe(
-        connectClean(defaultUrl),
+        TestUtils.Redis.connect(),
         taskEither.chain((client) =>
           pipe(
             client.emit({ foo: "bar" }),
@@ -52,7 +39,7 @@ describe("redis", () => {
     it(
       "should return undefined if no events exist",
       pipe(
-        connectClean(defaultUrl),
+        TestUtils.Redis.connect(),
         taskEither.chain((client) => client.getLastEventId()),
         taskEither.match(
           () => throwException("expected a right"),

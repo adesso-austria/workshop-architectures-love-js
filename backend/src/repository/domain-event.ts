@@ -1,12 +1,12 @@
 import { taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { DomainEvent } from "../domain";
-import type { Env } from "./root";
+import type { Db } from "./db";
 
 export const getUnknownEvents = ({
   redis,
   mongo,
-}: Env): taskEither.TaskEither<string, DomainEvent.DomainEvent[]> =>
+}: Db): taskEither.TaskEither<string, DomainEvent.DomainEvent[]> =>
   pipe(
     mongo.getLastKnownEventId(),
     taskEither.mapLeft(([error, reason]) => `${error}: ${reason}`),

@@ -4,31 +4,14 @@ import * as Mongo from "mongodb";
 import { ignore } from "utils";
 import * as Domain from "../domain";
 
-export enum ErrorCode {
-  ECONNECT_client = "could not connect to client",
-  EACCESS_lastKnownEventId = "could not access last known event id",
-  EACCESS_db = "could not access db",
-  ENOTFOUND_lastKnownEventId = "could not find last known event id",
-  EINVALIDARG_url = "need url to know where to connect to",
-  ECREATE_mongoclient = "could not create mongo client",
-  EACCESS_kv = "could not access kv collection",
-  EACCESS_todo = "could not access todo collection",
-  EUPDATE_lastKnownEventId = "could not update last known event id",
-  EDROP_db = "could not drop db",
-  ENOTFOUND_todo = "could not find todo",
-  EINSERT_todo = "could not insert todo",
-}
-
-type Error = [ErrorCode, unknown?];
-
 export type Client = {
-  flush: () => taskEither.TaskEither<Error, void>;
-  getLastKnownEventId: () => taskEither.TaskEither<Error, string>;
-  setLastKnownEventId: (id: string) => taskEither.TaskEither<Error, void>;
+  flush: () => taskEither.TaskEither<string, void>;
+  getLastKnownEventId: () => taskEither.TaskEither<string, string>;
+  setLastKnownEventId: (id: string) => taskEither.TaskEither<string, void>;
   getTodo: (
     id: string
-  ) => taskEither.TaskEither<Error, option.Option<Domain.Todo.Todo>>;
-  addTodo: (todo: Domain.Todo.Todo) => taskEither.TaskEither<Error, void>;
+  ) => taskEither.TaskEither<string, option.Option<Domain.Todo.Todo>>;
+  addTodo: (todo: Domain.Todo.Todo) => taskEither.TaskEither<string, void>;
 };
 
 type KVEntry = { key: string; value: string };
@@ -44,7 +27,7 @@ const flush =
   () =>
     taskEither.tryCatch(
       () => _db.dropDatabase().then(ignore),
-      (reason): Error => [ErrorCode.EDROP_db, reason]
+      (reason) => `could not drop db: ${reason}`
     );
 
 const getLastKnownEventId =
@@ -53,12 +36,12 @@ const getLastKnownEventId =
     pipe(
       taskEither.tryCatch(
         () => kv.findOne({ key: "lastKnownEventId" }),
-        (reason): Error => [ErrorCode.EACCESS_lastKnownEventId, reason]
+        (reason) => `error when searching for lastKnownEventId: ${reason}`
       ),
       taskEither.chain((doc) =>
         taskEither.tryCatch(
           async () => (doc == null ? Promise.reject() : doc.value),
-          (reason): Error => [ErrorCode.ENOTFOUND_lastKnownEventId, reason]
+          (reason) => `could not find lastKnownEventId: ${reason}`
         )
       )
     );
@@ -75,7 +58,7 @@ const setLastKnownEventId =
             { upsert: true }
           )
           .then(ignore),
-      (reason): Error => [ErrorCode.EUPDATE_lastKnownEventId, reason]
+      (reason) => `could not update lastKnownEventId: ${reason}`
     );
 
 const getTodo =
@@ -83,7 +66,7 @@ const getTodo =
   (id) =>
     taskEither.tryCatch(
       () => todo.findOne({ id }).then(option.fromNullable),
-      (reason): Error => [ErrorCode.ENOTFOUND_todo, reason]
+      (reason) => `error when searching for todo: ${reason}`
     );
 
 const addTodo =
@@ -91,7 +74,7 @@ const addTodo =
   (todo) =>
     taskEither.tryCatch(
       () => db.todo.insertOne(todo).then(ignore),
-      (reason): Error => [ErrorCode.EINSERT_todo, reason]
+      (reason) => `error when adding todo: ${reason}`
     );
 
 export type ConnectOptions = {
@@ -102,27 +85,29 @@ export type ConnectOptions = {
 export const connect = ({
   url = process.env["MONGO_URL"],
   db = "todo-app",
-}: ConnectOptions = {}): taskEither.TaskEither<Error, Client> => {
+}: ConnectOptions = {}): taskEither.TaskEither<string, Client> => {
   if (url == null) {
-    return taskEither.left<Error, Client>([ErrorCode.EINVALIDARG_url]);
+    return taskEither.left<string, Client>(
+      "need an url to know where to connect to"
+    );
   }
   return pipe(
     ioEither.tryCatch(
       () => new Mongo.MongoClient(url),
-      (reason): Error => [ErrorCode.ECREATE_mongoclient, reason]
+      (reason) => `could not create client: ${reason}`
     ),
     taskEither.fromIOEither,
     taskEither.chain((client) =>
       taskEither.tryCatch(
         () => client.connect(),
-        (reason): Error => [ErrorCode.ECONNECT_client, reason]
+        (reason) => `could not connect to client: ${reason}`
       )
     ),
     taskEither.chain((client) =>
       pipe(
         ioEither.tryCatch(
           () => client.db(db),
-          (reason): Error => [ErrorCode.EACCESS_db, reason]
+          (reason) => `could not access db: ${reason}`
         ),
         taskEither.fromIOEither
       )
@@ -134,14 +119,14 @@ export const connect = ({
           "kv",
           ioEither.tryCatch(
             () => db.collection<{ key: string; value: string }>("kv"),
-            (reason): Error => [ErrorCode.EACCESS_kv, reason]
+            (reason) => `could not access kv collection: ${reason}`
           )
         ),
         ioEither.apS(
           "todo",
           ioEither.tryCatch(
             () => db.collection<Domain.Todo.Todo>("todo"),
-            (reason): Error => [ErrorCode.EACCESS_todo, reason]
+            (reason) => `could not access todo collection: ${reason}`
           )
         ),
         taskEither.fromIOEither,

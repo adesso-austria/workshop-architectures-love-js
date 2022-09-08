@@ -1,15 +1,14 @@
 import { option, taskEither } from "fp-ts";
 import * as Domain from "../domain";
-import type { Env } from "./root";
 
 export type Repository = {
-  getTodos: () => taskEither.TaskEither<Error, Domain.Todo.Todo[]>;
+  getTodos: () => taskEither.TaskEither<string, Domain.Todo.Todo[]>;
   getTodo: (
     id: string
-  ) => taskEither.TaskEither<Error, option.Option<Domain.Todo.Todo>>;
+  ) => taskEither.TaskEither<string, option.Option<Domain.Todo.Todo>>;
 };
 
-export const create = (env: Env): Repository => ({
+export const create = (): Repository => ({
   getTodos: () => taskEither.right([]),
   getTodo: () => taskEither.right(option.none),
 });
