@@ -6,7 +6,15 @@ import * as TestUtils from "../test-utils";
 import * as Mongo from "./mongo";
 
 const connect = (url?: string) =>
-  Mongo.connect({ ...(url == null ? {} : { url }), db: "test-db" });
+  pipe(
+    Mongo.connect({ ...(url == null ? {} : { url }), db: "test-db" }),
+    taskEither.chain((client) =>
+      pipe(
+        client.flush(),
+        taskEither.map(() => client)
+      )
+    )
+  );
 
 describe("mongo", () => {
   describe("connect", () => {
