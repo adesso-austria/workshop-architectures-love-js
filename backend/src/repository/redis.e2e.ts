@@ -1,53 +1,33 @@
-import { describe, it, expect } from "@jest/globals";
-import { option, taskEither } from "fp-ts";
+import { describe, it } from "@jest/globals";
+import { taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { ignore, throwException } from "utils";
-import * as TestData from "../test-data";
-import * as TestUtils from "../test-utils";
+import * as Redis from "./redis";
+
+const connect = (url?: string) =>
+  Redis.connect({ ...(url == null ? {} : { url }), db: 1 });
 
 describe("redis", () => {
-  it(
-    "should return left if invalid connection url is given",
-    pipe(
-      TestUtils.Repository.connect({ db: { redis: { url: "fuytnwrt" } } }),
-      taskEither.match(ignore, () => throwException("expected a left"))
-    )
-  );
-
-  it(
-    "should return a right if a valid url is given",
-    pipe(
-      TestUtils.Repository.connect(),
-      taskEither.match(() => throwException("expected a right"), ignore)
-    )
-  );
-
-  describe("getLastEventId", () => {
+  describe("connect", () => {
     it(
-      "should return the last event id",
-      pipe(
-        TestUtils.Repository.connect(),
-        taskEither.chain((client) =>
-          pipe(
-            client.emit({
-              type: "create todo",
-              payload: TestData.AddTodo.buyIcecream,
-            }),
-            taskEither.chain(() => client.getLastEventId())
-          )
-        ),
-        taskEither.match(throwException, (id) => expect(id).toBeDefined())
-      )
+      "should return left if invalid connection url is given",
+      pipe(connect("uynptrs"), taskEither.match(ignore, throwException))
     );
 
     it(
-      "should return option.none if no events exist",
+      "should return a right if a valid url is given",
+      pipe(connect(), taskEither.match(throwException, ignore))
+    );
+  });
+
+  describe("flush", () => {
+    it(
+      "should reject if selected db is 0 (prod)",
       pipe(
-        TestUtils.Repository.connect(),
-        taskEither.chain((client) => client.getLastEventId()),
-        taskEither.match(
-          () => throwException("expected a right"),
-          (id) => expect(id).toEqual(option.none)
+        Redis.connect(),
+        taskEither.chain((client) => client.flush()),
+        taskEither.match(ignore, () =>
+          throwException("should not have dropped prod db")
         )
       )
     );

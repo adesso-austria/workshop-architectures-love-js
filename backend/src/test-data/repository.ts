@@ -6,10 +6,9 @@ import * as Todo from "./todo";
 
 export const defaultRepository: Repository = {
   flush: () => taskEither.right(undefined),
-  emit: () => taskEither.right(undefined),
-  getLastKnownEventId: () => taskEither.right(option.none),
-  getLastEventId: () => taskEither.right(option.none),
-  setLastKnownEventId: () => taskEither.right(undefined),
+  event: {
+    getUnknownEvents: () => taskEither.right([]),
+  },
   todo: {
     addTodo: () => taskEither.right(undefined),
     getTodo: (id) => {
@@ -18,7 +17,6 @@ export const defaultRepository: Repository = {
     },
     getTodos: () => taskEither.right(Todo.all),
   },
-  applyEvents: () => taskEither.right(undefined),
 };
 
 export const create = (overrides: DeepPartial<Repository>) =>

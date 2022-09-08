@@ -1,9 +1,9 @@
 import { TypeGuards } from "utils";
-import { AddTodo } from "./add-todo";
+import * as Todo from "./todo";
 
 export type DomainEvent = {
   type: "create todo";
-  payload: AddTodo;
+  payload: Todo.Todo;
 };
 
 export const isDomainEvent = TypeGuards.hasKeys(["type", "payload"]) as (

@@ -1,4 +1,4 @@
-import { ioEither, option, taskEither } from "fp-ts";
+import { ioEither, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Mongo from "mongodb";
 import { ignore } from "utils";
@@ -6,59 +6,15 @@ import * as Domain from "../domain";
 
 type KVEntry = { key: string; value: string };
 
-type Db = {
-  _db: Mongo.Db;
+type Collections = {
   kv: Mongo.Collection<KVEntry>;
   todos: Mongo.Collection<Domain.Todo.Todo>;
+  db: Mongo.Db;
 };
 
-export type Client = {
+export type Db = Collections & {
   flush: () => taskEither.TaskEither<string, void>;
-  getLastKnownEventId: () => taskEither.TaskEither<
-    string,
-    option.Option<string>
-  >;
-  setLastKnownEventId: (id: string) => taskEither.TaskEither<string, void>;
-  todos: Mongo.Collection<Domain.Todo.Todo>;
 };
-
-const flush =
-  ({ _db }: Db): Client["flush"] =>
-  () =>
-    taskEither.tryCatch(
-      () => _db.dropDatabase().then(ignore),
-      (reason) => `could not drop db: ${reason}`
-    );
-
-const getLastKnownEventId =
-  ({ kv }: Db): Client["getLastKnownEventId"] =>
-  () =>
-    pipe(
-      taskEither.tryCatch(
-        () =>
-          kv
-            .findOne({ key: "lastKnownEventId" })
-            .then((doc) =>
-              doc == null ? option.none : option.some(doc.value)
-            ),
-        (reason) => `error when searching for lastKnownEventId: ${reason}`
-      )
-    );
-
-const setLastKnownEventId =
-  ({ kv }: Db): Client["setLastKnownEventId"] =>
-  (id) =>
-    taskEither.tryCatch(
-      () =>
-        kv
-          .updateOne(
-            { key: "lastKnownEventId" },
-            { $set: { value: id } },
-            { upsert: true }
-          )
-          .then(ignore),
-      (reason) => `could not update lastKnownEventId: ${reason}`
-    );
 
 export type ConnectOptions = {
   url?: string;
@@ -68,9 +24,9 @@ export type ConnectOptions = {
 export const connect = ({
   url = process.env["MONGO_URL"],
   db = "todo-app",
-}: ConnectOptions = {}): taskEither.TaskEither<string, Client> => {
+}: ConnectOptions = {}): taskEither.TaskEither<string, Db> => {
   if (url == null) {
-    return taskEither.left<string, Client>(
+    return taskEither.left<string, Db>(
       "need an url to know where to connect to"
     );
   }
@@ -115,17 +71,14 @@ export const connect = ({
         taskEither.fromIOEither,
         taskEither.map((collections) => ({
           ...collections,
-          _db: db,
+          db,
+          flush: () =>
+            taskEither.tryCatch(
+              () => db.dropDatabase().then(ignore),
+              (reason) => reason as string
+            ),
         }))
       )
-    ),
-    taskEither.map(
-      (db): Client => ({
-        flush: flush(db),
-        getLastKnownEventId: getLastKnownEventId(db),
-        setLastKnownEventId: setLastKnownEventId(db),
-        todos: db.todos,
-      })
     )
   );
 };
