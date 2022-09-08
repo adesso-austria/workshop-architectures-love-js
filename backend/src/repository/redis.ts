@@ -1,11 +1,18 @@
-import { ioEither, taskEither } from "fp-ts";
+import { ioEither, option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Redis from "redis";
 // eslint-disable-next-line import/no-internal-modules
 import { RedisFlushModes } from "@redis/client/dist/lib/commands/FLUSHALL";
 import { ignore } from "utils";
 
-export type Client = ReturnType<typeof Redis["createClient"]> & {
+type MessageContent = Record<string, string | Buffer>;
+type RedisMessage = { id: string; message: MessageContent };
+
+export type Client = {
+  addEvent: (event: MessageContent) => taskEither.TaskEither<string, void>;
+  getEvents: (
+    since: option.Option<string>
+  ) => taskEither.TaskEither<string, RedisMessage[]>;
   flush: () => taskEither.TaskEither<string, void>;
 };
 
@@ -34,16 +41,33 @@ export const connect = ({
       )
     ),
     taskEither.map(
-      (client): Client =>
-        Object.assign({}, client, {
-          flush: () =>
-            db === 0
-              ? taskEither.left("refusing to drop prod db")
-              : taskEither.tryCatch(
-                  () => client.flushDb(RedisFlushModes.ASYNC).then(ignore),
-                  (reason) => reason as string
+      (client): Client => ({
+        addEvent: (message) =>
+          taskEither.tryCatch(
+            () => client.XADD("events", "*", message).then(ignore),
+            (reason) => reason as string
+          ),
+        getEvents: (since) =>
+          taskEither.tryCatch(
+            () =>
+              client.XRANGE(
+                "events",
+                pipe(
+                  since,
+                  option.getOrElse(() => "-")
                 ),
-        })
+                "+"
+              ),
+            (reason) => reason as string
+          ),
+        flush: () =>
+          db === 0
+            ? taskEither.left("refusing to drop prod db")
+            : taskEither.tryCatch(
+                () => client.flushDb(RedisFlushModes.ASYNC).then(ignore),
+                (reason) => reason as string
+              ),
+      })
     )
   );
 };

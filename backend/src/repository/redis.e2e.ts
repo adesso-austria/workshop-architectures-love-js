@@ -1,11 +1,19 @@
-import { describe, it } from "@jest/globals";
-import { taskEither } from "fp-ts";
+import { describe, it, expect } from "@jest/globals";
+import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { ignore, throwException } from "utils";
 import * as Redis from "./redis";
 
 const connect = (url?: string) =>
-  Redis.connect({ ...(url == null ? {} : { url }), db: 1 });
+  pipe(
+    Redis.connect({ ...(url == null ? {} : { url }), db: 1 }),
+    taskEither.chain((client) =>
+      pipe(
+        client.flush(),
+        taskEither.map(() => client)
+      )
+    )
+  );
 
 describe("redis", () => {
   describe("connect", () => {
@@ -28,6 +36,37 @@ describe("redis", () => {
         taskEither.chain((client) => client.flush()),
         taskEither.match(ignore, () =>
           throwException("should not have dropped prod db")
+        )
+      )
+    );
+  });
+
+  describe("addEvent", () => {
+    it(
+      "should work",
+      pipe(
+        connect(),
+        taskEither.chain((client) =>
+          pipe(
+            client.addEvent({ foo: "bar" }),
+            taskEither.chain(() => client.getEvents(option.none))
+          )
+        ),
+        taskEither.match(throwException, (events) =>
+          expect(events).toHaveLength(1)
+        )
+      )
+    );
+  });
+
+  describe("getEvents", () => {
+    it(
+      "should return an empty array if no events have been emitted",
+      pipe(
+        connect(),
+        taskEither.chain((client) => client.getEvents(option.none)),
+        taskEither.match(throwException, (events) =>
+          expect(events).toHaveLength(0)
         )
       )
     );
