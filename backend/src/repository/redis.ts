@@ -40,6 +40,7 @@ export const connect = ({
         () => "could not connect to client"
       )
     ),
+    // TODO: pull each function out
     taskEither.map(
       (client): Client => ({
         addEvent: (message) =>

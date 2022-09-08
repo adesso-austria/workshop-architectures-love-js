@@ -17,6 +17,7 @@ export const connect = (options: ConnectOptions = {}) =>
   pipe(Db.connect(options.db), taskEither.map(create));
 
 export const create = (db: Db.Db): Repository => {
+  const getRepo = () => repository;
   const repository: Repository = {
     flush: () =>
       pipe(
@@ -25,8 +26,8 @@ export const create = (db: Db.Db): Repository => {
         taskEither.apS("redis", db.redis.flush()),
         taskEither.map(ignore)
       ),
-    todo: Todo.create(db, () => repository),
-    event: Event.create(db),
+    todo: Todo.create(db, getRepo),
+    event: Event.create(db, getRepo),
   };
   return repository;
 };

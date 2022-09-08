@@ -1,4 +1,7 @@
 import { option, taskEither } from "fp-ts";
+import { pipe } from "fp-ts/lib/function";
+import { match } from "ts-pattern";
+import { ignore } from "utils";
 import * as Domain from "../domain";
 import * as Db from "./db";
 import type * as Root from "./root";
@@ -9,13 +12,35 @@ export type Repository = {
   getTodo: (
     id: string
   ) => taskEither.TaskEither<string, option.Option<Domain.Todo.Todo>>;
+  applyEvent: (
+    event: Domain.DomainEvent.DomainEvent
+  ) => taskEither.TaskEither<string, void>;
 };
+
+const addTodo = (db: Db.Db, todo: Domain.Todo.Todo) =>
+  taskEither.tryCatch(
+    () => db.mongo.todos.insertOne(todo).then(ignore),
+    (reason) => reason as string
+  );
 
 export const create = (
   db: Db.Db,
   getRepo: () => Root.Repository
 ): Repository => ({
-  addTodo: () => taskEither.left("not implemented"),
+  applyEvent: (event) =>
+    match(event)
+      .with({ type: "create todo" }, ({ payload }) => addTodo(db, payload))
+      .exhaustive(),
+  addTodo: (todo) => addTodo(db, todo),
   getTodos: () => taskEither.left("not implemented"),
-  getTodo: () => taskEither.left("not implemented"),
+  getTodo: (id) =>
+    pipe(
+      getRepo().event.syncState(),
+      taskEither.chain(() =>
+        taskEither.tryCatch(
+          () => db.mongo.todos.findOne({ id }).then(option.fromNullable),
+          (reason) => reason as string
+        )
+      )
+    ),
 });
