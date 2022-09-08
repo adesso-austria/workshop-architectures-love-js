@@ -6,7 +6,7 @@ import { connect } from "./redis";
 
 const connectClean = (url: string) =>
   pipe(
-    connect(url, 1),
+    connect({ url, db: 1 }),
     taskEither.chain((client) =>
       pipe(
         client.flush(),
@@ -21,7 +21,7 @@ describe("redis", () => {
   it(
     "should return left if invalid connection url is given",
     pipe(
-      connect("fuytnwrt"),
+      connectClean("fuytnwrt"),
       taskEither.match(ignore, () => throwException("expected a left"))
     )
   );
@@ -29,7 +29,7 @@ describe("redis", () => {
   it(
     "should return a right if a valid url is given",
     pipe(
-      connect(defaultUrl),
+      connectClean(defaultUrl),
       taskEither.match(() => throwException("expected a right"), ignore)
     )
   );

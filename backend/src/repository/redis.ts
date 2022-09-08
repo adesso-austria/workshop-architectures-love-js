@@ -67,10 +67,15 @@ const getEventsSince =
       )
     );
 
-export const connect = (
+export type ConnectOptions = {
+  url?: string;
+  db?: number;
+};
+
+export const connect = ({
   url = process.env["REDIS_URL"],
-  db = 0
-): taskEither.TaskEither<string, Client> => {
+  db = 0,
+}: ConnectOptions = {}): taskEither.TaskEither<string, Client> => {
   if (url == null) {
     return taskEither.left("need to have a url to know where to connect to");
   }

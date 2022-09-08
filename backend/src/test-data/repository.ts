@@ -12,6 +12,7 @@ export const defaultRepository: Repository = {
     },
     getTodos: () => taskEither.right(Todo.all),
   },
+  applyEvents: () => taskEither.right(undefined),
 };
 
 export const create = (overrides: DeepPartial<Repository>) =>
