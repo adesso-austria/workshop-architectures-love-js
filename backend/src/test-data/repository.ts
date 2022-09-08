@@ -7,6 +7,7 @@ import * as Todo from "./todo";
 export const defaultRepository: Repository = {
   flush: () => taskEither.right(undefined),
   event: {
+    emit: () => taskEither.right(undefined),
     getUnknownEvents: () => taskEither.right([]),
   },
   todo: {
