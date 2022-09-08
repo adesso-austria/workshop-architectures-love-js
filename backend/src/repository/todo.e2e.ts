@@ -10,8 +10,8 @@ describe("todo", () => {
     it(
       "should return right none for an unknown todo",
       pipe(
-        TestUtils.Mongo.connect(),
-        taskEither.chain((client) => client.getTodo("foo")),
+        TestUtils.Repository.connect(),
+        taskEither.chain((repo) => repo.todo.getTodo("foo")),
         taskEither.match(
           () => throwException("expected a right"),
           (todo) => expect(todo).toEqual(option.none)
@@ -22,11 +22,13 @@ describe("todo", () => {
     it(
       "should find a todo that has been added",
       pipe(
-        TestUtils.Mongo.connect(),
-        taskEither.chain((client) =>
+        TestUtils.Repository.connect(),
+        taskEither.chain((repo) =>
           pipe(
-            client.addTodo(TestData.Todo.buyIcecream),
-            taskEither.chain(() => client.getTodo(TestData.Todo.buyIcecream.id))
+            repo.todo.addTodo(TestData.Todo.buyIcecream),
+            taskEither.chain(() =>
+              repo.todo.getTodo(TestData.Todo.buyIcecream.id)
+            )
           )
         ),
         taskEither.match(
@@ -37,18 +39,22 @@ describe("todo", () => {
     );
   });
 
-  // describe("getTodos", () => {
-  //   it(
-  //     "should fetch all todos",
-  //     pipe(
-  //       TestUtils.Db.connect(),
-  //       taskEither.map(create),
-  //       taskEither.chain((repo) => repo.getTodos()),
-  //       taskEither.match(
-  //         () => throwException("expected a right"),
-  //         (todos) => expect(todos).toEqual(TestData.Todo.all)
-  //       )
-  //     )
-  //   );
-  // });
+  describe("getTodos", () => {
+    it(
+      "should fetch all todos",
+      pipe(
+        TestUtils.Repository.connect(),
+        taskEither.chain((repo) =>
+          pipe(
+            repo.todo.addTodo(TestData.Todo.buyIcecream),
+            taskEither.chain(() => repo.todo.getTodos())
+          )
+        ),
+        taskEither.match(
+          (error) => throwException(error),
+          (todos) => expect(todos).toEqual([TestData.Todo.buyIcecream])
+        )
+      )
+    );
+  });
 });

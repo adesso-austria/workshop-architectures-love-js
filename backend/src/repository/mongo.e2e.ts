@@ -1,5 +1,5 @@
 import { describe, it, expect } from "@jest/globals";
-import { either, taskEither } from "fp-ts";
+import { either, option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { ignore, throwException } from "utils";
 import * as TestUtils from "../test-utils";
@@ -8,15 +8,15 @@ describe("mongo", () => {
   it(
     "should return left if no url is given",
     pipe(
-      TestUtils.Mongo.connect(""),
+      TestUtils.Repository.connect({ db: { mongo: { url: "" } } }),
       taskEither.match(ignore, () => throwException("expected a left"))
     )
   );
 
   it(
-    "should return left ECREATE when given an invalid url",
+    "should return left when given an invalid url",
     pipe(
-      TestUtils.Mongo.connect("foo"),
+      TestUtils.Repository.connect({ db: { mongo: { url: "foo" } } }),
       taskEither.match(ignore, () => throwException("expected a left"))
     )
   );
@@ -24,24 +24,27 @@ describe("mongo", () => {
   it(
     "should return right when connection to db succeeds",
     pipe(
-      TestUtils.Mongo.connect(),
+      TestUtils.Repository.connect(),
       taskEither.match(() => throwException("expected a right"), ignore)
     )
   );
 
   describe("getLastKnownEventId", () => {
     it(
-      "should return left ENOTFOUND if the db is empty",
+      "should return option.none if the db is empty",
       pipe(
-        TestUtils.Mongo.connect(),
-        taskEither.chain(({ getLastKnownEventId }) => getLastKnownEventId()),
-        taskEither.match(ignore, () => throwException("expected a left"))
+        TestUtils.Repository.connect(),
+        taskEither.chain((repo) => repo.getLastKnownEventId()),
+        taskEither.match(
+          () => throwException("expected a left"),
+          (id) => expect(id).toEqual(option.none)
+        )
       )
     );
 
     it("should return right if key was found", async () => {
       const task = pipe(
-        TestUtils.Mongo.connect(),
+        TestUtils.Repository.connect(),
         taskEither.chain((client) =>
           pipe(
             client.setLastKnownEventId("bla"),
@@ -49,7 +52,7 @@ describe("mongo", () => {
           )
         )
       );
-      expect(await task()).toEqual(either.right("bla"));
+      expect(await task()).toEqual(either.right(option.some("bla")));
     });
   });
 
@@ -57,16 +60,16 @@ describe("mongo", () => {
     it(
       "should return right",
       pipe(
-        TestUtils.Mongo.connect(),
-        taskEither.chain((client) =>
+        TestUtils.Repository.connect(),
+        taskEither.chain((repo) =>
           pipe(
-            client.setLastKnownEventId("foo"),
-            taskEither.chain(() => client.getLastKnownEventId())
+            repo.setLastKnownEventId("foo"),
+            taskEither.chain(() => repo.getLastKnownEventId())
           )
         ),
         taskEither.match(
           () => throwException("expected a right"),
-          (id) => expect(id).toEqual("foo")
+          (id) => expect(id).toEqual(option.some("foo"))
         )
       )
     );

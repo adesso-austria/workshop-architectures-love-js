@@ -4,22 +4,22 @@ import * as Mongo from "mongodb";
 import { ignore } from "utils";
 import * as Domain from "../domain";
 
-export type Client = {
-  flush: () => taskEither.TaskEither<string, void>;
-  getLastKnownEventId: () => taskEither.TaskEither<string, string>;
-  setLastKnownEventId: (id: string) => taskEither.TaskEither<string, void>;
-  getTodo: (
-    id: string
-  ) => taskEither.TaskEither<string, option.Option<Domain.Todo.Todo>>;
-  addTodo: (todo: Domain.Todo.Todo) => taskEither.TaskEither<string, void>;
-};
-
 type KVEntry = { key: string; value: string };
 
 type Db = {
   _db: Mongo.Db;
   kv: Mongo.Collection<KVEntry>;
-  todo: Mongo.Collection<Domain.Todo.Todo>;
+  todos: Mongo.Collection<Domain.Todo.Todo>;
+};
+
+export type Client = {
+  flush: () => taskEither.TaskEither<string, void>;
+  getLastKnownEventId: () => taskEither.TaskEither<
+    string,
+    option.Option<string>
+  >;
+  setLastKnownEventId: (id: string) => taskEither.TaskEither<string, void>;
+  todos: Mongo.Collection<Domain.Todo.Todo>;
 };
 
 const flush =
@@ -35,14 +35,13 @@ const getLastKnownEventId =
   () =>
     pipe(
       taskEither.tryCatch(
-        () => kv.findOne({ key: "lastKnownEventId" }),
+        () =>
+          kv
+            .findOne({ key: "lastKnownEventId" })
+            .then((doc) =>
+              doc == null ? option.none : option.some(doc.value)
+            ),
         (reason) => `error when searching for lastKnownEventId: ${reason}`
-      ),
-      taskEither.chain((doc) =>
-        taskEither.tryCatch(
-          async () => (doc == null ? Promise.reject() : doc.value),
-          (reason) => `could not find lastKnownEventId: ${reason}`
-        )
       )
     );
 
@@ -59,22 +58,6 @@ const setLastKnownEventId =
           )
           .then(ignore),
       (reason) => `could not update lastKnownEventId: ${reason}`
-    );
-
-const getTodo =
-  ({ todo }: Db): Client["getTodo"] =>
-  (id) =>
-    taskEither.tryCatch(
-      () => todo.findOne({ id }).then(option.fromNullable),
-      (reason) => `error when searching for todo: ${reason}`
-    );
-
-const addTodo =
-  (db: Db): Client["addTodo"] =>
-  (todo) =>
-    taskEither.tryCatch(
-      () => db.todo.insertOne(todo).then(ignore),
-      (reason) => `error when adding todo: ${reason}`
     );
 
 export type ConnectOptions = {
@@ -123,7 +106,7 @@ export const connect = ({
           )
         ),
         ioEither.apS(
-          "todo",
+          "todos",
           ioEither.tryCatch(
             () => db.collection<Domain.Todo.Todo>("todo"),
             (reason) => `could not access todo collection: ${reason}`
@@ -141,8 +124,7 @@ export const connect = ({
         flush: flush(db),
         getLastKnownEventId: getLastKnownEventId(db),
         setLastKnownEventId: setLastKnownEventId(db),
-        getTodo: getTodo(db),
-        addTodo: addTodo(db),
+        todos: db.todos,
       })
     )
   );

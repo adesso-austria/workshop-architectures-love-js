@@ -1,4 +1,4 @@
-import { ioEither, taskEither } from "fp-ts";
+import { ioEither, option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Redis from "redis";
 // eslint-disable-next-line import/no-internal-modules
@@ -17,9 +17,9 @@ export type Client = {
    * Only exists for integration tests
    */
   flush: () => taskEither.TaskEither<string, void>;
-  getLastEventId: () => taskEither.TaskEither<string, string | undefined>;
+  getLastEventId: () => taskEither.TaskEither<string, option.Option<string>>;
   getEventsSince: (
-    id: string | undefined
+    id: option.Option<string>
   ) => taskEither.TaskEither<string, RedisMessage[]>;
 };
 
@@ -47,10 +47,10 @@ const getLastEventId =
         () =>
           client
             .XINFO_STREAM("events")
-            .then((info) => info.lastEntry?.id)
+            .then((info) => option.fromNullable(info.lastEntry?.id))
             .catch((error: Redis.ErrorReply) =>
               error.message === "ERR no such key"
-                ? undefined
+                ? option.none
                 : Promise.reject(error)
             ),
         (reason) => (reason as Redis.ErrorReply).message
@@ -62,7 +62,15 @@ const getEventsSince =
   (since) =>
     pipe(
       taskEither.tryCatch(
-        () => client.XRANGE("events", since ?? "-", "+"),
+        () =>
+          client.XRANGE(
+            "events",
+            pipe(
+              since,
+              option.getOrElse(() => "-")
+            ),
+            "+"
+          ),
         () => "could not read events since"
       )
     );
