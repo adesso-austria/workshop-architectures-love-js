@@ -1,6 +1,8 @@
 import console from "console";
 import process from "process";
 import yargs from "yargs";
+import dotenv from "dotenv";
+dotenv.config();
 
 const options = yargs(process.env.JEST_OPTIONS?.split(" ") ?? [])
   .option("filter", {
