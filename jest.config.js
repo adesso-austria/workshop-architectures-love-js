@@ -83,7 +83,7 @@ export default {
     "**/*.{ts,tsx}",
     "!**/node_modules/**",
     "!**/vendor/**",
-    "!**/*.demoize.{ts,tsx}",
+    "!**/*.{demoize,e2e,spec}.{ts,tsx}",
     "!**/test-utils/**/*.{ts,tsx}",
     "!**/test-data/**/*.{ts,tsx}",
   ],

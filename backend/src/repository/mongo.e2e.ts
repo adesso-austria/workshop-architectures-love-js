@@ -1,14 +1,13 @@
-import * as Crypto from "crypto";
 import { describe, it, expect } from "@jest/globals";
-import { either, ioEither, option, taskEither } from "fp-ts";
+import { either, option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { ignore, throwException } from "utils";
 import * as TestData from "../test-data";
-import { connect, ErrorCode } from "./mongo";
+import { connect } from "./mongo";
 
-const cleanConnect = (url: string) =>
+const connectClean = (url: string) =>
   pipe(
-    connect(url, "testdb"),
+    connect({ url, db: "testdb" }),
     taskEither.chain((client) =>
       pipe(
         client.flush(),
@@ -31,7 +30,7 @@ describe("mongo", () => {
   it(
     "should return left ECREATE when given an invalid url",
     pipe(
-      connect("foo"),
+      connect({ url: "foo" }),
       taskEither.match(ignore, () => throwException("expected a left"))
     )
   );
@@ -39,7 +38,7 @@ describe("mongo", () => {
   it(
     "should return right when connection to db succeeds",
     pipe(
-      connect(defaultUrl),
+      connect({ url: defaultUrl }),
       taskEither.match(() => throwException("expected a right"), ignore)
     )
   );
@@ -48,7 +47,7 @@ describe("mongo", () => {
     it(
       "should return left ENOTFOUND if the db is empty",
       pipe(
-        connect(defaultUrl, Crypto.randomUUID()),
+        connectClean(defaultUrl),
         taskEither.chain(({ getLastKnownEventId }) => getLastKnownEventId()),
         taskEither.match(ignore, () => throwException("expected a left"))
       )
@@ -56,7 +55,7 @@ describe("mongo", () => {
 
     it("should return right if key was found", async () => {
       const task = pipe(
-        connect(defaultUrl, Crypto.randomUUID()),
+        connectClean(defaultUrl),
         taskEither.chain((client) =>
           pipe(
             client.setLastKnownEventId("bla"),
@@ -72,7 +71,7 @@ describe("mongo", () => {
     it(
       "should return right",
       pipe(
-        cleanConnect(defaultUrl),
+        connectClean(defaultUrl),
         taskEither.chain((client) =>
           pipe(
             client.setLastKnownEventId("foo"),
@@ -91,7 +90,7 @@ describe("mongo", () => {
     it(
       "should return right none for an unknown todo",
       pipe(
-        cleanConnect(defaultUrl),
+        connectClean(defaultUrl),
         taskEither.chain((client) => client.getTodo("foo")),
         taskEither.match(
           () => throwException("expected a right"),
@@ -103,7 +102,7 @@ describe("mongo", () => {
     it(
       "should find a todo that has been added",
       pipe(
-        cleanConnect(defaultUrl),
+        connectClean(defaultUrl),
         taskEither.chain((client) =>
           pipe(
             client.addTodo(TestData.Todo.buyIcecream),

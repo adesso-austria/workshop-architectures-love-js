@@ -94,10 +94,15 @@ const addTodo =
       (reason): Error => [ErrorCode.EINSERT_todo, reason]
     );
 
-export const connect = (
+export type ConnectOptions = {
+  url?: string;
+  db?: string;
+};
+
+export const connect = ({
   url = process.env["MONGO_URL"],
-  db = "todo-app"
-): taskEither.TaskEither<Error, Client> => {
+  db = "todo-app",
+}: ConnectOptions = {}): taskEither.TaskEither<Error, Client> => {
   if (url == null) {
     return taskEither.left<Error, Client>([ErrorCode.EINVALIDARG_url]);
   }
