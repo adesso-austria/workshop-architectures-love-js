@@ -41,7 +41,7 @@ const getUnknownEvents = (
           .then((doc) => option.fromNullable(doc?.value)),
       (reason) => reason as string,
     ),
-    taskEither.chain((lastKnown) => db.redis.getEvents(lastKnown)),
+    taskEither.chain(db.redis.getEvents),
     taskEither.map((messages) =>
       messages.reduce((events, { id, message }) => {
         events.push({ id, event: deserializeEvent(message) });

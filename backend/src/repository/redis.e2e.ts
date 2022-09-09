@@ -11,20 +11,9 @@ const withClient = (
   url?: string,
 ) =>
   pipe(
-    Redis.connect({ ...(url == null ? {} : { url }), db: 1 }),
-    taskEither.chain((client) =>
-      pipe(
-        client.flush(),
-        taskEither.map(() => client),
-      ),
-    ),
+    Redis.connect({ ...(url == null ? {} : { url }) }),
     task.chainFirst(flow(taskEither.fromEither, fn)),
-    taskEither.chain((client) =>
-      pipe(
-        client.flush(),
-        taskEither.chain(() => client.disconnect()),
-      ),
-    ),
+    taskEither.chain((client) => client.disconnect()),
   );
 
 describe("redis", () => {
@@ -50,21 +39,6 @@ describe("redis", () => {
     it(
       "should return a right if a valid url is given",
       withClient(taskEither.match(throwException, ignore)),
-    );
-  });
-
-  describe("flush", () => {
-    it(
-      "should reject if selected db is 0 (prod)",
-      pipe(
-        Redis.connect(),
-        taskEither.chain((client) =>
-          pipe(client.flush(), taskEither.apFirst(client.disconnect())),
-        ),
-        taskEither.match(ignore, () =>
-          throwException("should not have dropped prod db"),
-        ),
-      ),
     );
   });
 

@@ -1,8 +1,8 @@
+import * as Crypto from "crypto";
 import { ioEither, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Mongo from "mongodb";
 import { omit } from "ramda";
-import { ignore } from "utils";
 import * as Domain from "../domain";
 
 type KVEntry = { key: string; value: string };
@@ -15,20 +15,19 @@ type Collections = {
 
 export type Client = Collections & {
   disconnect: () => taskEither.TaskEither<string, void>;
-  flush: () => taskEither.TaskEither<string, void>;
 };
+
+export const stripMongoId = <T, Doc extends Mongo.WithId<T>>(document: Doc) =>
+  omit(["_id"], document) as T;
 
 export type ConnectOptions = {
   url?: string;
   db?: string;
 };
 
-export const stripMongoId = <T, Doc extends Mongo.WithId<T>>(document: Doc) =>
-  omit(["_id"], document) as T;
-
 export const connect = ({
   url = process.env["MONGO_URL"],
-  db = "todo-app",
+  db = Crypto.randomUUID(),
 }: ConnectOptions = {}): taskEither.TaskEither<string, Client> => {
   if (url == null) {
     return taskEither.left<string, Client>(
@@ -80,11 +79,6 @@ export const connect = ({
           disconnect: () =>
             taskEither.tryCatch(
               () => client.close(),
-              (reason) => reason as string,
-            ),
-          flush: () =>
-            taskEither.tryCatch(
-              () => db.dropDatabase().then(ignore),
               (reason) => reason as string,
             ),
         })),

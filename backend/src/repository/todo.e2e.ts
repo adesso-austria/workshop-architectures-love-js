@@ -1,7 +1,7 @@
-import { describe, it, expect } from "@jest/globals";
+import { describe, expect } from "@jest/globals";
 import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
-import { ignore, throwException } from "utils";
+import { throwException } from "utils";
 import * as TestData from "../test-data";
 import * as TestUtils from "../test-utils";
 

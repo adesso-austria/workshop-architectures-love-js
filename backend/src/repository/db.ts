@@ -11,7 +11,6 @@ type Clients = {
 };
 
 export type Db = Clients & {
-  flush: () => taskEither.TaskEither<string, void>;
   disconnect: () => taskEither.TaskEither<string, void>;
 };
 
@@ -19,14 +18,6 @@ export type ConnectOptions = {
   redis?: Redis.ConnectOptions;
   mongo?: Mongo.ConnectOptions;
 };
-
-const flush = (clients: Clients) =>
-  pipe(
-    taskEither.Do,
-    taskEither.apS("redis", clients.redis.flush()),
-    taskEither.apS("mongo", clients.mongo.flush()),
-    taskEither.map(ignore),
-  );
 
 const disconnect = (clients: Clients) =>
   pipe(
@@ -79,7 +70,6 @@ export const connect = ({
     }),
     taskEither.map((clients) => ({
       ...clients,
-      flush: () => flush(clients),
       disconnect: () => disconnect(clients),
     })),
   );

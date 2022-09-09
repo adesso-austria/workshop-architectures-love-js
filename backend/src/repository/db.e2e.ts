@@ -1,7 +1,6 @@
 import { describe, it } from "@jest/globals";
 import { task, taskEither } from "fp-ts";
 import { flow, pipe } from "fp-ts/lib/function";
-import { mergeDeepRight } from "ramda";
 import { ignore, throwException } from "utils";
 import * as Db from "./db";
 
@@ -10,20 +9,9 @@ const withDb = (
   options: Db.ConnectOptions,
 ) =>
   pipe(
-    Db.connect(mergeDeepRight(options, { redis: { db: 1 } })),
-    taskEither.chain((db) =>
-      pipe(
-        db.flush(),
-        taskEither.map(() => db),
-      ),
-    ),
+    Db.connect(options),
     task.chainFirst(flow(taskEither.fromEither, fn)),
-    taskEither.chain((db) =>
-      pipe(
-        db.flush(),
-        taskEither.chain(() => db.disconnect()),
-      ),
-    ),
+    taskEither.chain((db) => db.disconnect()),
   );
 
 describe("db", () => {

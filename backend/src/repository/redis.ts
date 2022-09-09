@@ -1,9 +1,8 @@
+import * as Crypto from "crypto";
 import { ioEither, option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Redis from "redis";
 // eslint-disable-next-line import/no-internal-modules
-import { RedisFlushModes } from "@redis/client/dist/lib/commands/FLUSHALL";
-import { ignore } from "utils";
 
 type RedisClient = ReturnType<typeof Redis["createClient"]>;
 type MessageContent = Record<string, string | Buffer>;
@@ -15,59 +14,66 @@ export type Client = {
   getEvents: (
     since: option.Option<string>
   ) => taskEither.TaskEither<string, RedisMessage[]>;
-  flush: () => taskEither.TaskEither<string, void>;
 };
 
 export type ConnectOptions = {
   url?: string;
-  db?: number;
+  namespace?: string | undefined;
 };
 
-const disconnect = (client: RedisClient) =>
-  taskEither.tryCatch(
-    () => client.disconnect(),
-    (reason) => reason as string,
-  );
+type RedisEnv = {
+  client: RedisClient;
+  /**
+   * the key of the events stream
+   */
+  eventsKey: string;
+};
 
-const addEvent = (client: RedisClient, message: MessageContent) =>
-  taskEither.tryCatch(
-    () => client.XADD("events", "*", message),
-    (reason) => reason as string,
-  );
+const disconnect =
+  ({ client }: RedisEnv): Client["disconnect"] =>
+  () =>
+    taskEither.tryCatch(
+      () => client.disconnect(),
+      (reason) => reason as string,
+    );
 
-const getEvents = (client: RedisClient, since: option.Option<string>) =>
-  taskEither.tryCatch(
-    () =>
-      client.XRANGE(
-        "events",
-        pipe(
-          since,
-          option.map((id) => `(${id}`),
-          option.getOrElse(() => "-"),
-        ),
-        "+",
-      ),
-    (reason) => reason as string,
-  );
+const addEvent =
+  ({ client, eventsKey }: RedisEnv): Client["addEvent"] =>
+  (message: MessageContent) =>
+    taskEither.tryCatch(
+      () => client.XADD(eventsKey, "*", message),
+      (reason) => reason as string,
+    );
 
-const flush = (client: RedisClient, db: number) =>
-  db === 0
-    ? taskEither.left("refusing to drop prod db")
-    : taskEither.tryCatch(
-        () => client.flushDb(RedisFlushModes.ASYNC).then(ignore),
+const getEvents =
+  ({ client, eventsKey }: RedisEnv): Client["getEvents"] =>
+  (since: option.Option<string>) =>
+    pipe(
+      taskEither.tryCatch(
+        () =>
+          client.XRANGE(
+            eventsKey,
+            pipe(
+              since,
+              option.map((id) => `(${id}`),
+              option.getOrElse(() => "-"),
+            ),
+            "+",
+          ),
         (reason) => reason as string,
-      );
+      ),
+    );
 
 export const connect = ({
   url = process.env["REDIS_URL"],
-  db = 0,
+  namespace = Crypto.randomUUID(),
 }: ConnectOptions = {}): taskEither.TaskEither<string, Client> => {
   if (url == null) {
     return taskEither.left("need to have a url to know where to connect to");
   }
   return pipe(
     ioEither.tryCatch(
-      () => Redis.createClient({ url, database: db }),
+      () => Redis.createClient({ url }),
       () => "could not create db",
     ),
     taskEither.fromIOEither,
@@ -78,11 +84,16 @@ export const connect = ({
       ),
     ),
     taskEither.map(
-      (client): Client => ({
-        disconnect: () => disconnect(client),
-        addEvent: (message) => addEvent(client, message),
-        getEvents: (since) => getEvents(client, since),
-        flush: () => flush(client, db),
+      (client): RedisEnv => ({
+        client,
+        eventsKey: namespace == null ? "events" : `${namespace}-events`,
+      }),
+    ),
+    taskEither.map(
+      (env): Client => ({
+        disconnect: disconnect(env),
+        addEvent: addEvent(env),
+        getEvents: getEvents(env),
       }),
     ),
   );

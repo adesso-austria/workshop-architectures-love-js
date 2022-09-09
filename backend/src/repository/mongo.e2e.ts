@@ -1,4 +1,4 @@
-import { describe, it, expect } from "@jest/globals";
+import { describe, it } from "@jest/globals";
 import { task, taskEither } from "fp-ts";
 import { flow, pipe } from "fp-ts/lib/function";
 import { ignore, throwException } from "utils";
@@ -12,19 +12,8 @@ const withClient = (
 ) =>
   pipe(
     Mongo.connect({ ...(url == null ? {} : { url }), db: "test-db" }),
-    taskEither.chain((client) =>
-      pipe(
-        client.flush(),
-        taskEither.map(() => client),
-      ),
-    ),
     task.chainFirst(flow(taskEither.fromEither, fn)),
-    taskEither.chain((client) =>
-      pipe(
-        client.flush(),
-        taskEither.chain(() => client.disconnect()),
-      ),
-    ),
+    taskEither.chain((client) => client.disconnect()),
   );
 
 describe("mongo", () => {
@@ -40,30 +29,6 @@ describe("mongo", () => {
     it(
       "should return right when connection to db succeeds",
       withClient(taskEither.match(throwException, ignore)),
-    );
-  });
-
-  describe("flush", () => {
-    it(
-      "should completely drop the db",
-      withClient(
-        flow(
-          taskEither.chain((mongo) =>
-            pipe(
-              mongo.flush(),
-              taskEither.chain(() =>
-                taskEither.tryCatch(
-                  () => mongo.db.collections(),
-                  () => "could not list collections",
-                ),
-              ),
-            ),
-          ),
-          taskEither.match(throwException, (collections) =>
-            expect(collections).toHaveLength(0),
-          ),
-        ),
-      ),
     );
   });
 });
