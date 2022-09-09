@@ -1,6 +1,5 @@
 import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
-import { TypeGuards } from "utils";
 import * as Domain from "../domain";
 import * as Db from "./db";
 import type * as Root from "./root";
@@ -9,10 +8,6 @@ export type Repository = {
   emit: (
     event: Domain.DomainEvent.DomainEvent
   ) => taskEither.TaskEither<string, void>;
-  getUnknownEvents: () => taskEither.TaskEither<
-    string,
-    Domain.DomainEvent.DomainEvent[]
-  >;
   syncState: () => taskEither.TaskEither<string, void>;
 };
 
@@ -54,7 +49,6 @@ export const create = (
   getRepo: () => Root.Repository
 ): Repository => ({
   emit: (event) => db.redis.addEvent(serializeEvent(event)),
-  getUnknownEvents: () => getUnknownEvents(db),
   syncState: () => {
     const repo = getRepo();
     return pipe(

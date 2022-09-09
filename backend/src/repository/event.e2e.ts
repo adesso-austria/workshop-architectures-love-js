@@ -6,35 +6,6 @@ import * as TestData from "../test-data";
 import * as TestUtils from "../test-utils";
 
 describe("event", () => {
-  describe("getUnknownEvents", () => {
-    it(
-      "should return an empty array if no events have been added",
-      pipe(
-        TestUtils.Repository.connect(),
-        taskEither.chain((repo) => repo.event.getUnknownEvents()),
-        taskEither.match(throwException, (events) =>
-          expect(events).toHaveLength(0)
-        )
-      )
-    );
-
-    it(
-      "should return an array of events that have not been applied",
-      pipe(
-        TestUtils.Repository.connect(),
-        taskEither.chain((repo) =>
-          pipe(
-            repo.event.emit(TestData.DomainEvent.createBuyIcecream),
-            taskEither.chain(() => repo.event.getUnknownEvents())
-          )
-        ),
-        taskEither.match(throwException, (events) =>
-          expect(events).toEqual([TestData.DomainEvent.createBuyIcecream])
-        )
-      )
-    );
-  });
-
   describe("emit", () => {
     it(
       "should work",

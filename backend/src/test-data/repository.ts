@@ -9,7 +9,6 @@ export const defaultRepository: Repository = {
   event: {
     syncState: () => taskEither.right(undefined),
     emit: () => taskEither.right(undefined),
-    getUnknownEvents: () => taskEither.right([]),
   },
   todo: {
     applyEvent: () => taskEither.right(undefined),
