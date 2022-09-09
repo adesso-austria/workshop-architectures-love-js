@@ -20,7 +20,10 @@ describe("db", () => {
       "should return left if given an invalid mongo url",
       withDb(
         taskEither.match(ignore, () => throwException("expected a left")),
-        { mongo: { url: "fuytnrt" } },
+        {
+          mongo: { url: "fuytnrt", namespace: "doesn't matter" },
+          redis: { url: "abc", namespace: "tnuyrst" },
+        },
       ),
     );
   });

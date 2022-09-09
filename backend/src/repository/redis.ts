@@ -1,4 +1,3 @@
-import * as Crypto from "crypto";
 import { ioEither, option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Redis from "redis";
@@ -17,8 +16,8 @@ export type Client = {
 };
 
 export type ConnectOptions = {
-  url?: string;
-  namespace?: string | undefined;
+  url: string;
+  namespace: string;
 };
 
 type RedisEnv = {
@@ -65,9 +64,9 @@ const getEvents =
     );
 
 export const connect = ({
-  url = process.env["REDIS_URL"],
-  namespace = Crypto.randomUUID(),
-}: ConnectOptions = {}): taskEither.TaskEither<string, Client> => {
+  url,
+  namespace,
+}: ConnectOptions): taskEither.TaskEither<string, Client> => {
   if (url == null) {
     return taskEither.left("need to have a url to know where to connect to");
   }
@@ -86,7 +85,7 @@ export const connect = ({
     taskEither.map(
       (client): RedisEnv => ({
         client,
-        eventsKey: namespace == null ? "events" : `${namespace}-events`,
+        eventsKey: namespace === "" ? "events" : `${namespace}-events`,
       }),
     ),
     taskEither.map(

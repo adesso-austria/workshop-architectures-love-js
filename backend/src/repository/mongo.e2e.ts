@@ -2,6 +2,7 @@ import { describe, it } from "@jest/globals";
 import { task, taskEither } from "fp-ts";
 import { flow, pipe } from "fp-ts/lib/function";
 import { ignore, throwException } from "utils";
+import * as TestUtils from "../test-utils";
 import * as Mongo from "./mongo";
 
 const withClient = (
@@ -11,7 +12,11 @@ const withClient = (
   url?: string,
 ) =>
   pipe(
-    Mongo.connect({ ...(url == null ? {} : { url }), db: "test-db" }),
+    Mongo.connect(
+      TestUtils.Repository.createConnectOptions({
+        db: { mongo: url == null ? {} : { url } },
+      }).db.mongo,
+    ),
     task.chainFirst(flow(taskEither.fromEither, fn)),
     taskEither.chain((client) => client.disconnect()),
   );

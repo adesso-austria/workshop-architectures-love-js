@@ -2,6 +2,7 @@ import { describe, it, expect } from "@jest/globals";
 import { option, task, taskEither } from "fp-ts";
 import { flow, pipe } from "fp-ts/lib/function";
 import { ignore, throwException } from "utils";
+import * as TestUtils from "../test-utils";
 import * as Redis from "./redis";
 
 const withClient = (
@@ -11,23 +12,17 @@ const withClient = (
   url?: string,
 ) =>
   pipe(
-    Redis.connect({ ...(url == null ? {} : { url }) }),
+    Redis.connect(
+      TestUtils.Repository.createConnectOptions({
+        db: { redis: url == null ? {} : { url } },
+      }).db.redis,
+    ),
     task.chainFirst(flow(taskEither.fromEither, fn)),
     taskEither.chain((client) => client.disconnect()),
   );
 
 describe("redis", () => {
   describe("connect", () => {
-    it("should return left if no url is given", async () => {
-      const url = process.env["REDIS_URL"];
-      delete process.env["REDIS_URL"];
-      const task = withClient(
-        taskEither.match(ignore, () => throwException("expected a left")),
-      );
-      await task();
-      process.env["REDIS_URL"] = url;
-    });
-
     it(
       "should return left if invalid connection url is given",
       withClient(

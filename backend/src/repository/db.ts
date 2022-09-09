@@ -15,8 +15,8 @@ export type Db = Clients & {
 };
 
 export type ConnectOptions = {
-  redis?: Redis.ConnectOptions;
-  mongo?: Mongo.ConnectOptions;
+  redis: Redis.ConnectOptions;
+  mongo: Mongo.ConnectOptions;
 };
 
 const disconnect = (clients: Clients) =>
@@ -33,9 +33,9 @@ match(option.of("test"))
   .exhaustive();
 
 export const connect = ({
-  redis: redisOptions = {},
-  mongo: mongoOptions = {},
-}: ConnectOptions = {}): taskEither.TaskEither<string, Db> =>
+  redis: redisOptions,
+  mongo: mongoOptions,
+}: ConnectOptions): taskEither.TaskEither<string, Db> =>
   pipe(
     task.Do,
     task.apS("redis", pipe(Redis.connect(redisOptions))),

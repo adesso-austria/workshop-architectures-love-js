@@ -10,9 +10,9 @@ export type Repository = {
   event: Event.Repository;
 };
 
-export type ConnectOptions = { db?: Db.ConnectOptions };
+export type ConnectOptions = { db: Db.ConnectOptions };
 
-export const connect = (options: ConnectOptions = {}) =>
+export const connect = (options: ConnectOptions) =>
   pipe(Db.connect(options.db), taskEither.map(create));
 
 export const create = (db: Db.Db): Repository => {

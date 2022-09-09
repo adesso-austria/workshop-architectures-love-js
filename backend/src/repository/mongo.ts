@@ -1,4 +1,3 @@
-import * as Crypto from "crypto";
 import { ioEither, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Mongo from "mongodb";
@@ -21,19 +20,14 @@ export const stripMongoId = <T, Doc extends Mongo.WithId<T>>(document: Doc) =>
   omit(["_id"], document) as T;
 
 export type ConnectOptions = {
-  url?: string;
-  db?: string;
+  url: string;
+  namespace: string;
 };
 
 export const connect = ({
-  url = process.env["MONGO_URL"],
-  db = Crypto.randomUUID(),
-}: ConnectOptions = {}): taskEither.TaskEither<string, Client> => {
-  if (url == null) {
-    return taskEither.left<string, Client>(
-      "need an url to know where to connect to",
-    );
-  }
+  url,
+  namespace,
+}: ConnectOptions): taskEither.TaskEither<string, Client> => {
   return pipe(
     ioEither.tryCatch(
       () => new Mongo.MongoClient(url),
@@ -49,7 +43,7 @@ export const connect = ({
     taskEither.chain((client) =>
       pipe(
         ioEither.tryCatch(
-          () => [client, client.db(db)] as const,
+          () => [client, client.db(namespace)] as const,
           (reason) => `could not access db: ${reason}`,
         ),
         taskEither.fromIOEither,
