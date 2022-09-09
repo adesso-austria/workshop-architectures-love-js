@@ -8,7 +8,8 @@ export const defaultRepository: Repository = {
   flush: () => taskEither.right(undefined),
   event: {
     syncState: () => taskEither.right(undefined),
-    emit: () => taskEither.right(undefined),
+    emit: () =>
+      taskEither.left("emitting events on mock repository isn't sensible"),
   },
   todo: {
     applyEvent: () => taskEither.right(undefined),

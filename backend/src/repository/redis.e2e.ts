@@ -43,7 +43,7 @@ describe("redis", () => {
 
   describe("addEvent", () => {
     it(
-      "should work",
+      "should add an event to the events stream",
       pipe(
         connect(),
         taskEither.chain((client) =>
@@ -54,6 +54,17 @@ describe("redis", () => {
         ),
         taskEither.match(throwException, (events) =>
           expect(events).toHaveLength(1)
+        )
+      )
+    );
+
+    it(
+      "should return the event id of the added event",
+      pipe(
+        connect(),
+        taskEither.chain((client) => client.addEvent({ foo: "bar" })),
+        taskEither.match(throwException, (id) =>
+          expect(typeof id === "string").toBeTruthy()
         )
       )
     );

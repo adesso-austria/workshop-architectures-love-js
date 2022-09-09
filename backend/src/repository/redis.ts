@@ -9,7 +9,7 @@ type MessageContent = Record<string, string | Buffer>;
 type RedisMessage = { id: string; message: MessageContent };
 
 export type Client = {
-  addEvent: (event: MessageContent) => taskEither.TaskEither<string, void>;
+  addEvent: (event: MessageContent) => taskEither.TaskEither<string, string>;
   getEvents: (
     since: option.Option<string>
   ) => taskEither.TaskEither<string, RedisMessage[]>;
@@ -45,7 +45,7 @@ export const connect = ({
       (client): Client => ({
         addEvent: (message) =>
           taskEither.tryCatch(
-            () => client.XADD("events", "*", message).then(ignore),
+            () => client.XADD("events", "*", message),
             (reason) => reason as string
           ),
         getEvents: (since) =>
@@ -55,6 +55,7 @@ export const connect = ({
                 "events",
                 pipe(
                   since,
+                  option.map((id) => `(${id}`),
                   option.getOrElse(() => "-")
                 ),
                 "+"

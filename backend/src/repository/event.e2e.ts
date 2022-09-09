@@ -40,5 +40,25 @@ describe("event", () => {
         )
       )
     );
+
+    it(
+      "should not apply the same event twice",
+      pipe(
+        TestUtils.Repository.connect(),
+        taskEither.chain((repo) => {
+          const spy = jest.fn(() => taskEither.right(undefined));
+          repo.todo.applyEvent = spy;
+          return pipe(
+            repo.event.emit(TestData.DomainEvent.createBuyIcecream),
+            taskEither.chain(() => repo.event.syncState()),
+            taskEither.chain(() => repo.event.syncState()),
+            taskEither.map(() => spy)
+          );
+        }),
+        taskEither.match(throwException, (spy) =>
+          expect(spy).toHaveBeenCalledTimes(1)
+        )
+      )
+    );
   });
 });
