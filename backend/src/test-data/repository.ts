@@ -5,6 +5,7 @@ import { Repository } from "../repository";
 import * as Todo from "./todo";
 
 export const defaultRepository: Repository = {
+  disconnect: () => taskEither.right(undefined),
   flush: () => taskEither.right(undefined),
   event: {
     syncState: () => taskEither.right(undefined),

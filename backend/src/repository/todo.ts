@@ -24,12 +24,12 @@ const addTodo = (db: Db.Db, todo: Domain.Todo.Todo) =>
       db.mongo.todos
         .insertOne(todo, { forceServerObjectId: true })
         .then(ignore),
-    (reason) => reason as string
+    (reason) => reason as string,
   );
 
 export const create = (
   db: Db.Db,
-  getRepo: () => Root.Repository
+  getRepo: () => Root.Repository,
 ): Repository => ({
   applyEvent: (event) =>
     match(event)
@@ -46,11 +46,11 @@ export const create = (
             db.mongo.todos.findOne({ id }).then(
               flow(
                 option.fromNullable,
-                option.map((doc) => stripMongoId(doc))
-              )
+                option.map((doc) => stripMongoId(doc)),
+              ),
             ),
-          (reason) => reason as string
-        )
-      )
+          (reason) => reason as string,
+        ),
+      ),
     ),
 });

@@ -68,7 +68,7 @@ export type Fetcher = {
 };
 
 export const buildQueryString = (
-  query: Record<string, string | string[]>
+  query: Record<string, string | string[]>,
 ): string => {
   const args = Object.entries(query).reduce((args, [key, value]) => {
     args.push(`${key}=${Array.isArray(value) ? value.join(",") : value}`);
@@ -86,7 +86,7 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
     Method extends keyof Contracts.paths[Path]
   >(
     path: Path,
-    method: Method
+    method: Method,
   ) => {
     // type gets a bit too complicated here...
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,9 +101,9 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
               body: args.body,
               headers: args.headers,
               method: method as string,
-            }
+            },
           ).then((res) => res.json().catch(() => res.text())),
-        () => "could not fetch"
+        () => "could not fetch",
       )) as Op<Path, Method>;
   };
 

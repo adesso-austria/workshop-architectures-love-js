@@ -21,10 +21,10 @@ describe("todo", () => {
               getTodo: () => taskEither.left("something's up"),
             },
           }),
-          "foo"
+          "foo",
         ),
-        taskEither.match(ignore, () => throwException("expected a left"))
-      )
+        taskEither.match(ignore, () => throwException("expected a left")),
+      ),
     );
 
     it(
@@ -36,10 +36,10 @@ describe("todo", () => {
               getTodo: () => taskEither.right(option.none),
             },
           }),
-          "foo"
+          "foo",
         ),
-        taskEither.match(ignore, () => throwException("expected a left"))
-      )
+        taskEither.match(ignore, () => throwException("expected a left")),
+      ),
     );
 
     it(
@@ -52,10 +52,10 @@ describe("todo", () => {
                 taskEither.right(option.some(TestData.Todo.buyIcecream)),
             },
           }),
-          "foo"
+          "foo",
         ),
-        taskEither.match(() => throwException("expected a right"), ignore)
-      )
+        taskEither.match(() => throwException("expected a right"), ignore),
+      ),
     );
   });
 
@@ -72,8 +72,8 @@ describe("todo", () => {
               todo: {
                 getTodo: () => givenTodoReturn,
               },
-            })
-          )
+            }),
+          ),
         );
         const response = await root.inject({
           path: "/todo",
@@ -89,14 +89,14 @@ describe("todo", () => {
           taskEither.left("something's up"),
           (response) => {
             expect(response.statusCode).toEqual(500);
-          }
+          },
         ),
         Jest.givenThen(
           "should return status 404 if the todo can't be found",
           taskEither.right(option.none),
           (response) => {
             expect(response.statusCode).toEqual(404);
-          }
+          },
         ),
         Jest.givenThen(
           "should return the todo with status 200 if it could be found",
@@ -104,11 +104,11 @@ describe("todo", () => {
           (response) => {
             expect(response.statusCode).toEqual(200);
             expect(response.json()).toEqual(
-              Boundary.Todo.fromDomain(TestData.Todo.buyIcecream)
+              Boundary.Todo.fromDomain(TestData.Todo.buyIcecream),
             );
-          }
+          },
         ),
-      ]
+      ],
     );
   });
 });

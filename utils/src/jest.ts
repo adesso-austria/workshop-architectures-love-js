@@ -21,7 +21,7 @@ export function givenWhenThen<Given, When, Then>(
   description: string,
   given?: Given,
   when?: When,
-  then?: Then
+  then?: Then,
 ): GivenWhenThen<Given, When, Then> {
   const details =
     arguments.length === 1
@@ -38,7 +38,7 @@ export function givenWhenThen<Given, When, Then>(
 export const testGivenWhenThen = <Given, When, Then>(
   description: string,
   test: (given: Given, when: When, then: Then) => Promise<void>,
-  definitions: GivenWhenThens<Given, When, Then>
+  definitions: GivenWhenThens<Given, When, Then>,
 ) =>
   describe(description, () =>
     definitions.forEach(({ description, details }) =>
@@ -47,8 +47,8 @@ export const testGivenWhenThen = <Given, When, Then>(
         : it(description, async () => {
             const { given, when, then } = details;
             await test(given, when, then);
-          })
-    )
+          }),
+    ),
   );
 
 export function givenThen<Given, Then>(
@@ -62,7 +62,7 @@ export function givenThen<Given, Then>(
 export function givenThen<Given, Then>(
   description: string,
   given?: Given,
-  then?: Then
+  then?: Then,
 ): GivenWhenThen<Given, undefined, Then> {
   return arguments.length === 1
     ? givenWhenThen(description)
@@ -72,10 +72,10 @@ export function givenThen<Given, Then>(
 export const testGivenThen = <Given, Then>(
   description: string,
   test: (given: Given, then: Then) => Promise<void>,
-  definitions: GivenWhenThens<Given, undefined, Then>
+  definitions: GivenWhenThens<Given, undefined, Then>,
 ) =>
   testGivenWhenThen(
     description,
     (given, _, then) => test(given, then),
-    definitions
+    definitions,
   );

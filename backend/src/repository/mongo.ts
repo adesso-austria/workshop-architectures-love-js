@@ -13,7 +13,8 @@ type Collections = {
   db: Mongo.Db;
 };
 
-export type Db = Collections & {
+export type Client = Collections & {
+  disconnect: () => taskEither.TaskEither<string, void>;
   flush: () => taskEither.TaskEither<string, void>;
 };
 
@@ -28,61 +29,66 @@ export const stripMongoId = <T, Doc extends Mongo.WithId<T>>(document: Doc) =>
 export const connect = ({
   url = process.env["MONGO_URL"],
   db = "todo-app",
-}: ConnectOptions = {}): taskEither.TaskEither<string, Db> => {
+}: ConnectOptions = {}): taskEither.TaskEither<string, Client> => {
   if (url == null) {
-    return taskEither.left<string, Db>(
-      "need an url to know where to connect to"
+    return taskEither.left<string, Client>(
+      "need an url to know where to connect to",
     );
   }
   return pipe(
     ioEither.tryCatch(
       () => new Mongo.MongoClient(url),
-      (reason) => `could not create client: ${reason}`
+      (reason) => `could not create client: ${reason}`,
     ),
     taskEither.fromIOEither,
     taskEither.chain((client) =>
       taskEither.tryCatch(
         () => client.connect(),
-        (reason) => `could not connect to client: ${reason}`
-      )
+        (reason) => `could not connect to client: ${reason}`,
+      ),
     ),
     taskEither.chain((client) =>
       pipe(
         ioEither.tryCatch(
-          () => client.db(db),
-          (reason) => `could not access db: ${reason}`
+          () => [client, client.db(db)] as const,
+          (reason) => `could not access db: ${reason}`,
         ),
-        taskEither.fromIOEither
-      )
+        taskEither.fromIOEither,
+      ),
     ),
-    taskEither.chain((db) =>
+    taskEither.chain(([client, db]) =>
       pipe(
         ioEither.Do,
         ioEither.apS(
           "kv",
           ioEither.tryCatch(
             () => db.collection<{ key: string; value: string }>("kv"),
-            (reason) => `could not access kv collection: ${reason}`
-          )
+            (reason) => `could not access kv collection: ${reason}`,
+          ),
         ),
         ioEither.apS(
           "todos",
           ioEither.tryCatch(
             () => db.collection<Domain.Todo.Todo>("todo"),
-            (reason) => `could not access todo collection: ${reason}`
-          )
+            (reason) => `could not access todo collection: ${reason}`,
+          ),
         ),
         taskEither.fromIOEither,
         taskEither.map((collections) => ({
           ...collections,
           db,
+          disconnect: () =>
+            taskEither.tryCatch(
+              () => client.close(),
+              (reason) => reason as string,
+            ),
           flush: () =>
             taskEither.tryCatch(
               () => db.dropDatabase().then(ignore),
-              (reason) => reason as string
+              (reason) => reason as string,
             ),
-        }))
-      )
-    )
+        })),
+      ),
+    ),
   );
 };

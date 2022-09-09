@@ -9,6 +9,7 @@ type MessageContent = Record<string, string | Buffer>;
 type RedisMessage = { id: string; message: MessageContent };
 
 export type Client = {
+  disconnect: () => taskEither.TaskEither<string, void>;
   addEvent: (event: MessageContent) => taskEither.TaskEither<string, string>;
   getEvents: (
     since: option.Option<string>
@@ -31,22 +32,27 @@ export const connect = ({
   return pipe(
     ioEither.tryCatch(
       () => Redis.createClient({ url, database: db }),
-      () => "could not create db"
+      () => "could not create db",
     ),
     taskEither.fromIOEither,
     taskEither.chain((client) =>
       taskEither.tryCatch(
         () => client.connect().then(() => client),
-        () => "could not connect to client"
-      )
+        () => "could not connect to client",
+      ),
     ),
     // TODO: pull each function out
     taskEither.map(
       (client): Client => ({
+        disconnect: () =>
+          taskEither.tryCatch(
+            () => client.disconnect(),
+            (reason) => reason as string,
+          ),
         addEvent: (message) =>
           taskEither.tryCatch(
             () => client.XADD("events", "*", message),
-            (reason) => reason as string
+            (reason) => reason as string,
           ),
         getEvents: (since) =>
           taskEither.tryCatch(
@@ -56,20 +62,20 @@ export const connect = ({
                 pipe(
                   since,
                   option.map((id) => `(${id}`),
-                  option.getOrElse(() => "-")
+                  option.getOrElse(() => "-"),
                 ),
-                "+"
+                "+",
               ),
-            (reason) => reason as string
+            (reason) => reason as string,
           ),
         flush: () =>
           db === 0
             ? taskEither.left("refusing to drop prod db")
             : taskEither.tryCatch(
                 () => client.flushDb(RedisFlushModes.ASYNC).then(ignore),
-                (reason) => reason as string
+                (reason) => reason as string,
               ),
-      })
-    )
+      }),
+    ),
   );
 };

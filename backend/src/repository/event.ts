@@ -18,7 +18,7 @@ const serializeEvent = (event: Domain.DomainEvent.DomainEvent) => ({
 });
 
 const deserializeEvent = (
-  message: Record<string, string | Buffer>
+  message: Record<string, string | Buffer>,
 ): Domain.DomainEvent.DomainEvent => {
   const parsed = JSON.parse(message["payload"]?.toString() ?? "");
   return {
@@ -28,7 +28,7 @@ const deserializeEvent = (
 };
 
 const getUnknownEvents = (
-  db: Db.Db
+  db: Db.Db,
 ): taskEither.TaskEither<
   string,
   Array<{ id: string; event: Domain.DomainEvent.DomainEvent }>
@@ -39,25 +39,25 @@ const getUnknownEvents = (
         db.mongo.kv
           .findOne({ key: "lastKnownEventId" })
           .then((doc) => option.fromNullable(doc?.value)),
-      (reason) => reason as string
+      (reason) => reason as string,
     ),
     taskEither.chain((lastKnown) => db.redis.getEvents(lastKnown)),
     taskEither.map((messages) =>
       messages.reduce((events, { id, message }) => {
         events.push({ id, event: deserializeEvent(message) });
         return events;
-      }, [] as Array<{ id: string; event: Domain.DomainEvent.DomainEvent }>)
-    )
+      }, [] as Array<{ id: string; event: Domain.DomainEvent.DomainEvent }>),
+    ),
   );
 
 const applyEvent = (
   repo: Root.Repository,
-  event: Domain.DomainEvent.DomainEvent
+  event: Domain.DomainEvent.DomainEvent,
 ): taskEither.TaskEither<string, void> => pipe(repo.todo.applyEvent(event));
 
 export const create = (
   db: Db.Db,
-  getRepo: () => Root.Repository
+  getRepo: () => Root.Repository,
 ): Repository => ({
   emit: (event) => db.redis.addEvent(serializeEvent(event)),
   syncState: () => {
@@ -76,15 +76,15 @@ export const create = (
                     .updateOne(
                       { key: "lastKnownEventId" },
                       { $set: { value: id } },
-                      { upsert: true }
+                      { upsert: true, writeConcern: { fsync: true } },
                     )
                     .then(ignore),
-                (reason) => reason as string
-              )
-            )
+                (reason) => reason as string,
+              ),
+            ),
           );
-        }, taskEither.right<string, void>(undefined))
-      )
+        }, taskEither.right<string, void>(undefined)),
+      ),
     );
   },
 });

@@ -1,7 +1,7 @@
 export const isArray = (x: unknown): x is unknown[] => Array.isArray(x);
 
 export const isRecord = (
-  x: unknown
+  x: unknown,
 ): x is Record<string | number | symbol, unknown> =>
   typeof x === "object" && x != null && !isArray(x);
 

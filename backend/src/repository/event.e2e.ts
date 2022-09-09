@@ -7,58 +7,45 @@ import * as TestUtils from "../test-utils";
 
 describe("event", () => {
   describe("emit", () => {
-    it(
-      "should work",
+    TestUtils.Repository.withRepo("should work", (repo) =>
       pipe(
-        TestUtils.Repository.connect(),
-        taskEither.chain((repo) =>
-          repo.event.emit(TestData.DomainEvent.createBuyIcecream)
-        ),
-        taskEither.match(throwException, ignore)
-      )
+        repo.event.emit(TestData.DomainEvent.createBuyIcecream),
+        taskEither.match(throwException, ignore),
+      ),
     );
   });
 
   describe("syncState", () => {
-    it(
-      "should apply missing events",
-      pipe(
-        TestUtils.Repository.connect(),
-        taskEither.chain((repo) => {
-          const spy = jest.fn(() => taskEither.right(undefined));
-          repo.todo.applyEvent = spy;
-          return pipe(
-            repo.event.emit(TestData.DomainEvent.createBuyIcecream),
-            taskEither.chain(() => repo.event.syncState()),
-            taskEither.map(() => spy)
-          );
-        }),
+    TestUtils.Repository.withRepo("should apply missing events", (repo) => {
+      const spy = jest.fn(() => taskEither.right(undefined));
+      repo.todo.applyEvent = spy;
+      return pipe(
+        repo.event.emit(TestData.DomainEvent.createBuyIcecream),
+        taskEither.chain(() => repo.event.syncState()),
+        taskEither.map(() => spy),
         taskEither.match(throwException, (spy) =>
           expect(spy).toHaveBeenCalledWith(
-            TestData.DomainEvent.createBuyIcecream
-          )
-        )
-      )
-    );
+            TestData.DomainEvent.createBuyIcecream,
+          ),
+        ),
+      );
+    });
 
-    it(
+    TestUtils.Repository.withRepo(
       "should not apply the same event twice",
-      pipe(
-        TestUtils.Repository.connect(),
-        taskEither.chain((repo) => {
-          const spy = jest.fn(() => taskEither.right(undefined));
-          repo.todo.applyEvent = spy;
-          return pipe(
-            repo.event.emit(TestData.DomainEvent.createBuyIcecream),
-            taskEither.chain(() => repo.event.syncState()),
-            taskEither.chain(() => repo.event.syncState()),
-            taskEither.map(() => spy)
-          );
-        }),
-        taskEither.match(throwException, (spy) =>
-          expect(spy).toHaveBeenCalledTimes(1)
-        )
-      )
+      (repo) => {
+        const spy = jest.fn(() => taskEither.right(undefined));
+        repo.todo.applyEvent = spy;
+        return pipe(
+          repo.event.emit(TestData.DomainEvent.createBuyIcecream),
+          taskEither.chain(() => repo.event.syncState()),
+          taskEither.chain(() => repo.event.syncState()),
+          taskEither.map(() => spy),
+          taskEither.match(throwException, (spy) =>
+            expect(spy).toHaveBeenCalledTimes(1),
+          ),
+        );
+      },
     );
   });
 });

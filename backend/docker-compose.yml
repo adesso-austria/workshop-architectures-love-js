@@ -3,8 +3,6 @@ services:
   redis:
     image: redis
     command: --logfile /data/redis.log
-    volumes:
-      - redis-data:/data
     ports: 
       - 6379:6379
   mongo:
@@ -12,5 +10,3 @@ services:
     command: --logpath /var/log/mongodb/log
     ports:
       - 27017:27017
-volumes:
-  redis-data: {}

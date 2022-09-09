@@ -7,79 +7,63 @@ import * as TestUtils from "../test-utils";
 
 describe("todo", () => {
   describe("getTodo", () => {
-    it(
+    TestUtils.Repository.withRepo(
       "should return right none if the todo could not be found",
-      pipe(
-        TestUtils.Repository.connect(),
-        taskEither.chain((repo) => repo.todo.getTodo("foo")),
-        taskEither.match(throwException, (maybeTodo) =>
-          expect(maybeTodo).toEqual(option.none)
-        )
-      )
+      (repo) =>
+        pipe(
+          repo.todo.getTodo("foo"),
+          taskEither.match(throwException, (maybeTodo) =>
+            expect(maybeTodo).toEqual(option.none),
+          ),
+        ),
     );
 
-    it(
+    TestUtils.Repository.withRepo(
       "should return some todo that has been added before",
-      pipe(
-        TestUtils.Repository.connect(),
-        taskEither.chain((repo) =>
-          pipe(
-            repo.todo.addTodo(TestData.Todo.buyIcecream),
-            taskEither.chain(() =>
-              repo.todo.getTodo(TestData.Todo.buyIcecream.id)
-            )
-          )
+      (repo) =>
+        pipe(
+          repo.todo.addTodo(TestData.Todo.buyIcecream),
+          taskEither.chain(() =>
+            repo.todo.getTodo(TestData.Todo.buyIcecream.id),
+          ),
+          taskEither.match(throwException, (todo) =>
+            expect(todo).toEqual(option.some(TestData.Todo.buyIcecream)),
+          ),
         ),
-        taskEither.match(throwException, (todo) =>
-          expect(todo).toEqual(option.some(TestData.Todo.buyIcecream))
-        )
-      )
     );
 
-    it(
+    TestUtils.Repository.withRepo(
       "should sync the state before returning the todo",
-      pipe(
-        TestUtils.Repository.connect(),
-        taskEither.chain((repo) =>
-          pipe(
-            repo.event.emit(TestData.DomainEvent.createBuyIcecream),
-            taskEither.chain(() =>
-              repo.todo.getTodo(
-                TestData.DomainEvent.createBuyIcecream.payload.id
-              )
-            )
-          )
+      (repo) =>
+        pipe(
+          repo.event.emit(TestData.DomainEvent.createBuyIcecream),
+          taskEither.chain(() =>
+            repo.todo.getTodo(TestData.DomainEvent.createBuyIcecream.payload.id),
+          ),
+          taskEither.match(throwException, (todo) =>
+            expect(todo).toEqual(
+              option.some(TestData.DomainEvent.createBuyIcecream.payload),
+            ),
+          ),
         ),
-        taskEither.match(throwException, (todo) =>
-          expect(todo).toEqual(
-            option.some(TestData.DomainEvent.createBuyIcecream.payload)
-          )
-        )
-      )
     );
   });
 
   describe("applyEvent", () => {
-    it(
+    TestUtils.Repository.withRepo(
       "should add a todo for a createEvent",
-      pipe(
-        TestUtils.Repository.connect(),
-        taskEither.chain((repo) =>
-          pipe(
-            repo.todo.applyEvent(TestData.DomainEvent.createBuyIcecream),
-            taskEither.chain(() =>
-              repo.todo.getTodo(
-                TestData.DomainEvent.createBuyIcecream.payload.id
-              )
-            )
-          )
+      (repo) =>
+        pipe(
+          repo.todo.applyEvent(TestData.DomainEvent.createBuyIcecream),
+          taskEither.chain(() =>
+            repo.todo.getTodo(TestData.DomainEvent.createBuyIcecream.payload.id),
+          ),
+          taskEither.match(throwException, (todo) =>
+            expect(todo).toEqual(
+              option.some(TestData.DomainEvent.createBuyIcecream.payload),
+            ),
+          ),
         ),
-        taskEither.match(throwException, (todo) =>
-          expect(todo).toEqual(
-            option.some(TestData.DomainEvent.createBuyIcecream.payload)
-          )
-        )
-      )
     );
   });
 });

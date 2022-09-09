@@ -9,7 +9,7 @@ import { Env } from "./env";
 
 export const getTodo = (
   repository: Repository,
-  id: string
+  id: string,
 ): taskEither.TaskEither<"db error" | "not found", Domain.Todo.Todo> =>
   pipe(
     repository.todo.getTodo(id),
@@ -17,9 +17,9 @@ export const getTodo = (
     taskEither.chain(
       option.match(
         (): ReturnType<typeof getTodo> => taskEither.left("not found"),
-        taskEither.of
-      )
-    )
+        taskEither.of,
+      ),
+    ),
   );
 
 export const routes: FastifyPluginCallback<Env> = async (app, options) => {
@@ -52,19 +52,19 @@ export const routes: FastifyPluginCallback<Env> = async (app, options) => {
                 Promise.reject({
                   status: 500,
                   message: "internal server error",
-                })
+                }),
               )
               .with("not found", () =>
                 Promise.reject({
                   status: 404,
                   message: `no todo with id ${req.query.id} exists`,
-                })
+                }),
               )
               .exhaustive(),
-          (todo) => Promise.resolve(Boundary.Todo.fromDomain(todo))
-        )
+          (todo) => Promise.resolve(Boundary.Todo.fromDomain(todo)),
+        ),
       );
       return task();
-    }
+    },
   );
 };
