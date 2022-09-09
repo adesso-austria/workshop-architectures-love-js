@@ -17,6 +17,14 @@ const connect = (url?: string) =>
 
 describe("redis", () => {
   describe("connect", () => {
+    it("should return left if no url is given", async () => {
+      const url = process.env["REDIS_URL"];
+      delete process.env["REDIS_URL"];
+      const task = pipe(connect(), taskEither.match(ignore, throwException));
+      await task();
+      process.env["REDIS_URL"] = url;
+    });
+
     it(
       "should return left if invalid connection url is given",
       pipe(connect("uynptrs"), taskEither.match(ignore, throwException))
