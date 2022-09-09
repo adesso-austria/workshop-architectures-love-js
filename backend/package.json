@@ -9,7 +9,7 @@
     "prestart": "npm run up",
     "start": "NODE_OPTIONS='--experimental-specifier-resolution=node' nodemon -w build -d 10ms -x 'node build/server.js'",
     "poststart": "npm run down",
-    "down": "docker-compose down"
+    "down": "docker-compose down -v"
   },
   "author": "",
   "license": "ISC",
