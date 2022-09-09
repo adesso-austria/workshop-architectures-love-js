@@ -35,6 +35,28 @@ describe("todo", () => {
         )
       )
     );
+
+    it(
+      "should sync the state before returning the todo",
+      pipe(
+        TestUtils.Repository.connect(),
+        taskEither.chain((repo) =>
+          pipe(
+            repo.event.emit(TestData.DomainEvent.createBuyIcecream),
+            taskEither.chain(() =>
+              repo.todo.getTodo(
+                TestData.DomainEvent.createBuyIcecream.payload.id
+              )
+            )
+          )
+        ),
+        taskEither.match(throwException, (todo) =>
+          expect(todo).toEqual(
+            option.some(TestData.DomainEvent.createBuyIcecream.payload)
+          )
+        )
+      )
+    );
   });
 
   describe("applyEvent", () => {

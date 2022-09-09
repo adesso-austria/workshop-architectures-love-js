@@ -1,6 +1,7 @@
 import { ioEither, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Mongo from "mongodb";
+import { omit } from "ramda";
 import { ignore } from "utils";
 import * as Domain from "../domain";
 
@@ -20,6 +21,9 @@ export type ConnectOptions = {
   url?: string;
   db?: string;
 };
+
+export const stripMongoId = <T, Doc extends Mongo.WithId<T>>(document: Doc) =>
+  omit(["_id"], document) as T;
 
 export const connect = ({
   url = process.env["MONGO_URL"],
