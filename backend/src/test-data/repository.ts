@@ -1,6 +1,7 @@
 import { option, taskEither } from "fp-ts";
 import { DeepPartial } from "utils";
 import { mergeDeepRight } from "ramda";
+import * as Rx from "rxjs";
 import { Repository } from "../repository";
 import * as Todo from "./todo";
 
@@ -8,6 +9,7 @@ export const defaultRepository: Repository = {
   disconnect: () => taskEither.right(undefined),
   event: {
     syncState: () => taskEither.right(undefined),
+    events$: Rx.of(),
     emit: () =>
       taskEither.left("emitting events on mock repository isn't sensible"),
   },

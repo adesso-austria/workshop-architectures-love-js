@@ -1,7 +1,9 @@
 import { describe, it, expect } from "@jest/globals";
 import { option, task, taskEither } from "fp-ts";
 import { flow, pipe } from "fp-ts/lib/function";
+import { firstValueFrom } from "rxjs";
 import { ignore, throwException } from "utils";
+import * as RedisRaw from "redis";
 import * as TestUtils from "../test-utils";
 import * as Redis from "./redis";
 
@@ -14,7 +16,9 @@ const withClient = (
   pipe(
     Redis.connect(
       TestUtils.Repository.createConnectOptions({
-        db: { redis: url == null ? {} : { url } },
+        db: {
+          redis: { ...(url == null ? {} : { url }) },
+        },
       }).db.redis,
     ),
     task.chainFirst(flow(taskEither.fromEither, fn)),
@@ -76,6 +80,31 @@ describe("redis", () => {
           taskEither.chain((client) => client.getEvents(option.none)),
           taskEither.match(throwException, (events) =>
             expect(events).toHaveLength(0),
+          ),
+        ),
+      ),
+    );
+  });
+
+  describe("events$", () => {
+    it(
+      "should emit new events",
+      withClient(
+        flow(
+          taskEither.map((client) => ({
+            client,
+            promise: firstValueFrom(client.events$),
+          })),
+          taskEither.chainFirst(({ client }) =>
+            client.addEvent({ foo: "bar" }),
+          ),
+          taskEither.fold(
+            throwException,
+            ({ promise }) =>
+              () =>
+                expect(promise).resolves.toMatchObject({
+                  message: { foo: "bar" },
+                }),
           ),
         ),
       ),
