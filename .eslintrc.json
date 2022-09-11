@@ -4,12 +4,11 @@
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:import/recommended",
-    "plugin:import/typescript"
+    "plugin:import/typescript",
+    "prettier"
   ],
   "parser": "@typescript-eslint/parser",
-  "plugins": [
-    "@typescript-eslint"
-  ],
+  "plugins": ["@typescript-eslint"],
   "settings": {
     "import/resolver": {
       "typescript": true,
@@ -18,7 +17,6 @@
   },
   "root": true,
   "rules": {
-    "comma-dangle": ["error", "always-multiline"],
     "import/order": "error",
     "import/namespace": "off",
     "import/no-internal-modules": [
