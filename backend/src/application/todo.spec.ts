@@ -5,7 +5,7 @@ import { ignore, throwException, Jest } from "utils";
 import { LightMyRequestResponse } from "fastify";
 import * as Boundary from "../boundary";
 import * as TestData from "../test-data";
-import { Repository } from "../repository";
+import * as Repository from "../repository";
 import { getTodo } from "./todo";
 import * as Root from "./root";
 import * as Env from "./env";
@@ -16,10 +16,8 @@ describe("todo", () => {
       "should return left if the repository throws an error",
       pipe(
         getTodo(
-          TestData.Repository.create({
-            todo: {
-              getTodo: () => taskEither.left("something's up"),
-            },
+          TestData.Repository.createTodoRepository({
+            getTodo: () => taskEither.left("something's up"),
           }),
           "foo",
         ),
@@ -31,10 +29,8 @@ describe("todo", () => {
       "should return left if the repository can't find the todo",
       pipe(
         getTodo(
-          TestData.Repository.create({
-            todo: {
-              getTodo: () => taskEither.right(option.none),
-            },
+          TestData.Repository.createTodoRepository({
+            getTodo: () => taskEither.right(option.none),
           }),
           "foo",
         ),
@@ -46,11 +42,9 @@ describe("todo", () => {
       "should return a right if the repository can find the todo",
       pipe(
         getTodo(
-          TestData.Repository.create({
-            todo: {
-              getTodo: () =>
-                taskEither.right(option.some(TestData.Todo.buyIcecream)),
-            },
+          TestData.Repository.createTodoRepository({
+            getTodo: () =>
+              taskEither.right(option.some(TestData.Todo.buyIcecream)),
           }),
           "foo",
         ),
@@ -61,19 +55,19 @@ describe("todo", () => {
 
   describe("routes", () => {
     Jest.testGivenThen<
-      ReturnType<Repository["todo"]["getTodo"]>,
+      ReturnType<Repository.Todo.Repository["getTodo"]>,
       (response: LightMyRequestResponse) => void
     >(
       "/todo",
       async (givenTodoReturn, checkExpectation) => {
         const root = Root.create(
-          Env.create(
-            TestData.Repository.create({
+          TestData.Env.create({
+            repositories: {
               todo: {
                 getTodo: () => givenTodoReturn,
               },
-            }),
-          ),
+            },
+          }),
         );
         const response = await root.inject({
           path: "/todo",

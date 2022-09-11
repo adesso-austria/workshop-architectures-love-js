@@ -1,26 +1,19 @@
+import * as Crypto from "crypto";
 import { describe, it, expect } from "@jest/globals";
 import { option, task, taskEither } from "fp-ts";
 import { flow, pipe } from "fp-ts/lib/function";
 import { firstValueFrom } from "rxjs";
 import { ignore, throwException } from "utils";
-import * as RedisRaw from "redis";
-import * as TestUtils from "../test-utils";
 import * as Redis from "./redis";
 
 const withClient = (
   fn: (
-    connectResult: taskEither.TaskEither<string, Redis.Client>
+    connectResult: taskEither.TaskEither<string, Redis.Client>,
   ) => task.Task<void>,
-  url?: string,
+  url = "redis://localhost:6379",
 ) =>
   pipe(
-    Redis.connect(
-      TestUtils.Repository.createConnectOptions({
-        db: {
-          redis: { ...(url == null ? {} : { url }) },
-        },
-      }).db.redis,
-    ),
+    Redis.connect({ url, namespace: Crypto.randomUUID() }),
     task.chainFirst(flow(taskEither.fromEither, fn)),
     taskEither.chain((client) => client.disconnect()),
   );

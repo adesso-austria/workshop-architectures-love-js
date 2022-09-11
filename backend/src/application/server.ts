@@ -2,6 +2,7 @@ import { pipe } from "fp-ts/lib/function";
 import { taskEither } from "fp-ts";
 import dotenv from "dotenv";
 import { throwException } from "utils";
+import * as Adapters from "../adapters";
 import * as Repository from "../repository";
 import * as Root from "./root";
 import * as Env from "./env";
@@ -13,22 +14,24 @@ const readEnv = (key: string) =>
   );
 
 const start = pipe(
-  Repository.connect({
-    db: {
-      mongo: {
-        url: readEnv("MONGO_URL"),
-        namespace: readEnv("MONGO_NAMESPACE"),
-      },
-      redis: { url: readEnv("REDIS_URL"), namespace: "" },
-    },
+  Adapters.Mongo.connect({
+    url: readEnv("MONGO_URL"),
+    namespace: readEnv("MONGO_NAMESPACE"),
   }),
+  taskEither.map(
+    (mongo): Env.Env => ({
+      repositories: {
+        todo: Repository.Todo.create({ mongo }),
+      },
+    }),
+  ),
   taskEither.match(
     (reason) => {
       console.error(reason);
       process.exit(1);
     },
-    (repository) => {
-      Root.create(Env.create(repository))
+    (env) => {
+      Root.create(env)
         .listen({
           port:
             process.env["PORT"] == null ? 8080 : parseInt(process.env["PORT"]),

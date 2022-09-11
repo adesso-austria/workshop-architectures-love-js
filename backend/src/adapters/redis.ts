@@ -1,4 +1,4 @@
-import { ioEither, option, taskEither } from "fp-ts";
+import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Redis from "redis";
 import * as Rx from "rxjs";
@@ -11,7 +11,7 @@ export type Client = {
   disconnect: () => taskEither.TaskEither<string, void>;
   addEvent: (event: MessageContent) => taskEither.TaskEither<string, string>;
   getEvents: (
-    since: option.Option<string>
+    since: option.Option<string>,
   ) => taskEither.TaskEither<string, RedisMessage[]>;
   events$: Rx.Observable<RedisMessage>;
 };

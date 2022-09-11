@@ -2,17 +2,17 @@ import { FastifyPluginCallback } from "fastify";
 import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { match } from "ts-pattern";
-import { Repository } from "../repository";
+import { Todo } from "../repository";
 import * as Boundary from "../boundary";
 import * as Domain from "../domain";
 import { Env } from "./env";
 
 export const getTodo = (
-  repository: Repository,
+  repository: Todo.Repository,
   id: string,
 ): taskEither.TaskEither<"db error" | "not found", Domain.Todo.Todo> =>
   pipe(
-    repository.todo.getTodo(id),
+    repository.getTodo(id),
     taskEither.mapLeft(() => "db error" as const),
     taskEither.chain(
       option.match(
@@ -22,7 +22,7 @@ export const getTodo = (
     ),
   );
 
-export const routes: FastifyPluginCallback<Env> = async (app, options) => {
+export const routes: FastifyPluginCallback<Env> = async (app, env) => {
   app.get<{
     Querystring: {
       id: string;
@@ -44,7 +44,7 @@ export const routes: FastifyPluginCallback<Env> = async (app, options) => {
     },
     async (req) => {
       const task = pipe(
-        getTodo(options.repository, req.query.id),
+        getTodo(env.repositories.todo, req.query.id),
         taskEither.match(
           (error) =>
             match(error)

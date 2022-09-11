@@ -1,15 +1,25 @@
 import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
-import { ignore } from "utils";
+import { ignore, throwException } from "utils";
 import * as Domain from "../domain";
-import * as Db from "./db";
-import type * as Root from "./root";
+import { Redis } from "../adapters";
 
 export type Repository = {
+  /**
+   * emit a new domain event
+   */
   emit: (
-    event: Domain.DomainEvent.DomainEvent
+    event: Domain.DomainEvent.DomainEvent,
   ) => taskEither.TaskEither<string, string>;
-  syncState: () => taskEither.TaskEither<string, void>;
+  /**
+   * subscribe to domain events.
+   * @param subscriber callback that gets passed events since `since`
+   * @param since emit all events since this id. If nothing is supplied all events will be emitted
+   */
+  subscribe: (
+    subscriber: (event: Domain.DomainEvent.DomainEvent) => void,
+    since?: string,
+  ) => { unsubscribe: () => void };
 };
 
 const serializeEvent = (event: Domain.DomainEvent.DomainEvent) => ({
@@ -27,64 +37,7 @@ const deserializeEvent = (
   } as Domain.DomainEvent.DomainEvent;
 };
 
-const getUnknownEvents = (
-  db: Db.Db,
-): taskEither.TaskEither<
-  string,
-  Array<{ id: string; event: Domain.DomainEvent.DomainEvent }>
-> =>
-  pipe(
-    taskEither.tryCatch(
-      () =>
-        db.mongo.kv
-          .findOne({ key: "lastKnownEventId" })
-          .then((doc) => option.fromNullable(doc?.value)),
-      (reason) => reason as string,
-    ),
-    taskEither.chain(db.redis.getEvents),
-    taskEither.map((messages) =>
-      messages.reduce((events, { id, message }) => {
-        events.push({ id, event: deserializeEvent(message) });
-        return events;
-      }, [] as Array<{ id: string; event: Domain.DomainEvent.DomainEvent }>),
-    ),
-  );
-
-const applyEvent = (
-  repo: Root.Repository,
-  event: Domain.DomainEvent.DomainEvent,
-): taskEither.TaskEither<string, void> => pipe(repo.todo.applyEvent(event));
-
-export const create = (
-  db: Db.Db,
-  getRepo: () => Root.Repository,
-): Repository => ({
-  emit: (event) => db.redis.addEvent(serializeEvent(event)),
-  syncState: () => {
-    const repo = getRepo();
-    return pipe(
-      getUnknownEvents(db),
-      taskEither.chain((events) =>
-        events.reduce((task, { id, event }) => {
-          return pipe(
-            task,
-            taskEither.chain(() => applyEvent(repo, event)),
-            taskEither.chain(() =>
-              taskEither.tryCatch(
-                () =>
-                  db.mongo.kv
-                    .updateOne(
-                      { key: "lastKnownEventId" },
-                      { $set: { value: id } },
-                      { upsert: true, writeConcern: { fsync: true } },
-                    )
-                    .then(ignore),
-                (reason) => reason as string,
-              ),
-            ),
-          );
-        }, taskEither.right<string, void>(undefined)),
-      ),
-    );
-  },
+export const create = (redis: Redis.Client): Repository => ({
+  emit: (event) => redis.addEvent(serializeEvent(event)),
+  subscribe: () => throwException("not implemented"),
 });

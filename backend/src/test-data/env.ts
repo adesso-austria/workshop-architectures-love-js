@@ -1,4 +1,9 @@
+import { mergeDeepRight } from "ramda";
+import { DeepPartial } from "utils";
 import { Env } from "../application/env";
-import { defaultRepository } from "./repository";
+import { todo } from "./repository";
 
-export const defaultEnv: Env = { repository: defaultRepository };
+export const defaultEnv: Env = { repositories: { todo } };
+
+export const create = (overrides: DeepPartial<Env>): Env =>
+  mergeDeepRight(defaultEnv, overrides);

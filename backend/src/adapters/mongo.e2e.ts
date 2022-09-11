@@ -1,22 +1,21 @@
+import * as Crypto from "crypto";
 import { describe, it } from "@jest/globals";
 import { task, taskEither } from "fp-ts";
 import { flow, pipe } from "fp-ts/lib/function";
 import { ignore, throwException } from "utils";
-import * as TestUtils from "../test-utils";
 import * as Mongo from "./mongo";
 
 const withClient = (
   fn: (
-    connectResult: taskEither.TaskEither<string, Mongo.Client>
+    connectResult: taskEither.TaskEither<string, Mongo.Client>,
   ) => task.Task<void>,
-  url?: string,
+  url = "mongodb://localhost:27017",
 ) =>
   pipe(
-    Mongo.connect(
-      TestUtils.Repository.createConnectOptions({
-        db: { mongo: url == null ? {} : { url } },
-      }).db.mongo,
-    ),
+    Mongo.connect({
+      url,
+      namespace: Crypto.randomUUID(),
+    }),
     task.chainFirst(flow(taskEither.fromEither, fn)),
     taskEither.chain((client) => client.disconnect()),
   );
