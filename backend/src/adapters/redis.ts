@@ -33,7 +33,7 @@ const disconnect =
   ({ client }: RedisEnv): Client["disconnect"] =>
   () =>
     taskEither.tryCatch(
-      () => client.disconnect(),
+      () => client.quit(),
       (reason) => reason as string,
     );
 
