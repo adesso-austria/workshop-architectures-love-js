@@ -14,14 +14,25 @@ const readEnv = (key: string) =>
   );
 
 const start = pipe(
-  Adapters.Mongo.connect({
-    url: readEnv("MONGO_URL"),
-    namespace: readEnv("MONGO_NAMESPACE"),
-  }),
+  taskEither.Do,
+  taskEither.apS(
+    "mongo",
+    Adapters.Mongo.connect({
+      url: readEnv("MONGO_URL"),
+      namespace: readEnv("MONGO_NAMESPACE"),
+    }),
+  ),
+  taskEither.apS(
+    "redis",
+    Adapters.Redis.connect({
+      url: readEnv("REDIS_URL"),
+      namespace: readEnv("REDIS_NAMESPACE"),
+    }),
+  ),
   taskEither.map(
-    (mongo): Env.Env => ({
+    ({ mongo, redis }): Env.Env => ({
       repositories: {
-        todo: Repository.Todo.create({ mongo }),
+        todo: Repository.Todo.create({ mongo, redis }),
       },
     }),
   ),

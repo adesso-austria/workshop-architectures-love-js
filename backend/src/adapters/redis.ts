@@ -2,25 +2,30 @@ import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Redis from "redis";
 import * as Rx from "rxjs";
-
-type RedisClient = ReturnType<typeof Redis["createClient"]>;
-type MessageContent = Record<string, string | Buffer>;
-type RedisMessage = { id: string; message: MessageContent };
-
-export type Client = {
-  disconnect: () => taskEither.TaskEither<string, void>;
-  addEvent: (event: MessageContent) => taskEither.TaskEither<string, string>;
-  getEvents: (
-    since: option.Option<string>,
-  ) => taskEither.TaskEither<string, RedisMessage[]>;
-  events$: Rx.Observable<RedisMessage>;
-};
+import * as Domain from "../domain";
 
 export type ConnectOptions = {
   url: string;
   namespace: string;
 };
 
+/**
+ * public api
+ */
+export type Client = {
+  disconnect: () => taskEither.TaskEither<string, void>;
+  addEvent: (
+    event: Domain.DomainEvent.DomainEvent,
+  ) => taskEither.TaskEither<string, string>;
+  getEvents: (
+    since: option.Option<string>,
+  ) => taskEither.TaskEither<string, Event[]>;
+  events$: Rx.Observable<Event>;
+};
+
+/**
+ * module local environment
+ */
 type RedisEnv = {
   client: RedisClient;
   /**
@@ -29,6 +34,40 @@ type RedisEnv = {
   eventsKey: string;
 };
 
+type RedisClient = ReturnType<typeof Redis["createClient"]>;
+/**
+ * a stringified message, as it is written and read to and from the stream
+ */
+type Message = { id: string; message: Record<string, string | Buffer> };
+/**
+ * a parsed message, i.e. a message with parsed content
+ */
+type Event = { id: string; message: Domain.DomainEvent.DomainEvent };
+
+/**
+ * transform a domain event into a redis message without id
+ */
+const createMessageContent = (
+  event: Domain.DomainEvent.DomainEvent,
+): Message["message"] => ({
+  type: event.type,
+  payload: JSON.stringify(event.payload),
+});
+
+/**
+ * parse a redis stream entry into an event
+ */
+const parseMessage = ({ id, message }: Message): Event => {
+  const payload = {
+    type: message["type"],
+    payload: JSON.parse(message["payload"]?.toString() ?? ""),
+  } as Domain.DomainEvent.DomainEvent;
+  return { id, message: payload };
+};
+
+/**
+ * gracefully disconnects the client
+ */
 const disconnect =
   ({ client }: RedisEnv): Client["disconnect"] =>
   () =>
@@ -37,21 +76,28 @@ const disconnect =
       (reason) => reason as string,
     );
 
+/**
+ * add a new DomainEvent to the stream
+ */
 const addEvent =
   ({ client, eventsKey }: RedisEnv): Client["addEvent"] =>
-  (message: MessageContent) => {
+  (event) => {
     return taskEither.tryCatch(
-      () => client.XADD(eventsKey, "*", message),
+      () => client.XADD(eventsKey, "*", createMessageContent(event)),
       (reason) => reason as string,
     );
   };
 
+/**
+ * get events since id X
+ */
 const getEvents =
   ({ client, eventsKey }: RedisEnv): Client["getEvents"] =>
-  (since: option.Option<string>) =>
+  (since) =>
     pipe(
       taskEither.tryCatch(
         () =>
+          // TODO: replace with XREAD
           client.XRANGE(
             eventsKey,
             pipe(
@@ -63,18 +109,25 @@ const getEvents =
           ),
         (reason) => reason as string,
       ),
+      taskEither.map((events) => events.map(parseMessage)),
     );
 
+/**
+ * get the last generated stream entry id or 0 if the stream is empty
+ */
 const getLastEventId = ({ client, eventsKey }: RedisEnv) =>
   client
     .XINFO_STREAM(eventsKey)
     .then((info) => info.lastGeneratedId)
     .catch(() => "0");
 
+/**
+ * create the observable of events
+ */
 const createEvents$ = (env: RedisEnv): Client["events$"] => {
   const { client, eventsKey } = env;
-  return new Rx.Observable<RedisMessage>((observer) => {
-    function waitForNextEmit(id: string): Promise<void> {
+  return new Rx.Observable<Event>((observer) => {
+    function waitForNextMessage(id: string): Promise<void> {
       if (!client.isOpen) {
         return Promise.resolve();
       }
@@ -89,7 +142,7 @@ const createEvents$ = (env: RedisEnv): Client["events$"] => {
         })
         .then((replies) => {
           if (replies == null) {
-            return waitForNextEmit(id);
+            return waitForNextMessage(id);
           }
           const [events] = replies;
           if (events == null) {
@@ -97,19 +150,22 @@ const createEvents$ = (env: RedisEnv): Client["events$"] => {
           }
 
           let lastId: string | undefined;
-          events.messages.forEach((message) => {
-            lastId = message.id;
-            observer.next(message);
+          events.messages.forEach((entry) => {
+            lastId = entry.id;
+            observer.next(parseMessage(entry));
           });
 
-          return waitForNextEmit(lastId ?? id);
+          return waitForNextMessage(lastId ?? id);
         });
     }
 
-    getLastEventId(env).then(waitForNextEmit);
+    getLastEventId(env).then(waitForNextMessage);
   }).pipe(Rx.share());
 };
 
+/**
+ * create a new redis client and connect it
+ */
 const create = ({ url, namespace }: ConnectOptions): Promise<RedisEnv> => {
   const client = Redis.createClient({ url });
   return client.connect().then(() => ({
@@ -118,6 +174,9 @@ const create = ({ url, namespace }: ConnectOptions): Promise<RedisEnv> => {
   }));
 };
 
+/**
+ * connect and create a redis client
+ */
 export const connect = (
   options: ConnectOptions,
 ): taskEither.TaskEither<string, Client> => {

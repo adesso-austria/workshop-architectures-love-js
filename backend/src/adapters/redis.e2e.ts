@@ -4,6 +4,7 @@ import { option, task, taskEither } from "fp-ts";
 import { flow, pipe } from "fp-ts/lib/function";
 import { firstValueFrom } from "rxjs";
 import { ignore, throwException } from "utils";
+import * as TestData from "../test-data";
 import * as Redis from "./redis";
 
 const withClient = (
@@ -41,7 +42,7 @@ describe("redis", () => {
         flow(
           taskEither.chain((client) =>
             pipe(
-              client.addEvent({ foo: "bar" }),
+              client.addEvent(TestData.DomainEvent.createBuyIcecream),
               taskEither.chain(() => client.getEvents(option.none)),
             ),
           ),
@@ -56,7 +57,9 @@ describe("redis", () => {
       "should return the event id of the added event",
       withClient(
         flow(
-          taskEither.chain((client) => client.addEvent({ foo: "bar" })),
+          taskEither.chain((client) =>
+            client.addEvent(TestData.DomainEvent.createBuyIcecream),
+          ),
           taskEither.match(throwException, (id) =>
             expect(typeof id === "string").toBeTruthy(),
           ),
@@ -89,14 +92,14 @@ describe("redis", () => {
             promise: firstValueFrom(client.events$),
           })),
           taskEither.chainFirst(({ client }) =>
-            client.addEvent({ foo: "bar" }),
+            client.addEvent(TestData.DomainEvent.createBuyIcecream),
           ),
           taskEither.fold(
             throwException,
             ({ promise }) =>
               () =>
                 expect(promise).resolves.toMatchObject({
-                  message: { foo: "bar" },
+                  message: TestData.DomainEvent.createBuyIcecream,
                 }),
           ),
         ),
