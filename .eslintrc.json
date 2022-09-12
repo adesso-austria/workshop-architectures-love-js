@@ -17,6 +17,7 @@
   },
   "root": true,
   "rules": {
+    "@typescript-eslint/no-namespace": "off",
     "import/order": "error",
     "import/namespace": "off",
     "import/no-internal-modules": [
