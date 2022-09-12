@@ -1,10 +1,8 @@
 import { option, taskEither } from "fp-ts";
-import { flow } from "fp-ts/lib/function";
-import * as Rx from "rxjs";
 import { ignore } from "utils";
-import { match } from "ts-pattern";
+import { flow } from "fp-ts/lib/function";
 import * as Domain from "../domain";
-import { Mongo, Redis } from "../adapters";
+import { Mongo } from "../adapters";
 
 export type Repository = {
   addTodo: (todo: Domain.Todo.Todo) => taskEither.TaskEither<string, void>;
@@ -14,40 +12,34 @@ export type Repository = {
   ) => taskEither.TaskEither<string, option.Option<Domain.Todo.Todo>>;
 };
 
-const addTodo = (mongo: Mongo.Client, todo: Domain.Todo.Todo) =>
-  taskEither.tryCatch(
-    () =>
-      mongo.todos.insertOne(todo, { forceServerObjectId: true }).then(ignore),
-    (reason) => reason as string,
-  );
-
-export const create = ({
-  mongo,
-  redis,
-}: {
+export type CreateOpts = {
   mongo: Mongo.Client;
-  redis: Redis.Client;
-}): Repository => {
-  redis.events$
-    .pipe(Rx.filter(Domain.DomainEvent.isDomainEvent))
-    .subscribe((event) => {
-      const task = match(event)
-        .with({ type: "create todo" }, ({ payload }) => addTodo(mongo, payload))
-        .otherwise(() => taskEither.right(undefined));
-    });
+};
+
+const addTodo =
+  ({ mongo }: CreateOpts): Repository["addTodo"] =>
+  (todo) =>
+    taskEither.tryCatch(
+      () =>
+        mongo.todos.insertOne(todo, { forceServerObjectId: true }).then(ignore),
+      (reason) => reason as string,
+    );
+
+const getTodo =
+  ({ mongo }: CreateOpts): Repository["getTodo"] =>
+  (id) =>
+    taskEither.tryCatch(
+      () =>
+        mongo.todos
+          .findOne({ id })
+          .then(flow(option.fromNullable, option.map(Mongo.stripId))),
+      (reason) => reason as string,
+    );
+
+export const create = (opts: CreateOpts): Repository => {
   return {
-    addTodo: (todo) => addTodo(mongo, todo),
+    addTodo: addTodo(opts),
     getTodos: () => taskEither.left("not implemented"),
-    getTodo: (id) =>
-      taskEither.tryCatch(
-        () =>
-          mongo.todos.findOne({ id }).then(
-            flow(
-              option.fromNullable,
-              option.map((doc) => Mongo.stripMongoId(doc)),
-            ),
-          ),
-        (reason) => reason as string,
-      ),
+    getTodo: getTodo(opts),
   };
 };

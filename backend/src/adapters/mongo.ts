@@ -4,25 +4,21 @@ import * as Mongo from "mongodb";
 import { omit } from "ramda";
 import * as Domain from "../domain";
 
-type KVEntry = { key: string; value: string };
-
 type Collections = {
-  kv: Mongo.Collection<KVEntry>;
+  kv: Mongo.Collection<{ key: string; value: string }>;
   todos: Mongo.Collection<Domain.Todo.Todo>;
-  db: Mongo.Db;
 };
 
 export type Client = Collections & {
   disconnect: () => taskEither.TaskEither<string, void>;
 };
 
-export const stripMongoId = <T, Doc extends Mongo.WithId<T>>(document: Doc) =>
-  omit(["_id"], document) as T;
-
 export type ConnectOptions = {
   url: string;
   namespace: string;
 };
+
+export const stripId = omit(["_id"]);
 
 export const connect = ({
   url,

@@ -5,7 +5,7 @@ import * as Repository from "../repository";
 import * as Todo from "./todo";
 
 export const todo: Repository.Todo.Repository = {
-  addTodo: () => taskEither.right(undefined),
+  addTodo: (todo) => taskEither.left("not implemented"),
   getTodo: (id) => {
     const todo = Todo.all.find((todo) => todo.id === id);
     return taskEither.right(option.fromNullable(todo));
