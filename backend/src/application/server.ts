@@ -32,6 +32,7 @@ const start = pipe(
   taskEither.map(
     ({ mongo, redis }): Env.Env => ({
       repositories: {
+        event: Repository.Event.create({ redis }),
         todo: Repository.Todo.create({ mongo }),
       },
     }),

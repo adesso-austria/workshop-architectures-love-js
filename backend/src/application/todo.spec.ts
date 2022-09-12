@@ -8,7 +8,6 @@ import * as TestData from "../test-data";
 import * as Repository from "../repository";
 import { getTodo } from "./todo";
 import * as Root from "./root";
-import * as Env from "./env";
 
 describe("todo", () => {
   describe("getTodo", () => {
@@ -16,7 +15,7 @@ describe("todo", () => {
       "should return left if the repository throws an error",
       pipe(
         getTodo(
-          TestData.Repository.createTodoRepository({
+          TestData.Repository.Todo.create({
             getTodo: () => taskEither.left("something's up"),
           }),
           "foo",
@@ -29,7 +28,7 @@ describe("todo", () => {
       "should return left if the repository can't find the todo",
       pipe(
         getTodo(
-          TestData.Repository.createTodoRepository({
+          TestData.Repository.Todo.create({
             getTodo: () => taskEither.right(option.none),
           }),
           "foo",
@@ -42,7 +41,7 @@ describe("todo", () => {
       "should return a right if the repository can find the todo",
       pipe(
         getTodo(
-          TestData.Repository.createTodoRepository({
+          TestData.Repository.Todo.create({
             getTodo: () =>
               taskEither.right(option.some(TestData.Todo.buyIcecream)),
           }),
