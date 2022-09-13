@@ -4,12 +4,38 @@ import * as Mongo from "mongodb";
 import { omit } from "ramda";
 import * as Domain from "../domain";
 
-type Collections = {
-  kv: Mongo.Collection<{ key: string; value: string }>;
-  todos: Mongo.Collection<Domain.Todo.Todo>;
+/**
+ * Represents a collection of T with tracked events that led to the current state
+ */
+type Consumer<T extends Mongo.Document> = {
+  collection: Mongo.Collection<T>;
+  events: Mongo.Collection<Domain.Event.Event>;
 };
 
-export type Client = Collections & {
+const createConsumer = <T extends Mongo.Document>(
+  db: Mongo.Db,
+  key: string,
+): ioEither.IOEither<string, Consumer<T>> =>
+  pipe(
+    ioEither.Do,
+    ioEither.apS(
+      "collection",
+      ioEither.tryCatch(
+        () => db.collection<T>(key),
+        (reason) => `could not create collection ${key}: ${reason}`,
+      ),
+    ),
+    ioEither.apS(
+      "events",
+      ioEither.tryCatch(
+        () => db.collection<Domain.Event.Event>(`${key}Events`),
+        (reason) => `could not create events collection for ${key}: ${reason}`,
+      ),
+    ),
+  );
+
+export type Client = {
+  todos: Consumer<Domain.Todo.Todo>;
   disconnect: () => taskEither.TaskEither<string, void>;
 };
 
@@ -48,24 +74,10 @@ export const connect = ({
     taskEither.chain(([client, db]) =>
       pipe(
         ioEither.Do,
-        ioEither.apS(
-          "kv",
-          ioEither.tryCatch(
-            () => db.collection<{ key: string; value: string }>("kv"),
-            (reason) => `could not access kv collection: ${reason}`,
-          ),
-        ),
-        ioEither.apS(
-          "todos",
-          ioEither.tryCatch(
-            () => db.collection<Domain.Todo.Todo>("todo"),
-            (reason) => `could not access todo collection: ${reason}`,
-          ),
-        ),
+        ioEither.apS("todos", createConsumer<Domain.Todo.Todo>(db, "todos")),
         taskEither.fromIOEither,
         taskEither.map((collections) => ({
           ...collections,
-          db,
           disconnect: () =>
             taskEither.tryCatch(
               () => client.close(),

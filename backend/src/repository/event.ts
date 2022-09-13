@@ -10,11 +10,11 @@ import * as Domain from "../domain";
 export type Repository = {
   addEvent: (
     event: Domain.DomainEvent.DomainEvent,
-  ) => taskEither.TaskEither<string, string>;
+  ) => taskEither.TaskEither<string, Domain.Event.Event>;
   getEvents: (
     since: option.Option<string>,
-  ) => taskEither.TaskEither<string, Event[]>;
-  events$: Rx.Observable<Event>;
+  ) => taskEither.TaskEither<string, Domain.Event.Event[]>;
+  events$: Rx.Observable<Domain.Event.Event>;
 };
 
 export type CreateOpts = { redis: Redis.Client };
@@ -23,10 +23,6 @@ export type CreateOpts = { redis: Redis.Client };
  * a stringified message, as it is written and read to and from the stream
  */
 type Message = { id: string; message: Record<string, string | Buffer> };
-/**
- * a parsed message, i.e. a message with parsed content
- */
-type Event = { id: string; message: Domain.DomainEvent.DomainEvent };
 
 /**
  * transform a domain event into a redis message without id
@@ -41,12 +37,12 @@ const createMessageContent = (
 /**
  * parse a redis stream entry into an event
  */
-const parseMessage = ({ id, message }: Message): Event => {
+const parseMessage = ({ id, message }: Message): Domain.Event.Event => {
   const payload = {
     type: message["type"],
     payload: JSON.parse(message["payload"]?.toString() ?? ""),
   } as Domain.DomainEvent.DomainEvent;
-  return { id, message: payload };
+  return { id, domainEvent: payload };
 };
 
 /**
@@ -55,7 +51,10 @@ const parseMessage = ({ id, message }: Message): Event => {
 const addEvent =
   ({ redis }: CreateOpts): Repository["addEvent"] =>
   (event) =>
-    Redis.XADD(redis, "events", "*", createMessageContent(event));
+    pipe(
+      Redis.XADD(redis, "events", "*", createMessageContent(event)),
+      taskEither.map((id) => ({ id, domainEvent: event })),
+    );
 
 /**
  * get events since id X
@@ -92,7 +91,7 @@ const getLastEventId = ({ redis }: CreateOpts) =>
  */
 const createEvents$ = (opts: CreateOpts): Repository["events$"] => {
   const { redis } = opts;
-  return new Rx.Observable<Event>((observer) => {
+  return new Rx.Observable<Domain.Event.Event>((observer) => {
     function waitForNextMessage(
       id: string,
     ): taskEither.TaskEither<string, void> {

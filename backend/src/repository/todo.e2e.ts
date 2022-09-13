@@ -9,7 +9,10 @@ import * as Todo from "./todo";
 
 const withRepo = (
   fn: (
-    repoTask: taskEither.TaskEither<string, Todo.Repository>,
+    repoTask: taskEither.TaskEither<
+      string,
+      { repo: Todo.Repository; mongo: Mongo.Client }
+    >,
   ) => task.Task<void>,
   url = "mongodb://localhost:27017",
 ) =>
@@ -21,7 +24,7 @@ const withRepo = (
     task.chainFirst(
       flow(
         taskEither.fromEither,
-        taskEither.map((mongo) => Todo.create({ mongo })),
+        taskEither.map((mongo) => ({ repo: Todo.create({ mongo }), mongo })),
         fn,
       ),
     ),
@@ -34,7 +37,7 @@ describe("todo", () => {
       "should return right none if the todo could not be found",
       withRepo(
         flow(
-          taskEither.chain((repo) => repo.getTodo("foo")),
+          taskEither.chain(({ repo }) => repo.getTodo("foo")),
           taskEither.match(throwException, (result) =>
             expect(result).toEqual(option.none),
           ),
@@ -46,15 +49,37 @@ describe("todo", () => {
       "should return some todo that has been added before",
       withRepo(
         flow(
-          taskEither.chainFirst((repo) =>
+          taskEither.chainFirst(({ repo }) =>
             repo.addTodo(TestData.Todo.buyIcecream),
           ),
-          taskEither.chain((repo) =>
+          taskEither.chain(({ repo }) =>
             repo.getTodo(TestData.Todo.buyIcecream.id),
           ),
           taskEither.match(throwException, (result) =>
             expect(result).toEqual(option.some(TestData.Todo.buyIcecream)),
           ),
+        ),
+      ),
+    );
+  });
+
+  describe("logEventId", () => {
+    withRepo(
+      flow(
+        taskEither.chainFirst(({ repo }) =>
+          repo.logEvent(TestData.Event.createBuyIcecream),
+        ),
+        taskEither.chain(({ mongo }) =>
+          taskEither.tryCatch(
+            () =>
+              mongo.todos.events.findOne({
+                id: TestData.Event.createBuyIcecream.id,
+              }),
+            (reason) => reason as string,
+          ),
+        ),
+        taskEither.match(throwException, (event) =>
+          expect(event).toEqual(TestData.Event.createBuyIcecream),
         ),
       ),
     );

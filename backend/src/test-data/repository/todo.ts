@@ -11,6 +11,8 @@ export const repository: Repository.Todo.Repository = {
     return taskEither.right(option.fromNullable(todo));
   },
   getTodos: () => taskEither.right(Todo.all),
+  logEvent: () => throwException("not implemented"),
+  hasEventBeenLogged: () => throwException("not implemented"),
 };
 
 export const create = (

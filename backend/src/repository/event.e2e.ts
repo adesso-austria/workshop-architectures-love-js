@@ -29,7 +29,7 @@ const withRepo = (
 describe("event", () => {
   describe("addEvent", () => {
     it(
-      "should add an event to the events stream",
+      "should add a domain event to the events stream",
       withRepo(
         flow(
           taskEither.chain((client) =>
@@ -46,14 +46,14 @@ describe("event", () => {
     );
 
     it(
-      "should return the event id of the added event",
+      "should return the full event including the domain event",
       withRepo(
         flow(
           taskEither.chain((client) =>
             client.addEvent(TestData.DomainEvent.createBuyIcecream),
           ),
-          taskEither.match(throwException, (id) =>
-            expect(typeof id === "string").toBeTruthy(),
+          taskEither.match(throwException, ({ domainEvent }) =>
+            expect(domainEvent).toEqual(TestData.DomainEvent.createBuyIcecream),
           ),
         ),
       ),
@@ -74,6 +74,10 @@ describe("event", () => {
     );
   });
 
+  describe("hasEventBeenLogged", () => {
+    it.todo("should return whether an event has been logged");
+  });
+
   describe("events$", () => {
     it(
       "should emit new events",
@@ -91,7 +95,7 @@ describe("event", () => {
             ({ promise }) =>
               () =>
                 expect(promise).resolves.toMatchObject({
-                  message: TestData.DomainEvent.createBuyIcecream,
+                  domainEvent: TestData.DomainEvent.createBuyIcecream,
                 }),
           ),
         ),
