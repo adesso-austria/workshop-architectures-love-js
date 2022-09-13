@@ -26,22 +26,7 @@ const withRepo = (
     taskEither.chain(Redis.disconnect),
   );
 
-describe("redis", () => {
-  describe("connect", () => {
-    it(
-      "should return left if invalid connection url is given",
-      withRepo(
-        taskEither.match(ignore, () => throwException("expected a left")),
-        "uyfntw",
-      ),
-    );
-
-    it(
-      "should return a right if a valid url is given",
-      withRepo(taskEither.match(throwException, ignore)),
-    );
-  });
-
+describe("event", () => {
   describe("addEvent", () => {
     it(
       "should add an event to the events stream",
@@ -84,6 +69,21 @@ describe("redis", () => {
           taskEither.match(throwException, (events) =>
             expect(events).toHaveLength(0),
           ),
+        ),
+      ),
+    );
+  });
+
+  describe("acknowledgeEvent", () => {
+    it(
+      "should persist an event id in mongo",
+      withRepo(
+        flow(
+          taskEither.chainFirst((client) => client.acknowledgeEvent("foo")),
+          taskEither.chain((client) =>
+            mongo.kv.findOne({ key: "lastKnownEventId" }),
+          ),
+          taskEither.match(throwException, (id) => expect(id).toEqual("foo")),
         ),
       ),
     );
