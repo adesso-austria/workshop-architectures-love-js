@@ -13,7 +13,10 @@ const readEnv = (key: string) =>
     value == null ? throwException(`${key} is required in env`) : value,
   );
 
-const start = pipe(
+/**
+ * connect adapters to services and fill into application environment
+ */
+const createEnv = pipe(
   taskEither.Do,
   taskEither.apS(
     "mongo",
@@ -37,6 +40,10 @@ const start = pipe(
       },
     }),
   ),
+);
+
+const start = pipe(
+  createEnv,
   taskEither.match(
     (reason) => {
       console.error(reason);
