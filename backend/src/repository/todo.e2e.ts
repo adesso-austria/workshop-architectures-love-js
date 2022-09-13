@@ -1,69 +1,87 @@
-import { describe, expect } from "@jest/globals";
-import { option, taskEither } from "fp-ts";
-import { pipe } from "fp-ts/lib/function";
+import * as Crypto from "crypto";
+import { describe, expect, it } from "@jest/globals";
+import { flow, pipe } from "fp-ts/lib/function";
+import { option, task, taskEither } from "fp-ts";
 import { throwException } from "utils";
+import { Mongo } from "../adapters";
 import * as TestData from "../test-data";
-import * as TestUtils from "../test-utils";
+import * as Todo from "./todo";
+
+const withRepo = (
+  fn: (
+    repoTask: taskEither.TaskEither<
+      string,
+      { repo: Todo.Repository; mongo: Mongo.Client }
+    >,
+  ) => task.Task<void>,
+  url = "mongodb://localhost:27017",
+) =>
+  pipe(
+    Mongo.connect({
+      url,
+      namespace: Crypto.randomUUID(),
+    }),
+    task.chainFirst(
+      flow(
+        taskEither.fromEither,
+        taskEither.map((mongo) => ({ repo: Todo.create({ mongo }), mongo })),
+        fn,
+      ),
+    ),
+    taskEither.chain((mongo) => mongo.disconnect()),
+  );
 
 describe("todo", () => {
   describe("getTodo", () => {
-    TestUtils.Repository.withRepo(
+    it(
       "should return right none if the todo could not be found",
-      (repo) =>
-        pipe(
-          repo.todo.getTodo("foo"),
-          taskEither.match(throwException, (maybeTodo) =>
-            expect(maybeTodo).toEqual(option.none),
+      withRepo(
+        flow(
+          taskEither.chain(({ repo }) => repo.getTodo("foo")),
+          taskEither.match(throwException, (result) =>
+            expect(result).toEqual(option.none),
           ),
         ),
+      ),
     );
 
-    TestUtils.Repository.withRepo(
+    it(
       "should return some todo that has been added before",
-      (repo) =>
-        pipe(
-          repo.todo.addTodo(TestData.Todo.buyIcecream),
-          taskEither.chain(() =>
-            repo.todo.getTodo(TestData.Todo.buyIcecream.id),
+      withRepo(
+        flow(
+          taskEither.chainFirst(({ repo }) =>
+            repo.addTodo(TestData.Todo.buyIcecream),
           ),
-          taskEither.match(throwException, (todo) =>
-            expect(todo).toEqual(option.some(TestData.Todo.buyIcecream)),
+          taskEither.chain(({ repo }) =>
+            repo.getTodo(TestData.Todo.buyIcecream.id),
           ),
-        ),
-    );
-
-    TestUtils.Repository.withRepo(
-      "should sync the state before returning the todo",
-      (repo) =>
-        pipe(
-          repo.event.emit(TestData.DomainEvent.createBuyIcecream),
-          taskEither.chain(() =>
-            repo.todo.getTodo(TestData.DomainEvent.createBuyIcecream.payload.id),
-          ),
-          taskEither.match(throwException, (todo) =>
-            expect(todo).toEqual(
-              option.some(TestData.DomainEvent.createBuyIcecream.payload),
-            ),
+          taskEither.match(throwException, (result) =>
+            expect(result).toEqual(option.some(TestData.Todo.buyIcecream)),
           ),
         ),
+      ),
     );
   });
 
-  describe("applyEvent", () => {
-    TestUtils.Repository.withRepo(
-      "should add a todo for a createEvent",
-      (repo) =>
-        pipe(
-          repo.todo.applyEvent(TestData.DomainEvent.createBuyIcecream),
-          taskEither.chain(() =>
-            repo.todo.getTodo(TestData.DomainEvent.createBuyIcecream.payload.id),
-          ),
-          taskEither.match(throwException, (todo) =>
-            expect(todo).toEqual(
-              option.some(TestData.DomainEvent.createBuyIcecream.payload),
-            ),
+  describe("logEventId", () => {
+    withRepo(
+      flow(
+        taskEither.chainFirst(({ repo }) =>
+          repo.logEvent(TestData.Event.createBuyIcecream),
+        ),
+        taskEither.chain(({ mongo }) =>
+          taskEither.tryCatch(
+            () =>
+              mongo.todos.events.findOne({
+                id: TestData.Event.createBuyIcecream.id,
+              }),
+            (reason) => reason as string,
           ),
         ),
+        taskEither.match(throwException, (event) =>
+          expect(event).toEqual(TestData.Event.createBuyIcecream),
+        ),
+      ),
     );
   });
 });

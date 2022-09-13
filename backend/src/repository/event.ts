@@ -1,90 +1,138 @@
 import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
-import { ignore } from "utils";
+import * as Rx from "rxjs";
+import { Redis } from "../adapters";
 import * as Domain from "../domain";
-import * as Db from "./db";
-import type * as Root from "./root";
 
+/**
+ * public api
+ */
 export type Repository = {
-  emit: (
-    event: Domain.DomainEvent.DomainEvent
-  ) => taskEither.TaskEither<string, string>;
-  syncState: () => taskEither.TaskEither<string, void>;
+  addEvent: (
+    event: Domain.DomainEvent.DomainEvent,
+  ) => taskEither.TaskEither<string, Domain.Event.Event>;
+  getEvents: (
+    since: option.Option<string>,
+  ) => taskEither.TaskEither<string, Domain.Event.Event[]>;
+  events$: Rx.Observable<Domain.Event.Event>;
 };
 
-const serializeEvent = (event: Domain.DomainEvent.DomainEvent) => ({
+export type CreateOpts = { redis: Redis.Client };
+
+/**
+ * a stringified message, as it is written and read to and from the stream
+ */
+type Message = { id: string; message: Record<string, string | Buffer> };
+
+/**
+ * transform a domain event into a redis message without id
+ */
+const createMessageContent = (
+  event: Domain.DomainEvent.DomainEvent,
+): Message["message"] => ({
   type: event.type,
   payload: JSON.stringify(event.payload),
 });
 
-const deserializeEvent = (
-  message: Record<string, string | Buffer>,
-): Domain.DomainEvent.DomainEvent => {
-  const parsed = JSON.parse(message["payload"]?.toString() ?? "");
-  return {
+/**
+ * parse a redis stream entry into an event
+ */
+const parseMessage = ({ id, message }: Message): Domain.Event.Event => {
+  const payload = {
     type: message["type"],
-    payload: parsed,
+    payload: JSON.parse(message["payload"]?.toString() ?? ""),
   } as Domain.DomainEvent.DomainEvent;
+  return { id, domainEvent: payload };
 };
 
-const getUnknownEvents = (
-  db: Db.Db,
-): taskEither.TaskEither<
-  string,
-  Array<{ id: string; event: Domain.DomainEvent.DomainEvent }>
-> =>
+/**
+ * add a new DomainEvent to the stream
+ */
+const addEvent =
+  ({ redis }: CreateOpts): Repository["addEvent"] =>
+  (event) =>
+    pipe(
+      Redis.XADD(redis, "events", "*", createMessageContent(event)),
+      taskEither.map((id) => ({ id, domainEvent: event })),
+    );
+
+/**
+ * get events since id X
+ */
+const getEvents =
+  ({ redis }: CreateOpts): Repository["getEvents"] =>
+  (since) =>
+    pipe(
+      Redis.XRANGE(
+        redis,
+        "events",
+        pipe(
+          since,
+          option.map((id) => `(${id}`),
+          option.getOrElse(() => "-"),
+        ),
+        "+",
+      ),
+      taskEither.map((events) => events.map(parseMessage)),
+    );
+
+/**
+ * get the last generated stream entry id or 0 if the stream is empty
+ */
+const getLastEventId = ({ redis }: CreateOpts) =>
   pipe(
-    taskEither.tryCatch(
-      () =>
-        db.mongo.kv
-          .findOne({ key: "lastKnownEventId" })
-          .then((doc) => option.fromNullable(doc?.value)),
-      (reason) => reason as string,
-    ),
-    taskEither.chain(db.redis.getEvents),
-    taskEither.map((messages) =>
-      messages.reduce((events, { id, message }) => {
-        events.push({ id, event: deserializeEvent(message) });
-        return events;
-      }, [] as Array<{ id: string; event: Domain.DomainEvent.DomainEvent }>),
-    ),
+    Redis.XINFO_STREAM(redis, "events"),
+    taskEither.map((info) => info.lastGeneratedId),
+    taskEither.alt(() => taskEither.of("0")),
   );
 
-const applyEvent = (
-  repo: Root.Repository,
-  event: Domain.DomainEvent.DomainEvent,
-): taskEither.TaskEither<string, void> => pipe(repo.todo.applyEvent(event));
+/**
+ * create the observable of events
+ */
+const createEvents$ = (opts: CreateOpts): Repository["events$"] => {
+  const { redis } = opts;
+  return new Rx.Observable<Domain.Event.Event>((observer) => {
+    function waitForNextMessage(
+      id: string,
+    ): taskEither.TaskEither<string, void> {
+      if (!Redis.isOpen(redis)) {
+        return taskEither.left("client is closed");
+      }
+      return pipe(
+        Redis.XREAD(redis, { key: "events", id }),
+        taskEither.chain((replies) => {
+          if (replies == null) {
+            return waitForNextMessage(id);
+          }
+          const [events] = replies;
+          if (events == null) {
+            observer.error("no response from events stream");
+            return taskEither.left("no response from events stream");
+          }
 
-export const create = (
-  db: Db.Db,
-  getRepo: () => Root.Repository,
-): Repository => ({
-  emit: (event) => db.redis.addEvent(serializeEvent(event)),
-  syncState: () => {
-    const repo = getRepo();
-    return pipe(
-      getUnknownEvents(db),
-      taskEither.chain((events) =>
-        events.reduce((task, { id, event }) => {
-          return pipe(
-            task,
-            taskEither.chain(() => applyEvent(repo, event)),
-            taskEither.chain(() =>
-              taskEither.tryCatch(
-                () =>
-                  db.mongo.kv
-                    .updateOne(
-                      { key: "lastKnownEventId" },
-                      { $set: { value: id } },
-                      { upsert: true, writeConcern: { fsync: true } },
-                    )
-                    .then(ignore),
-                (reason) => reason as string,
-              ),
-            ),
-          );
-        }, taskEither.right<string, void>(undefined)),
-      ),
+          let lastId: string | undefined;
+          events.messages.forEach((entry) => {
+            lastId = entry.id;
+            observer.next(parseMessage(entry));
+          });
+
+          return waitForNextMessage(lastId ?? id);
+        }),
+      );
+    }
+
+    const task = pipe(
+      getLastEventId(opts),
+      taskEither.chain(waitForNextMessage),
     );
-  },
-});
+    task();
+  }).pipe(Rx.share());
+};
+
+export const create = (opts: CreateOpts): Repository => {
+  return {
+    addEvent: addEvent(opts),
+    getEvents: getEvents(opts),
+    events$: createEvents$(opts),
+  };
+};

@@ -2,6 +2,7 @@ import { pipe } from "fp-ts/lib/function";
 import { taskEither } from "fp-ts";
 import dotenv from "dotenv";
 import { throwException } from "utils";
+import * as Adapters from "../adapters";
 import * as Repository from "../repository";
 import * as Root from "./root";
 import * as Env from "./env";
@@ -12,23 +13,44 @@ const readEnv = (key: string) =>
     value == null ? throwException(`${key} is required in env`) : value,
   );
 
-const start = pipe(
-  Repository.connect({
-    db: {
-      mongo: {
-        url: readEnv("MONGO_URL"),
-        namespace: readEnv("MONGO_NAMESPACE"),
+/**
+ * connect adapters to services and fill into application environment
+ */
+const createEnv = pipe(
+  taskEither.Do,
+  taskEither.apS(
+    "mongo",
+    Adapters.Mongo.connect({
+      url: readEnv("MONGO_URL"),
+      namespace: readEnv("MONGO_NAMESPACE"),
+    }),
+  ),
+  taskEither.apS(
+    "redis",
+    Adapters.Redis.connect({
+      url: readEnv("REDIS_URL"),
+      namespace: readEnv("REDIS_NAMESPACE"),
+    }),
+  ),
+  taskEither.map(
+    ({ mongo, redis }): Env.Env => ({
+      repositories: {
+        event: Repository.Event.create({ redis }),
+        todo: Repository.Todo.create({ mongo }),
       },
-      redis: { url: readEnv("REDIS_URL"), namespace: "" },
-    },
-  }),
+    }),
+  ),
+);
+
+const start = pipe(
+  createEnv,
   taskEither.match(
     (reason) => {
       console.error(reason);
       process.exit(1);
     },
-    (repository) => {
-      Root.create(Env.create(repository))
+    (env) => {
+      Root.create(env)
         .listen({
           port:
             process.env["PORT"] == null ? 8080 : parseInt(process.env["PORT"]),

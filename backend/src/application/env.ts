@@ -1,7 +1,11 @@
-import { Repository } from "../repository";
+import { Event, Todo } from "../repository";
 
+/**
+ * application environment
+ */
 export type Env = {
-  repository: Repository;
+  repositories: {
+    event: Event.Repository;
+    todo: Todo.Repository;
+  };
 };
-
-export const create = (repository: Repository): Env => ({ repository });

@@ -1,56 +1,69 @@
 import { option, taskEither } from "fp-ts";
-import { flow, pipe } from "fp-ts/lib/function";
-import { match } from "ts-pattern";
 import { ignore } from "utils";
+import { flow } from "fp-ts/lib/function";
 import * as Domain from "../domain";
-import * as Db from "./db";
-import { stripMongoId } from "./mongo";
-import type * as Root from "./root";
+import { Mongo } from "../adapters";
 
 export type Repository = {
   addTodo: (todo: Domain.Todo.Todo) => taskEither.TaskEither<string, void>;
   getTodos: () => taskEither.TaskEither<string, Domain.Todo.Todo[]>;
   getTodo: (
-    id: string
+    id: string,
   ) => taskEither.TaskEither<string, option.Option<Domain.Todo.Todo>>;
-  applyEvent: (
-    event: Domain.DomainEvent.DomainEvent
-  ) => taskEither.TaskEither<string, void>;
+  /**
+   * logs an event id that has led to the current state
+   */
+  logEvent: (event: Domain.Event.Event) => taskEither.TaskEither<string, void>;
+  hasEventBeenLogged: (
+    event: Domain.Event.Event,
+  ) => taskEither.TaskEither<string, boolean>;
 };
 
-const addTodo = (db: Db.Db, todo: Domain.Todo.Todo) =>
-  taskEither.tryCatch(
-    () =>
-      db.mongo.todos
+export type CreateOpts = {
+  mongo: Mongo.Client;
+};
+
+const taskify = <T>(
+  createPromise: () => Promise<T>,
+): taskEither.TaskEither<string, T> =>
+  taskEither.tryCatch(createPromise, (reason) => reason as string);
+
+const addTodo =
+  ({ mongo }: CreateOpts): Repository["addTodo"] =>
+  (todo) =>
+    taskify(() =>
+      mongo.todos.collection
         .insertOne(todo, { forceServerObjectId: true })
         .then(ignore),
-    (reason) => reason as string,
-  );
+    );
 
-export const create = (
-  db: Db.Db,
-  getRepo: () => Root.Repository,
-): Repository => ({
-  applyEvent: (event) =>
-    match(event)
-      .with({ type: "create todo" }, ({ payload }) => addTodo(db, payload))
-      .exhaustive(),
-  addTodo: (todo) => addTodo(db, todo),
-  getTodos: () => taskEither.left("not implemented"),
-  getTodo: (id) =>
-    pipe(
-      getRepo().event.syncState(),
-      taskEither.chain(() =>
-        taskEither.tryCatch(
-          () =>
-            db.mongo.todos.findOne({ id }).then(
-              flow(
-                option.fromNullable,
-                option.map((doc) => stripMongoId(doc)),
-              ),
-            ),
-          (reason) => reason as string,
-        ),
-      ),
-    ),
-});
+const getTodo =
+  ({ mongo }: CreateOpts): Repository["getTodo"] =>
+  (id) =>
+    taskify(() =>
+      mongo.todos.collection
+        .findOne({ id })
+        .then(flow(option.fromNullable, option.map(Mongo.stripId))),
+    );
+
+const logEventId =
+  ({ mongo: { todos } }: CreateOpts): Repository["logEvent"] =>
+  (event) =>
+    taskify(() =>
+      todos.events.insertOne(event, { forceServerObjectId: true }).then(ignore),
+    );
+
+const hasEventBeenLogged =
+  ({ mongo: { todos } }: CreateOpts): Repository["hasEventBeenLogged"] =>
+  (event) =>
+    taskify(() => todos.events.findOne(event).then((found) => found != null));
+
+export const create = (opts: CreateOpts): Repository => {
+  return {
+    addTodo: addTodo(opts),
+    getTodos: () => taskEither.left("not implemented"),
+    getTodo: getTodo(opts),
+    logEvent: logEventId(opts),
+    hasEventBeenLogged: hasEventBeenLogged(opts),
+  };
+};
