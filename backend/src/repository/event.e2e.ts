@@ -74,21 +74,6 @@ describe("event", () => {
     );
   });
 
-  describe("acknowledgeEvent", () => {
-    it(
-      "should persist an event id in mongo",
-      withRepo(
-        flow(
-          taskEither.chainFirst((client) => client.acknowledgeEvent("foo")),
-          taskEither.chain((client) =>
-            mongo.kv.findOne({ key: "lastKnownEventId" }),
-          ),
-          taskEither.match(throwException, (id) => expect(id).toEqual("foo")),
-        ),
-      ),
-    );
-  });
-
   describe("events$", () => {
     it(
       "should emit new events",
