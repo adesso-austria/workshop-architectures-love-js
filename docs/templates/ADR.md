@@ -1,4 +1,4 @@
-# {{date}}
+# {{date}}: {title}
 ## Context and Problem Statement
 
 ## Considered Options
