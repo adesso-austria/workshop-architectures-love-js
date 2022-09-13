@@ -2,12 +2,14 @@ import { describe, it, expect } from "@jest/globals";
 import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { ignore, throwException, Jest } from "utils";
-import { LightMyRequestResponse } from "fastify";
+import { InjectOptions, LightMyRequestResponse } from "fastify";
 import * as Boundary from "../boundary";
+import * as Domain from "../domain";
 import * as TestData from "../test-data";
 import * as Repository from "../repository";
 import { getTodo } from "./todo";
 import * as Root from "./root";
+import { Env } from "./env";
 
 describe("todo", () => {
   describe("getTodo", () => {
@@ -99,6 +101,86 @@ describe("todo", () => {
             expect(response.json()).toEqual(
               Boundary.Todo.fromDomain(TestData.Todo.buyIcecream),
             );
+          },
+        ),
+      ],
+    );
+
+    Jest.testGivenWhenThen<
+      Partial<Domain.AddTodo.AddTodo>,
+      Env,
+      (response: LightMyRequestResponse) => void
+    >(
+      "POST /todo",
+      async (givenPayload, whenEnv, expectResponse) => {
+        const root = Root.create(whenEnv);
+
+        const response = await root.inject({
+          path: "/todo",
+          method: "POST",
+          ...(givenPayload == null ? {} : { payload: givenPayload }),
+        });
+        expectResponse(response);
+      },
+      [
+        Jest.givenWhenThen(
+          "should reject with 400 if no title is present in the body",
+          {
+            content: "test",
+          },
+          TestData.Env.create({}),
+          (response) => {
+            expect(response.statusCode).toEqual(400);
+          },
+        ),
+        Jest.givenWhenThen(
+          "should reject with 400 if the title is empty",
+          { content: "valid", title: "" },
+          TestData.Env.create({}),
+          (response) => {
+            expect(response.statusCode).toEqual(400);
+          },
+        ),
+        Jest.givenWhenThen(
+          "should reject with 400 if no content is present in the body",
+          {
+            title: "test",
+          },
+          TestData.Env.create({}),
+          (response) => {
+            expect(response.statusCode).toEqual(400);
+          },
+        ),
+        Jest.givenWhenThen(
+          "should reject with 400 if the content is empty",
+          { content: "", title: "valid" },
+          TestData.Env.create({}),
+          (response) => expect(response.statusCode).toEqual(400),
+        ),
+        Jest.givenWhenThen(
+          "should return with 200 + id of the created todo",
+          { content: "foo", title: "bar" },
+          TestData.Env.create({
+            repositories: {
+              event: {
+                addEvent: () =>
+                  taskEither.right(TestData.Event.createBuyIcecream),
+              },
+            },
+          }),
+          (response) => {
+            expect(response.statusCode).toEqual(200);
+            expect(response.body).toEqual(
+              TestData.Event.createBuyIcecream.domainEvent.payload.id,
+            );
+          },
+        ),
+        Jest.givenWhenThen(
+          "should return 500 if the repo throws",
+          { content: "foo", title: "bar" },
+          TestData.Env.create({}),
+          (response) => {
+            expect(response.statusCode).toEqual(500);
           },
         ),
       ],

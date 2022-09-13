@@ -1,3 +1,4 @@
+import * as Crypto from "crypto";
 import { FastifyPluginAsync, FastifyPluginCallback } from "fastify";
 import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
@@ -57,6 +58,9 @@ export const getTodo = (
 export const createRoutes =
   (env: Env): FastifyPluginAsync =>
   async (app) => {
+    //////////////////////////////////////////////////////
+    // GET /todo
+    //////////////////////////////////////////////////////
     app.get<{
       Querystring: {
         id: string;
@@ -99,6 +103,52 @@ export const createRoutes =
           ),
         );
         return task();
+      },
+    );
+
+    app.post<{ Body: Domain.AddTodo.AddTodo }>(
+      "/todo",
+      {
+        schema: {
+          body: {
+            type: "object",
+            required: ["title", "content"],
+            properties: {
+              title: {
+                type: "string",
+                minLength: 1,
+              },
+              content: {
+                type: "string",
+                minLength: 1,
+              },
+            },
+          },
+        },
+      },
+      (req, res) => {
+        const todo: Domain.Todo.Todo = {
+          ...req.body,
+          id: Crypto.randomUUID(),
+        };
+
+        const task = pipe(
+          env.repositories.event.addEvent({
+            type: "create todo",
+            payload: todo,
+          }),
+          taskEither.map((event) => event.domainEvent.payload.id),
+          taskEither.match(
+            (error) => {
+              res.statusCode = 500;
+              console.error(error);
+              res.send();
+            },
+            (id) => res.send(id),
+          ),
+        );
+
+        task();
       },
     );
   };
