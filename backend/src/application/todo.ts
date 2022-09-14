@@ -1,10 +1,7 @@
-import * as Crypto from "crypto";
-import { FastifyPluginAsync, FastifyPluginCallback } from "fastify";
 import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { match } from "ts-pattern";
-import { Todo } from "../repository";
-import * as Boundary from "../boundary";
+import * as Repository from "../repository";
 import * as Domain from "../domain";
 import { Env } from "./env";
 
@@ -41,11 +38,11 @@ export const createEventHandler =
 //////////////////////////////////////////////////////
 
 export const getTodo = (
-  repository: Todo.Repository,
+  env: Env,
   id: string,
 ): taskEither.TaskEither<"db error" | "not found", Domain.Todo.Todo> =>
   pipe(
-    repository.getTodo(id),
+    env.repositories.todo.getTodo(id),
     taskEither.mapLeft(() => "db error" as const),
     taskEither.chain(
       option.match(
@@ -54,101 +51,3 @@ export const getTodo = (
       ),
     ),
   );
-
-export const createRoutes =
-  (env: Env): FastifyPluginAsync =>
-  async (app) => {
-    //////////////////////////////////////////////////////
-    // GET /todo
-    //////////////////////////////////////////////////////
-    app.get<{
-      Querystring: {
-        id: string;
-      };
-    }>(
-      "/todo",
-      {
-        schema: {
-          querystring: {
-            type: "object",
-            required: ["id"],
-            properties: {
-              id: {
-                type: "string",
-              },
-            },
-          },
-        },
-      },
-      async (req) => {
-        const task = pipe(
-          getTodo(env.repositories.todo, req.query.id),
-          taskEither.match(
-            (error) =>
-              match(error)
-                .with("db error", () =>
-                  Promise.reject({
-                    status: 500,
-                    message: "internal server error",
-                  }),
-                )
-                .with("not found", () =>
-                  Promise.reject({
-                    status: 404,
-                    message: `no todo with id ${req.query.id} exists`,
-                  }),
-                )
-                .exhaustive(),
-            (todo) => Promise.resolve(Boundary.Todo.fromDomain(todo)),
-          ),
-        );
-        return task();
-      },
-    );
-
-    app.post<{ Body: Domain.AddTodo.AddTodo }>(
-      "/todo",
-      {
-        schema: {
-          body: {
-            type: "object",
-            required: ["title", "content"],
-            properties: {
-              title: {
-                type: "string",
-                minLength: 1,
-              },
-              content: {
-                type: "string",
-                minLength: 1,
-              },
-            },
-          },
-        },
-      },
-      (req, res) => {
-        const todo: Domain.Todo.Todo = {
-          ...req.body,
-          id: Crypto.randomUUID(),
-        };
-
-        const task = pipe(
-          env.repositories.event.addEvent({
-            type: "create todo",
-            payload: todo,
-          }),
-          taskEither.map((event) => event.domainEvent.payload.id),
-          taskEither.match(
-            (error) => {
-              res.statusCode = 500;
-              console.error(error);
-              res.send();
-            },
-            (id) => res.send(id),
-          ),
-        );
-
-        task();
-      },
-    );
-  };

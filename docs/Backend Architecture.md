@@ -1,9 +1,17 @@
 ```mermaid
 flowchart LR
-repository-->domain
-application-->domain & repository & boundary
-boundary-->domain & contracts
+repository-->domain & adapters
+adapters-->domain
+application-->domain & repository
+boundary-->domain & contracts & application
 ```
+# Boundary
+- mapping from contracts to domain models
+- http endpoints
+# Application
+- glue code/orchestration of repositories
+# Adapters
+- low level handling of external systems
 # Repository
 ```mermaid
 flowchart LR

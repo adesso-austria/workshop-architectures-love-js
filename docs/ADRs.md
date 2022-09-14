@@ -18,3 +18,14 @@ Chosen Option: save which event was already processed in each consumer because:
 - consumers must not rely on each other, so they can be considered independent
 - fault detection within a consumers state will be easier that way
 - the responsibility to partake in a transaction is up to the individual repositories, leading to difficult and error prone implementations
+# 2022-09-14: adapter vs boundary
+## Context and Problem Statement
+Boundary could be defined as "technical boundary" where adapters are a part of the boundary layer.
+## Considered Options
+- put adapters into the boundary layer
+- separate adapters
+## Decision Outcome
+Chosen Option: separate adapters, because
+- boundary is the driving part
+- adapter is the driven part
+i.e. boundary is ingress, adapters are egress

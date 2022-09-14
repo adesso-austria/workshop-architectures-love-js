@@ -26,9 +26,14 @@
             "message": "application must not use contracts directly, use boundary instead"
           },
           {
+            "target": "src/application/**/*",
+            "from": "src/boundary/**/*",
+            "message": "boundary is edge of system, application is orchestrating internals"
+          },
+          {
             "target": "src/repository/**/*",
             "from": "src/application/**/*",
-            "message": "repository is driving application, not other way around"
+            "message": "application is driving repository, not other way around"
           },
           {
             "target": "src/repository/**/*",
@@ -47,8 +52,28 @@
           },
           {
             "target": "src/boundary/**/*",
+            "from": "src/adapters/**/*",
+            "message": "boundary should never get in contact with persistence layer"
+          },
+          {
+            "target": "src/adapters/**/*",
+            "from": "src/repository/**/*",
+            "message": "repositories use adapters, not the other way around"
+          },
+          {
+            "target": "src/adapters/**/*",
             "from": "src/application/**/*",
-            "message": "boundary is supposed to guard application, not other way around"
+            "message": "low level technical implementations must not rely on orchestration logic"
+          },
+          {
+            "target": "src/adapters/**/*",
+            "from": "src/boundary/**/*",
+            "message": "adapters are not supposed to interact with outside world on their own"
+          },
+          {
+            "target": "src/adapters/**/*",
+            "from": "../node_modules/contracts",
+            "message": "adapters should not even know about contracts"
           },
           {
             "target": "src/domain/**/*",
@@ -68,6 +93,11 @@
           {
             "target": "src/domain/**/*",
             "from": "src/repository/**/*",
+            "message": "domain layer must be pure"
+          },
+          {
+            "target": "src/domain/**/*",
+            "from": "src/adapters/**/*",
             "message": "domain layer must be pure"
           }
         ]
