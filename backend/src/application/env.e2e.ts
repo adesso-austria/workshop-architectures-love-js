@@ -4,22 +4,13 @@ import { ignore, Jest, throwException } from "utils";
 import { either, io, option, task, taskEither } from "fp-ts";
 import { mergeDeepRight, omit } from "ramda";
 import { flow, pipe } from "fp-ts/lib/function";
-import * as Adapters from "./adapters";
-import * as Main from "./main";
-
-const withMockedEnv = (env: Record<string, string>, fn: io.IO<void>) => {
-  const originalEnv = process.env;
-  process.env = mergeDeepRight(process.env, env);
-  fn();
-  process.env = originalEnv;
-};
+import * as Adapters from "../adapters";
+import * as Env from "./env";
 
 Jest.testGivenWhenThen<Record<string, string>, string, option.Option<string>>(
   "readEnv",
   async (givenEnv, whenRequested, expectResult) => {
-    withMockedEnv(givenEnv, () => {
-      expect(Main.readEnv(whenRequested)()).toEqual(expectResult);
-    });
+    expect(Env.readEnv(givenEnv)(whenRequested)()).toEqual(expectResult);
   },
   [
     Jest.givenWhenThen(
@@ -44,9 +35,7 @@ Jest.testGivenWhenThen<
 >(
   "requireEnv",
   async (givenEnv, whenRequested, expectedResult) => {
-    withMockedEnv(givenEnv, () => {
-      expect(Main.requireEnv(whenRequested)()).toEqual(expectedResult);
-    });
+    expect(Env.requireEnv(givenEnv)(whenRequested)()).toEqual(expectedResult);
   },
   [
     Jest.givenWhenThen(
@@ -76,9 +65,7 @@ Jest.testGivenThen<
 >(
   "readProcessEnvironment",
   async (givenEnv, assertExpectation) => {
-    withMockedEnv(givenEnv, () => {
-      pipe(Main.readProcessEnvironment(), assertExpectation);
-    });
+    pipe(Env.readProcessEnvironment(givenEnv)(), assertExpectation);
   },
   [
     Jest.givenThen(
@@ -115,13 +102,13 @@ Jest.testGivenThen<
 );
 
 Jest.testGivenThen<
-  Parameters<typeof Main["createAdapters"]>[0],
-  (taskEither: ReturnType<typeof Main["createAdapters"]>) => task.Task<void>
+  Parameters<typeof Env["createAdapters"]>[0],
+  (taskEither: ReturnType<typeof Env["createAdapters"]>) => task.Task<void>
 >(
   "createAdapters",
   (givenParams, assertExpectation) =>
     pipe(
-      Main.createAdapters(givenParams),
+      Env.createAdapters(givenParams),
       task.chainFirst(flow(taskEither.fromEither, assertExpectation)),
       taskEither.chain(({ redis, mongo }) =>
         pipe(
@@ -142,6 +129,36 @@ Jest.testGivenThen<
         redisNamespace: "",
       },
       taskEither.match(ignore, () => throwException("expected a left")),
+    ),
+    Jest.givenThen(
+      "should return left if passed an invalid redis url",
+      {
+        mongoUrl: "mongodb://localhost:27017",
+        mongoNamespace: "",
+        redisUrl: "fyutnr",
+        redisNamespace: "",
+      },
+      taskEither.match(ignore, () => throwException("expected a left")),
+    ),
+    Jest.givenThen(
+      "should return left if passed only invalid urls",
+      {
+        mongoUrl: "yfwnpt",
+        mongoNamespace: "",
+        redisUrl: "fyutnr",
+        redisNamespace: "",
+      },
+      taskEither.match(ignore, () => throwException("expected a left")),
+    ),
+    Jest.givenThen(
+      "should return right if passed valid urls",
+      {
+        mongoUrl: "mongodb://localhost:27017",
+        mongoNamespace: "",
+        redisUrl: "redis://localhost:6379",
+        redisNamespace: "",
+      },
+      taskEither.match(throwException, ignore),
     ),
   ],
 );
