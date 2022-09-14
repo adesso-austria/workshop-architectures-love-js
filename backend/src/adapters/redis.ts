@@ -37,7 +37,7 @@ export const connect = ({
   );
 };
 
-const buildKey = (prefix: string, key: string) =>
+export const buildKey = (prefix: string, key: string) =>
   prefix === "" ? key : `${prefix}-${key}`;
 
 export const XADD = (

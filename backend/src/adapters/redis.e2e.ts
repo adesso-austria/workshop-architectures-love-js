@@ -32,4 +32,10 @@ describe("redis", () => {
       withClient(taskEither.match(throwException, ignore)),
     );
   });
+
+  describe("buildKey", () => {
+    it("should return just the key for empty prefix", () => {
+      expect(Redis.buildKey("", "test")).toEqual("test");
+    });
+  });
 });
