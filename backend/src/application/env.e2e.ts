@@ -1,9 +1,10 @@
 import * as Crypto from "crypto";
-import { describe, it, expect } from "@jest/globals";
-import { ignore, Jest, throwException } from "utils";
-import { either, io, option, task, taskEither } from "fp-ts";
-import { mergeDeepRight, omit } from "ramda";
+import { expect } from "@jest/globals";
+import { ignore, throwException } from "utils";
+import { either, option, task, taskEither } from "fp-ts";
+import { omit } from "ramda";
 import { flow, pipe } from "fp-ts/lib/function";
+import { Jest } from "test-utils";
 import * as Adapters from "../adapters";
 import * as Env from "./env";
 

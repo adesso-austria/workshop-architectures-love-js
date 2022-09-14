@@ -1,7 +1,7 @@
 import { describe, expect } from "@jest/globals";
 import { LightMyRequestResponse } from "fastify";
 import { option, taskEither } from "fp-ts";
-import { Jest } from "utils";
+import { Jest } from "test-utils";
 import * as Application from "../application";
 import * as Domain from "../domain";
 import * as TestData from "../test-data";

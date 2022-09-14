@@ -1,7 +1,10 @@
+import dotenv from "dotenv";
 import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Boundary from "./boundary";
 import * as Application from "./application";
+
+dotenv.config();
 
 export const start = pipe(
   Application.Env.loadEnv(process.env),

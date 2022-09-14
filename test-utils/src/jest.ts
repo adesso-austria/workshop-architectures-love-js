@@ -9,13 +9,13 @@ export type GivenWhenThens<Given, When, Then> = Array<
 >;
 
 export function givenWhenThen<Given, When, Then>(
-  description: string
+  description: string,
 ): GivenWhenThen<Given, When, Then>;
 export function givenWhenThen<Given, When, Then>(
   description: string,
   given: Given,
   when: When,
-  then: Then
+  then: Then,
 ): GivenWhenThen<Given, When, Then>;
 export function givenWhenThen<Given, When, Then>(
   description: string,
@@ -52,12 +52,12 @@ export const testGivenWhenThen = <Given, When, Then>(
   );
 
 export function givenThen<Given, Then>(
-  description: string
+  description: string,
 ): GivenWhenThen<Given, undefined, Then>;
 export function givenThen<Given, Then>(
   description: string,
   given: Given,
-  then: Then
+  then: Then,
 ): GivenWhenThen<Given, undefined, Then>;
 export function givenThen<Given, Then>(
   description: string,

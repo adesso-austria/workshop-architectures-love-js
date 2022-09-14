@@ -6,9 +6,11 @@
     "./frontend",
     "./backend",
     "./contracts",
-    "./utils"
+    "./utils",
+    "./test-utils"
   ],
   "scripts": {
+    "clean": "tsc -b --clean && npm run -ws --if-present clean",
     "prebuild": "npm run gen:contracts",
     "build": "tsc -b",
     "build:watch": "tsc -b --watch --preserveWatchOutput",

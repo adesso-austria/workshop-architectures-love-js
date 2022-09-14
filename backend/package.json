@@ -5,11 +5,13 @@
   "main": "index.js",
   "keywords": [],
   "scripts": {
+    "clean": "rm -rf build",
     "up": "docker-compose up -d",
     "prestart": "npm run up",
-    "start": "NODE_OPTIONS='--experimental-specifier-resolution=node' nodemon -w build -d 10ms -x 'node -e \"require(\"build/server.js\").start()\"'",
+    "start": "NODE_OPTIONS='--experimental-specifier-resolution=node' nodemon -w build -d 10ms -x 'node build/main.js'",
     "poststart": "npm run down",
-    "down": "docker-compose down -v"
+    "down": "docker-compose down -v",
+    "prepare": "git update-index --assume-unchanged .env"
   },
   "author": "",
   "license": "ISC",
