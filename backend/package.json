@@ -7,7 +7,7 @@
   "scripts": {
     "up": "docker-compose up -d",
     "prestart": "npm run up",
-    "start": "NODE_OPTIONS='--experimental-specifier-resolution=node' nodemon -w build -d 10ms -x 'node build/server.js'",
+    "start": "NODE_OPTIONS='--experimental-specifier-resolution=node' nodemon -w build -d 10ms -x 'node -e \"require(\"build/server.js\").start()\"'",
     "poststart": "npm run down",
     "down": "docker-compose down -v"
   },
