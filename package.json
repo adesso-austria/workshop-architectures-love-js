@@ -19,7 +19,7 @@
     "prepare": "husky install",
     "lint": "eslint .",
     "lint:file-casing": "node scripts/check-file-casing.js",
-    "prestart": "npm run build || exit 0 && npm run -w backend up",
+    "prestart": "(npm run build || exit 0) && npm run -w backend up",
     "start": "concurrently -k --raw npm:build:watch 'npm -w backend --ignore-scripts start' npm:gen:contracts:watch 'npm run --ignore-scripts test:watch'",
     "poststart": "npm run -w backend down",
     "pretest": "npm run -w backend up",

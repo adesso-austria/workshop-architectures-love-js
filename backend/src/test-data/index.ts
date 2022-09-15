@@ -1,3 +1,4 @@
+export * as Adapters from "./adapters";
 export * as AddTodo from "./add-todo";
 export * as DomainEvent from "./domain-event";
 export * as Env from "./env";

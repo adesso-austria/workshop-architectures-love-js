@@ -1,7 +1,7 @@
 import { option, taskEither } from "fp-ts";
-import { pipe } from "fp-ts/lib/function";
+import { flow, pipe } from "fp-ts/lib/function";
 import * as Rx from "rxjs";
-import { Redis } from "../adapters";
+import { Mongo, Redis } from "../adapters";
 import * as Domain from "../domain";
 
 /**
@@ -14,30 +14,50 @@ export type Repository = {
   getEvents: (
     since: option.Option<string>,
   ) => taskEither.TaskEither<string, Domain.Event.Event[]>;
-  events$: Rx.Observable<Domain.Event.Event>;
+  eventStream: taskEither.TaskEither<string, Rx.Observable<Domain.Event.Event>>;
+  getUnknownEvents: (
+    consumer: string,
+  ) => taskEither.TaskEither<string, Domain.Event.Event[]>;
+  acknowledgeEvent: (
+    consumer: string,
+    eventId: string,
+  ) => taskEither.TaskEither<string, void>;
+  hasEventBeenAcknowledged: (
+    consumer: string,
+    eventId: string,
+  ) => taskEither.TaskEither<string, boolean>;
 };
 
-export type CreateOpts = { redis: Redis.Client };
+export type CreateOpts = { redis: Redis.Adapter; mongo: Mongo.Adapter };
 
 /**
- * a stringified message, as it is written and read to and from the stream
+ * @internal - only exported for unit testing
  */
-type Message = { id: string; message: Record<string, string | Buffer> };
+export const eventsKey = "events";
+/**
+ * @internal - only exported for unit testing
+ */
+export const ackEventsKey = "acknowledgedEvents";
 
 /**
+ * @interal - only exported for unit testing
  * transform a domain event into a redis message without id
  */
-const createMessageContent = (
+export const stringifyDomainEvent = (
   event: Domain.DomainEvent.DomainEvent,
-): Message["message"] => ({
+): Redis.Message["message"] => ({
   type: event.type,
   payload: JSON.stringify(event.payload),
 });
 
 /**
+ * @interal - only exported for unit testing
  * parse a redis stream entry into an event
  */
-const parseMessage = ({ id, message }: Message): Domain.Event.Event => {
+export const parseMessage = ({
+  id,
+  message,
+}: Redis.Message): Domain.Event.Event => {
   const payload = {
     type: message["type"],
     payload: JSON.parse(message["payload"]?.toString() ?? ""),
@@ -48,13 +68,14 @@ const parseMessage = ({ id, message }: Message): Domain.Event.Event => {
 /**
  * add a new DomainEvent to the stream
  */
-const addEvent =
+const createAddEvent =
   ({ redis }: CreateOpts): Repository["addEvent"] =>
-  (event) =>
-    pipe(
-      Redis.XADD(redis, "events", "*", createMessageContent(event)),
+  (event) => {
+    return pipe(
+      redis.streamAdd(eventsKey, stringifyDomainEvent(event)),
       taskEither.map((id) => ({ id, domainEvent: event })),
     );
+  };
 
 /**
  * get events since id X
@@ -63,9 +84,8 @@ const getEvents =
   ({ redis }: CreateOpts): Repository["getEvents"] =>
   (since) =>
     pipe(
-      Redis.XRANGE(
-        redis,
-        "events",
+      redis.streamRange(
+        eventsKey,
         pipe(
           since,
           option.map((id) => `(${id}`),
@@ -76,63 +96,62 @@ const getEvents =
       taskEither.map((events) => events.map(parseMessage)),
     );
 
-/**
- * get the last generated stream entry id or 0 if the stream is empty
- */
-const getLastEventId = ({ redis }: CreateOpts) =>
+const getLastKnownEventId = (
+  { mongo }: CreateOpts,
+  forConsumer?: string,
+): taskEither.TaskEither<string, string> =>
   pipe(
-    Redis.XINFO_STREAM(redis, "events"),
-    taskEither.map((info) => info.lastGeneratedId),
-    taskEither.alt(() => taskEither.of("0")),
+    mongo.findLast<{ consumer: string; id: string }>(
+      ackEventsKey,
+      forConsumer == null ? {} : { consumer: forConsumer },
+    ),
+    taskEither.map(
+      flow(
+        option.map(({ id }) => id),
+        option.getOrElse(() => "0"),
+      ),
+    ),
   );
 
 /**
  * create the observable of events
  */
-const createEvents$ = (opts: CreateOpts): Repository["events$"] => {
-  const { redis } = opts;
-  return new Rx.Observable<Domain.Event.Event>((observer) => {
-    function waitForNextMessage(
-      id: string,
-    ): taskEither.TaskEither<string, void> {
-      if (!Redis.isOpen(redis)) {
-        return taskEither.left("client is closed");
-      }
-      return pipe(
-        Redis.XREAD(redis, { key: "events", id }),
-        taskEither.chain((replies) => {
-          if (replies == null) {
-            return waitForNextMessage(id);
-          }
-          const [events] = replies;
-          if (events == null) {
-            observer.error("no response from events stream");
-            return taskEither.left("no response from events stream");
-          }
+const createEventStream = (opts: CreateOpts): Repository["eventStream"] =>
+  pipe(
+    getLastKnownEventId(opts),
+    taskEither.map((id) =>
+      opts.redis.streamSubscribe(eventsKey, id).pipe(Rx.map(parseMessage)),
+    ),
+  );
 
-          let lastId: string | undefined;
-          events.messages.forEach((entry) => {
-            lastId = entry.id;
-            observer.next(parseMessage(entry));
-          });
-
-          return waitForNextMessage(lastId ?? id);
-        }),
-      );
-    }
-
-    const task = pipe(
-      getLastEventId(opts),
-      taskEither.chain(waitForNextMessage),
+const getUnknownEvents =
+  (opts: CreateOpts): Repository["getUnknownEvents"] =>
+  (consumer) =>
+    pipe(
+      getLastKnownEventId(opts, consumer),
+      taskEither.chain(flow(option.some, getEvents(opts))),
     );
-    task();
-  }).pipe(Rx.share());
-};
+
+const acknowledgeEvent =
+  ({ mongo }: CreateOpts): Repository["acknowledgeEvent"] =>
+  (consumer, eventId) =>
+    mongo.addOne(ackEventsKey, { consumer, eventId });
+
+const hasEventBeenAcknowledged =
+  ({ mongo }: CreateOpts): Repository["hasEventBeenAcknowledged"] =>
+  (consumer, eventId) =>
+    pipe(
+      mongo.findOne(ackEventsKey, { consumer, eventId }),
+      taskEither.map(option.isSome),
+    );
 
 export const create = (opts: CreateOpts): Repository => {
   return {
-    addEvent: addEvent(opts),
+    addEvent: createAddEvent(opts),
     getEvents: getEvents(opts),
-    events$: createEvents$(opts),
+    eventStream: createEventStream(opts),
+    getUnknownEvents: getUnknownEvents(opts),
+    acknowledgeEvent: acknowledgeEvent(opts),
+    hasEventBeenAcknowledged: hasEventBeenAcknowledged(opts),
   };
 };

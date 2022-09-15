@@ -11,7 +11,7 @@ const withRepo = (
   fn: (
     repoTask: taskEither.TaskEither<
       string,
-      { repo: Todo.Repository; mongo: Mongo.Client }
+      { repo: Todo.Repository; mongo: Mongo.Adapter }
     >,
   ) => task.Task<void>,
   url = "mongodb://localhost:27017",
@@ -28,7 +28,7 @@ const withRepo = (
         fn,
       ),
     ),
-    taskEither.chain((mongo) => mongo.disconnect()),
+    taskEither.chain((mongo) => mongo.close()),
   );
 
 describe("todo", () => {
@@ -58,28 +58,6 @@ describe("todo", () => {
           taskEither.match(throwException, (result) =>
             expect(result).toEqual(option.some(TestData.Todo.buyIcecream)),
           ),
-        ),
-      ),
-    );
-  });
-
-  describe("logEventId", () => {
-    withRepo(
-      flow(
-        taskEither.chainFirst(({ repo }) =>
-          repo.logEvent(TestData.Event.createBuyIcecream),
-        ),
-        taskEither.chain(({ mongo }) =>
-          taskEither.tryCatch(
-            () =>
-              mongo.todos.events.findOne({
-                id: TestData.Event.createBuyIcecream.id,
-              }),
-            (reason) => reason as string,
-          ),
-        ),
-        taskEither.match(throwException, (event) =>
-          expect(event).toEqual(TestData.Event.createBuyIcecream),
         ),
       ),
     );

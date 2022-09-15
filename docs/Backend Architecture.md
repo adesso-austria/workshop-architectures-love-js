@@ -1,9 +1,16 @@
 ```mermaid
-flowchart LR
-repository-->domain & adapters
-adapters-->domain
-application-->domain & repository
+flowchart
+application-->domain & repositories
 boundary-->domain & contracts & application
+repository-->domain
+subgraph adapters
+	redis
+	mongo
+end
+subgraph repositories
+	direction TB
+	repository-->redis & mongo
+end
 ```
 # Boundary
 - mapping from contracts to domain models
@@ -12,11 +19,6 @@ boundary-->domain & contracts & application
 - glue code/orchestration of repositories
 # Adapters
 - low level handling of external systems
-# Repository
-```mermaid
-flowchart LR
-repository--> redis & mongo -->repository
-```
 # Fetching a todo
 ```mermaid
 sequenceDiagram
