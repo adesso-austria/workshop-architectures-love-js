@@ -4,7 +4,7 @@ import { Mongo } from "../../adapters";
 
 const mocked = throwIfCalled("not sensible to call on mock");
 
-export const adapter: Mongo.Adapter = {
+const adapter: Mongo.Adapter = {
   addOne: mocked,
   findOne: mocked,
   findLast: mocked,

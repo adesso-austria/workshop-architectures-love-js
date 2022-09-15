@@ -4,7 +4,7 @@ import { Redis } from "../../adapters";
 
 const mocked = throwIfCalled("not sensible to call on mock");
 
-export const adapter: Redis.Adapter = {
+const adapter: Redis.Adapter = {
   streamAdd: mocked,
   streamSubscribe: mocked,
   streamRange: mocked,
