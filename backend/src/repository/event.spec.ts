@@ -160,6 +160,28 @@ describe("eventStream", () => {
   });
 });
 
+describe("getUnknownEvents", () => {
+  it("should call streamRange with the last known id", async () => {
+    const streamRange = jest.fn(() => taskEither.right([]));
+    const repo = create({
+      mongo: {
+        findLast: (() =>
+          taskEither.right(
+            option.some({ consumer: "foo", id: "bar" }),
+          )) as Adapters.Mongo.Adapter["findLast"],
+      },
+      redis: {
+        streamRange,
+      },
+    });
+
+    const task = repo.getUnknownEvents("foo");
+    await task();
+
+    expect(streamRange).toHaveBeenCalledWith(Event.eventsKey, "(bar", "+");
+  });
+});
+
 Jest.testGivenThen<option.Option<{ consumer: string; id: string }>, boolean>(
   "hasEventBeenLogged",
   async (givenAdapterResponse, expectHasBeenAcknowledged) => {

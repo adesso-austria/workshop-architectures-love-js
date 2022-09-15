@@ -1,11 +1,14 @@
 import { mergeDeepRight } from "ramda";
-import { DeepPartial, throwException } from "utils";
+import { DeepPartial, throwException, throwIfCalled } from "utils";
 import * as Repository from "../../repository";
+
+const mocked = throwIfCalled("not sensible to call on mock");
 
 export const repository: Repository.Event.Repository = {
   addEvent: () => throwException("not implemented"),
   getEvents: () => throwException("not implemented"),
   eventStream: () => throwException("not implemented"),
+  getUnknownEvents: mocked,
   acknowledgeEvent: () => throwException("not implemented"),
   hasEventBeenAcknowledged: () => throwException("not implemented"),
 };

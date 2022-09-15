@@ -1,7 +1,6 @@
-import { either, option, taskEither } from "fp-ts";
+import { option, taskEither } from "fp-ts";
 import { flow, pipe } from "fp-ts/lib/function";
 import * as Rx from "rxjs";
-import { ignore, throwException } from "utils";
 import { Mongo, Redis } from "../adapters";
 import * as Domain from "../domain";
 
@@ -16,6 +15,9 @@ export type Repository = {
     since: option.Option<string>,
   ) => taskEither.TaskEither<string, Domain.Event.Event[]>;
   eventStream: taskEither.TaskEither<string, Rx.Observable<Domain.Event.Event>>;
+  getUnknownEvents: (
+    consumer: string,
+  ) => taskEither.TaskEither<string, Domain.Event.Event[]>;
   acknowledgeEvent: (
     consumer: string,
     eventId: string,
@@ -94,11 +96,15 @@ const getEvents =
       taskEither.map((events) => events.map(parseMessage)),
     );
 
-const getLastKnownEventId = ({
-  mongo,
-}: CreateOpts): taskEither.TaskEither<string, string> =>
+const getLastKnownEventId = (
+  { mongo }: CreateOpts,
+  forConsumer?: string,
+): taskEither.TaskEither<string, string> =>
   pipe(
-    mongo.findLast<{ consumer: string; id: string }>(ackEventsKey),
+    mongo.findLast<{ consumer: string; id: string }>(
+      ackEventsKey,
+      forConsumer == null ? {} : { consumer: forConsumer },
+    ),
     taskEither.map(
       flow(
         option.map(({ id }) => id),
@@ -118,6 +124,14 @@ const createEventStream = (opts: CreateOpts): Repository["eventStream"] =>
     ),
   );
 
+const getUnknownEvents =
+  (opts: CreateOpts): Repository["getUnknownEvents"] =>
+  (consumer) =>
+    pipe(
+      getLastKnownEventId(opts, consumer),
+      taskEither.chain(flow(option.some, getEvents(opts))),
+    );
+
 const acknowledgeEvent =
   ({ mongo }: CreateOpts): Repository["acknowledgeEvent"] =>
   (consumer, eventId) =>
@@ -136,6 +150,7 @@ export const create = (opts: CreateOpts): Repository => {
     addEvent: createAddEvent(opts),
     getEvents: getEvents(opts),
     eventStream: createEventStream(opts),
+    getUnknownEvents: getUnknownEvents(opts),
     acknowledgeEvent: acknowledgeEvent(opts),
     hasEventBeenAcknowledged: hasEventBeenAcknowledged(opts),
   };
