@@ -18,8 +18,8 @@ export const start = pipe(
       const startApplication = pipe(
         Application.create(env).start,
         taskEither.match(throwException, (stream) =>
-          stream.subscribe((errors) => {
-            console.log(errors);
+          stream.subscribe((processedEvent) => {
+            console.log(processedEvent);
           }),
         ),
       );

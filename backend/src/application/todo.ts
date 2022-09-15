@@ -9,7 +9,7 @@ import * as Consumer from "./consumer";
 // WRITE MODEL
 //////////////////////////////////////////////////////
 
-export const createEventHandler = (env: Env) =>
+export const createConsumer = (env: Env) =>
   Consumer.create(env, "todo", (event) =>
     pipe(
       match(event)
