@@ -7,4 +7,9 @@ export const buyIcecream: Domain.Todo.Todo = {
   ...AddTodo.buyIcecream,
 };
 
+export const buyMilk: Domain.Todo.Todo = {
+  id: Crypto.randomUUID(),
+  ...AddTodo.buyMild,
+};
+
 export const all = [buyIcecream];
