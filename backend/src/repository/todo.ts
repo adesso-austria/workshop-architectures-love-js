@@ -14,22 +14,25 @@ export type CreateOpts = {
   mongo: Mongo.Adapter;
 };
 
-const collectionKey = "todos";
+/**
+ * @internal - only exported for unit testing
+ */
+export const collectionKey = "todos";
 
-const createAddTodo =
+const addTodo =
   ({ mongo }: CreateOpts): Repository["addTodo"] =>
   (todo) =>
     mongo.addOne(collectionKey, todo);
 
-const createGetTodo =
+const getTodo =
   ({ mongo }: CreateOpts): Repository["getTodo"] =>
   (id) =>
     mongo.findOne<Domain.Todo.Todo>(collectionKey, { id });
 
 export const create = (opts: CreateOpts): Repository => {
   return {
-    addTodo: createAddTodo(opts),
+    addTodo: addTodo(opts),
     getTodos: () => taskEither.left("not implemented"),
-    getTodo: createGetTodo(opts),
+    getTodo: getTodo(opts),
   };
 };
