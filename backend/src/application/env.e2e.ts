@@ -5,7 +5,6 @@ import { either, option, task, taskEither } from "fp-ts";
 import { omit } from "ramda";
 import { flow, pipe } from "fp-ts/lib/function";
 import { Jest } from "test-utils";
-import * as Adapters from "../adapters";
 import * as Env from "./env";
 
 Jest.testGivenWhenThen<Record<string, string>, string, option.Option<string>>(
