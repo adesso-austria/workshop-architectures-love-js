@@ -8,7 +8,7 @@ import * as Redis from "./redis";
 
 const withClient = (
   fn: (
-    connectResult: taskEither.TaskEither<string, Redis.Client>,
+    connectResult: taskEither.TaskEither<string, Redis.Adapter>,
   ) => task.Task<void>,
   url = "redis://localhost:6379",
 ) =>

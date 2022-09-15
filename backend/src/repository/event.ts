@@ -26,7 +26,7 @@ export type Repository = {
   ) => taskEither.TaskEither<string, boolean>;
 };
 
-export type CreateOpts = { redis: Redis.Client; mongo: Mongo.Adapter };
+export type CreateOpts = { redis: Redis.Adapter; mongo: Mongo.Adapter };
 
 const eventsKey = "events";
 const ackEventsKey = "acknowledgedEvents";

@@ -11,7 +11,7 @@ export type ConnectOptions = {
 type MessageContent = Record<string, string | Buffer>;
 export type Message = { id: string; message: MessageContent };
 
-export type Client = {
+export type Adapter = {
   streamAdd: (
     key: string,
     message: MessageContent,
@@ -40,12 +40,12 @@ const taskify = <T>(fn: () => Promise<T>): taskEither.TaskEither<string, T> =>
   taskEither.tryCatch(fn, unsafeAsString);
 
 const createStreamAdd =
-  ({ client, namespace }: Instance): Client["streamAdd"] =>
+  ({ client, namespace }: Instance): Adapter["streamAdd"] =>
   (key, message) =>
     taskify(() => client.XADD(buildKey(namespace, key), "*", message));
 
 const createStreamSubscribe =
-  ({ client, namespace }: Instance): Client["streamSubscribe"] =>
+  ({ client, namespace }: Instance): Adapter["streamSubscribe"] =>
   (key, since) =>
     new Rx.Observable<Message>((observer) => {
       const abortController = new AbortController();
@@ -108,12 +108,12 @@ const createStreamSubscribe =
     });
 
 const createStreamRange =
-  ({ client, namespace }: Instance): Client["streamRange"] =>
+  ({ client, namespace }: Instance): Adapter["streamRange"] =>
   (key, from, to) =>
     taskify(() => client.XRANGE(buildKey(namespace, key), from, to));
 
 const createClientClose =
-  ({ client }: Instance): Client["close"] =>
+  ({ client }: Instance): Adapter["close"] =>
   () =>
     taskify(() => client.disconnect());
 
@@ -123,7 +123,7 @@ const createClientClose =
 export const connect = ({
   url,
   namespace,
-}: ConnectOptions): taskEither.TaskEither<string, Client> => {
+}: ConnectOptions): taskEither.TaskEither<string, Adapter> => {
   return pipe(
     taskify<Instance>(() => {
       const client = Redis.createClient({ url });
@@ -133,7 +133,7 @@ export const connect = ({
       }));
     }),
     taskEither.map(
-      (instance): Client => ({
+      (instance): Adapter => ({
         streamAdd: createStreamAdd(instance),
         streamSubscribe: createStreamSubscribe(instance),
         streamRange: createStreamRange(instance),
