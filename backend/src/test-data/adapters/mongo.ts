@@ -8,6 +8,7 @@ const mocked = throwIfCalled("not sensible to call on mock");
 const adapter: Mongo.Adapter = {
   addOne: mocked,
   findOne: mocked,
+  findAll: () => taskEither.right([]),
   findLast: () => taskEither.right(option.none),
   updateOne: mocked,
   deleteOne: mocked,

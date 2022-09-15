@@ -29,10 +29,15 @@ const getTodo =
   (id) =>
     mongo.findOne<Domain.Todo.Todo>(collectionKey, { id });
 
+const getTodos =
+  ({ mongo }: CreateOpts): Repository["getTodos"] =>
+  () =>
+    mongo.findAll<Domain.Todo.Todo>(collectionKey, {});
+
 export const create = (opts: CreateOpts): Repository => {
   return {
     addTodo: addTodo(opts),
-    getTodos: () => taskEither.left("not implemented"),
+    getTodos: getTodos(opts),
     getTodo: getTodo(opts),
   };
 };

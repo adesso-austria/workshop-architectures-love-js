@@ -2,7 +2,7 @@ import * as Crypto from "crypto";
 import { describe, it, expect } from "@jest/globals";
 import { option, task, taskEither } from "fp-ts";
 import { flow, pipe } from "fp-ts/lib/function";
-import { ignore, throwException, throwIfCalled } from "utils";
+import { ignore, throwException } from "utils";
 import * as Mongo from "./mongo";
 
 const taskify = <T>(fn: () => Promise<T>): taskEither.TaskEither<string, T> =>
@@ -75,6 +75,46 @@ describe("findOne", () => {
         taskEither.chain(({ client }) => client.findOne("foo", { bar: "baz" })),
         taskEither.match(throwException, (doc) =>
           expect(doc).toEqual(option.some({ bar: "baz" })),
+        ),
+      ),
+    ),
+  );
+});
+
+describe("findAll", () => {
+  it(
+    "should return all documents if unfiltered",
+    withClient(
+      flow(
+        taskEither.chainFirst(({ instance }) =>
+          taskify(() =>
+            instance.db
+              .collection("foo")
+              .insertMany([{ a: 1 }, { b: 2 }, { c: 3 }]),
+          ),
+        ),
+        taskEither.chain(({ client }) => client.findAll("foo", {})),
+        taskEither.match(throwException, (docs) =>
+          expect(docs).toEqual([{ a: 1 }, { b: 2 }, { c: 3 }]),
+        ),
+      ),
+    ),
+  );
+
+  it(
+    "should return all matching document if filtered",
+    withClient(
+      flow(
+        taskEither.chainFirst(({ instance }) =>
+          taskify(() =>
+            instance.db
+              .collection("foo")
+              .insertMany([{ a: 1 }, { b: 2 }, { c: 3 }]),
+          ),
+        ),
+        taskEither.chain(({ client }) => client.findAll("foo", { b: 2 })),
+        taskEither.match(throwException, (docs) =>
+          expect(docs).toEqual([{ b: 2 }]),
         ),
       ),
     ),

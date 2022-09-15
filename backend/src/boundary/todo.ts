@@ -166,4 +166,22 @@ export const createRoutes =
         task();
       },
     );
+
+    //////////////////////////////////////////////////////
+    // GET /todos
+    //////////////////////////////////////////////////////
+    app.get("/todos", (_, res) => {
+      const task = pipe(
+        env.repositories.todo.getTodos(),
+        taskEither.match(
+          () => {
+            res.statusCode = 500;
+            res.send();
+          },
+          (todos) => res.send(todos.map(fromDomain)),
+        ),
+      );
+
+      task();
+    });
   };
