@@ -73,12 +73,12 @@ Jest.testGivenThen<
 
 Jest.testGivenWhenThen<
   Partial<Domain.AddTodo.AddTodo>,
-  Application.Env.Env,
+  DeepPartial<Application.Env.Env>,
   (response: LightMyRequestResponse) => void
 >(
   "POST /todo",
   async (givenPayload, whenEnv, expectResponse) => {
-    const root = Main.create(whenEnv);
+    const root = Main.create(TestData.Env.create(whenEnv));
 
     const response = await root.inject({
       path: "/todo",
@@ -93,7 +93,7 @@ Jest.testGivenWhenThen<
       {
         content: "test",
       },
-      TestData.Env.create({}),
+      {},
       (response) => {
         expect(response.statusCode).toEqual(400);
       },
@@ -101,7 +101,7 @@ Jest.testGivenWhenThen<
     Jest.givenWhenThen(
       "should reject with 400 if the title is empty",
       { content: "valid", title: "" },
-      TestData.Env.create({}),
+      {},
       (response) => {
         expect(response.statusCode).toEqual(400);
       },
@@ -111,7 +111,7 @@ Jest.testGivenWhenThen<
       {
         title: "test",
       },
-      TestData.Env.create({}),
+      {},
       (response) => {
         expect(response.statusCode).toEqual(400);
       },
@@ -119,32 +119,38 @@ Jest.testGivenWhenThen<
     Jest.givenWhenThen(
       "should reject with 400 if the content is empty",
       { content: "", title: "valid" },
-      TestData.Env.create({}),
+      {},
       (response) => expect(response.statusCode).toEqual(400),
+    ),
+    Jest.givenWhenThen(
+      "should reject with 500 if the repo throws",
+      { content: "foo", title: "bar" },
+      {
+        repositories: {
+          event: {
+            addEvent: () => taskEither.left("some error"),
+          },
+        },
+      },
+      (response) => {
+        expect(response.statusCode).toEqual(500);
+      },
     ),
     Jest.givenWhenThen(
       "should return with 200 + id of the created todo",
       { content: "foo", title: "bar" },
-      TestData.Env.create({
+      {
         repositories: {
           event: {
             addEvent: () => taskEither.right(TestData.Event.createBuyIcecream),
           },
         },
-      }),
+      },
       (response) => {
         expect(response.statusCode).toEqual(200);
         expect(response.body).toEqual(
           TestData.Event.createBuyIcecream.domainEvent.payload.id,
         );
-      },
-    ),
-    Jest.givenWhenThen(
-      "should return 500 if the repo throws",
-      { content: "foo", title: "bar" },
-      TestData.Env.create({}),
-      (response) => {
-        expect(response.statusCode).toEqual(500);
       },
     ),
   ],
