@@ -102,6 +102,34 @@ describe("findLast", () => {
       ),
     ),
   );
+
+  it(
+    "should return the latest added document that looks like X",
+    withClient(
+      flow(
+        taskEither.chainFirst(({ instance }) =>
+          taskify(() =>
+            instance.db.collection("foo").insertMany(
+              [
+                { type: "bar", value: 1 },
+                { type: "bar", value: 2 },
+                { type: "baz", value: 1000 },
+              ],
+              {
+                forceServerObjectId: true,
+              },
+            ),
+          ),
+        ),
+        taskEither.chain(({ client }) =>
+          client.findLast("foo", { type: "bar" }),
+        ),
+        taskEither.match(throwException, (last) =>
+          expect(last).toEqual(option.some({ type: "bar", value: 2 })),
+        ),
+      ),
+    ),
+  );
 });
 
 describe("deleteOne", () => {

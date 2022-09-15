@@ -15,6 +15,7 @@ export type Adapter = {
   ) => taskEither.TaskEither<string, option.Option<T>>;
   findLast: <T extends Mongo.Document>(
     collection: string,
+    like?: Mongo.Filter<T>,
   ) => taskEither.TaskEither<string, option.Option<T>>;
   updateOne: <T extends Mongo.Document>(
     collection: string,
@@ -78,11 +79,11 @@ const createFindOne = ({ db }: Instance) =>
     )) as Adapter["findOne"]; // assertion is necessary because Mongo id types cannot be related to T
 
 const createFindLast = ({ db }: Instance) =>
-  ((collection) =>
+  ((collection, like = {}) =>
     taskify(() =>
       db
         .collection(collection)
-        .find()
+        .find(like)
         .limit(1)
         .sort({ $natural: -1 })
         .next()
