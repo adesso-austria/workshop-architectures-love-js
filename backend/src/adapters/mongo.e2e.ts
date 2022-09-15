@@ -81,6 +81,29 @@ describe("findOne", () => {
   );
 });
 
+describe("findLast", () => {
+  it(
+    "should return the latest added document",
+    withClient(
+      flow(
+        taskEither.chainFirst(({ instance }) =>
+          taskify(() =>
+            instance.db
+              .collection("foo")
+              .insertMany([{ a: 1 }, { b: 2 }, { c: 3 }], {
+                forceServerObjectId: true,
+              }),
+          ),
+        ),
+        taskEither.chain(({ client }) => client.findLast("foo")),
+        taskEither.match(throwException, (last) =>
+          expect(last).toEqual(option.some({ c: 3 })),
+        ),
+      ),
+    ),
+  );
+});
+
 describe("deleteOne", () => {
   it(
     "should remove a document",

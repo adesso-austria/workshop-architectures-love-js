@@ -13,6 +13,9 @@ export type Adapter = {
     collection: string,
     like: Mongo.Filter<T>,
   ) => taskEither.TaskEither<string, option.Option<T>>;
+  findLast: <T extends Mongo.Document>(
+    collection: string,
+  ) => taskEither.TaskEither<string, option.Option<T>>;
   updateOne: <T extends Mongo.Document>(
     collection: string,
     like: Mongo.Filter<T>,
@@ -74,6 +77,18 @@ const createFindOne = ({ db }: Instance) =>
         .then(flow(option.fromNullable, option.map(stripId))),
     )) as Adapter["findOne"]; // assertion is necessary because Mongo id types cannot be related to T
 
+const createFindLast = ({ db }: Instance) =>
+  ((collection) =>
+    taskify(() =>
+      db
+        .collection(collection)
+        .find()
+        .limit(1)
+        .sort({ $natural: -1 })
+        .next()
+        .then(flow(option.fromNullable, option.map(stripId))),
+    )) as Adapter["findLast"];
+
 const createClose =
   ({ client }: Instance): Adapter["close"] =>
   () =>
@@ -87,6 +102,7 @@ export const createClient = (instance: Instance): Adapter => ({
   updateOne: createUpdateOne(instance),
   deleteOne: createDeleteOne(instance),
   findOne: createFindOne(instance),
+  findLast: createFindLast(instance),
   close: createClose(instance),
 });
 

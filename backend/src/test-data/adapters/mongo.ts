@@ -7,6 +7,7 @@ const mocked = throwIfCalled("not sensible to call on mock");
 export const adapter: Mongo.Adapter = {
   addOne: mocked,
   findOne: mocked,
+  findLast: mocked,
   updateOne: mocked,
   deleteOne: mocked,
   close: mocked,
