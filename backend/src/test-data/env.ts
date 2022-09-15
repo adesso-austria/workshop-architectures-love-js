@@ -3,7 +3,6 @@ import { task, taskEither } from "fp-ts";
 import { flow, pipe } from "fp-ts/lib/function";
 import { mergeDeepRight } from "ramda";
 import { DeepPartial, ignore } from "utils";
-import { Redis } from "../adapters";
 import { Env } from "../application";
 import { Event, Todo } from "./repository";
 
@@ -29,7 +28,7 @@ export const withAdapters = (
       pipe(
         taskEither.Do,
         taskEither.apS("mongo", mongo.disconnect()),
-        taskEither.apS("redis", Redis.disconnect(redis)),
+        taskEither.apS("redis", redis.close()),
       ),
     ),
     task.map(ignore),

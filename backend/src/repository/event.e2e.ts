@@ -57,30 +57,6 @@ describe("event", () => {
     it.todo("should return whether an event has been logged");
   });
 
-  describe("events$", () => {
-    it(
-      "should emit new events",
-      withRepo((repo) => {
-        return pipe(
-          repo.eventStream,
-          taskEither.map((stream) => {
-            return firstValueFrom(stream);
-          }),
-          taskEither.chainFirst(() =>
-            repo.addEvent(TestData.DomainEvent.createBuyIcecream),
-          ),
-          taskEither.fold(throwException, (promise) => () => {
-            return expect(promise).resolves.toMatchObject({
-              domainEvent: TestData.DomainEvent.createBuyIcecream,
-            });
-          }),
-        );
-      }),
-    );
-
-    it.todo("should emit unknown events");
-  });
-
   describe("acknowledging events", () => {
     it(
       "should log the event id + consumer to the idempotency log",

@@ -29,16 +29,11 @@ export type Repository = {
 export type CreateOpts = { redis: Redis.Client; mongo: Mongo.Client };
 
 /**
- * a stringified message, as it is written and read to and from the stream
- */
-type Message = { id: string; message: Record<string, string | Buffer> };
-
-/**
  * transform a domain event into a redis message without id
  */
 const createMessageContent = (
   event: Domain.DomainEvent.DomainEvent,
-): Message["message"] => ({
+): Redis.Message["message"] => ({
   type: event.type,
   payload: JSON.stringify(event.payload),
 });
@@ -46,7 +41,7 @@ const createMessageContent = (
 /**
  * parse a redis stream entry into an event
  */
-const parseMessage = ({ id, message }: Message): Domain.Event.Event => {
+const parseMessage = ({ id, message }: Redis.Message): Domain.Event.Event => {
   const payload = {
     type: message["type"],
     payload: JSON.parse(message["payload"]?.toString() ?? ""),
@@ -61,7 +56,7 @@ const addEvent =
   ({ redis }: CreateOpts): Repository["addEvent"] =>
   (event) => {
     return pipe(
-      Redis.XADD(redis, "events", "*", createMessageContent(event)),
+      redis.streamAdd("events", createMessageContent(event)),
       taskEither.map((id) => ({ id, domainEvent: event })),
     );
   };
@@ -73,8 +68,7 @@ const getEvents =
   ({ redis }: CreateOpts): Repository["getEvents"] =>
   (since) =>
     pipe(
-      Redis.XRANGE(
-        redis,
+      redis.streamRange(
         "events",
         pipe(
           since,
@@ -86,68 +80,19 @@ const getEvents =
       taskEither.map((events) => events.map(parseMessage)),
     );
 
-/**
- * get the last generated stream entry id or 0 if the stream is empty
- */
-const getLastEventId = ({ redis }: CreateOpts) =>
-  pipe(
-    Redis.XINFO_STREAM(redis, "events"),
-    taskEither.map((info) => info.lastGeneratedId),
-    taskEither.alt(() => taskEither.of("0")),
-  );
+const getLastKnownEventId = (
+  _: CreateOpts,
+): taskEither.TaskEither<string, string> => taskEither.right("0");
 
 /**
  * create the observable of events
  */
 const createEventStream = (opts: CreateOpts): Repository["eventStream"] => {
-  const { redis } = opts;
   return pipe(
-    getLastEventId(opts),
-    taskEither.map((latestId) => {
-      return new Rx.Observable<Domain.Event.Event>((observer) => {
-        async function waitForNextMessage(id: string): Promise<void> {
-          if (!Redis.isOpen(redis)) {
-            return Promise.reject("client is closed");
-          }
-          const readTask = Redis.XREAD(
-            redis,
-            {},
-            {},
-            {
-              key: "events",
-              id,
-            },
-          );
-          const replies = pipe(
-            await readTask(),
-            either.match(
-              (error) => throwException(error),
-              (replies) => replies,
-            ),
-          );
-          if (replies == null) {
-            return waitForNextMessage(id);
-          }
-          const [events] = replies;
-          if (events == null) {
-            observer.error("no response from events stream");
-            return Promise.reject("no response from events stream");
-          }
-
-          let lastId: string | undefined;
-          events.messages.forEach((entry) => {
-            lastId = entry.id;
-            observer.next(parseMessage(entry));
-          });
-
-          return waitForNextMessage(lastId ?? id);
-        }
-
-        waitForNextMessage(latestId).catch((error) => {
-          observer.error(error);
-        });
-      }).pipe(Rx.share());
-    }),
+    getLastKnownEventId(opts),
+    taskEither.map((id) =>
+      opts.redis.streamSubscribe("events", id).pipe(Rx.map(parseMessage)),
+    ),
   );
 };
 

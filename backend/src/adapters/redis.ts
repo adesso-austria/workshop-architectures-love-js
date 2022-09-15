@@ -1,20 +1,121 @@
 import { taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Redis from "redis";
-
-const unsafeAsString = (x: unknown) => x as string;
+import * as Rx from "rxjs";
 
 export type ConnectOptions = {
   url: string;
   namespace: string;
 };
 
+type MessageContent = Record<string, string | Buffer>;
+export type Message = { id: string; message: MessageContent };
+
 export type Client = {
-  instance: ReturnType<typeof Redis["createClient"]>;
-  prefix: string;
+  streamAdd: (
+    key: string,
+    message: MessageContent,
+  ) => taskEither.TaskEither<string, string>;
+  streamSubscribe: (key: string, since: string) => Rx.Observable<Message>;
+  streamRange: (
+    key: string,
+    from: string,
+    to: string,
+  ) => taskEither.TaskEither<string, Message[]>;
+  close: () => taskEither.TaskEither<string, void>;
 };
 
-type MessageContent = Record<string, string | Buffer>;
+type RedisClient = ReturnType<typeof Redis["createClient"]>;
+type Instance = {
+  client: RedisClient;
+  namespace: string;
+};
+
+export const buildKey = (prefix: string, key: string) =>
+  prefix === "" ? key : `${prefix}-${key}`;
+
+const unsafeAsString = (x: unknown) => x as string;
+
+const taskify = <T>(fn: () => Promise<T>): taskEither.TaskEither<string, T> =>
+  taskEither.tryCatch(fn, unsafeAsString);
+
+const createStreamAdd =
+  ({ client, namespace }: Instance): Client["streamAdd"] =>
+  (key, message) =>
+    taskify(() => client.XADD(buildKey(namespace, key), "*", message));
+
+const createStreamSubscribe =
+  ({ client, namespace }: Instance): Client["streamSubscribe"] =>
+  (key, since) =>
+    new Rx.Observable<Message>((observer) => {
+      const abortController = new AbortController();
+
+      client.on("end", () => {
+        observer.complete();
+        abortController.abort();
+      });
+
+      client.executeIsolated(async (isolatedClient) => {
+        /**
+         * recursively calls itself after each event, emitting the read events on the observer
+         */
+        const waitForNextEmit = (lastId: string): Promise<void> => {
+          if (!client.isOpen || abortController.signal.aborted) {
+            observer.complete();
+            return isolatedClient.quit();
+          }
+          return isolatedClient
+            .XREAD(
+              Redis.commandOptions({ signal: abortController.signal }),
+              {
+                key: buildKey(namespace, key),
+                id: lastId,
+              },
+              { BLOCK: 0 },
+            )
+            .then((messages) => {
+              if (messages == null) {
+                return observer.error("unexpected socket close");
+              }
+              const [messagesForKey] = messages;
+              if (messagesForKey == null) {
+                return observer.error("read no messages for key");
+              }
+
+              let nextLastId = lastId;
+              for (const message of messagesForKey.messages) {
+                observer.next(message);
+                nextLastId = message.id;
+              }
+              return waitForNextEmit(nextLastId);
+            })
+            .catch((reason) => {
+              if (reason instanceof Redis.AbortError) {
+                observer.complete();
+                return Promise.resolve();
+              }
+              observer.error(reason);
+              return Promise.reject(reason);
+            });
+        };
+
+        return waitForNextEmit(since);
+      });
+
+      return () => {
+        abortController.abort("unsubscribe");
+      };
+    });
+
+const createStreamRange =
+  ({ client, namespace }: Instance): Client["streamRange"] =>
+  (key, from, to) =>
+    taskify(() => client.XRANGE(buildKey(namespace, key), from, to));
+
+const createClientClose =
+  ({ client }: Instance): Client["close"] =>
+  () =>
+    taskify(() => client.disconnect());
 
 /**
  * connect and create a redis client
@@ -24,74 +125,20 @@ export const connect = ({
   namespace,
 }: ConnectOptions): taskEither.TaskEither<string, Client> => {
   return pipe(
-    taskEither.tryCatch(
-      () => {
-        const client = Redis.createClient({ url });
-        return client.connect().then(() => ({
-          instance: client,
-          prefix: namespace === "" ? "" : `${namespace}-`,
-        }));
-      },
-      (reason) => reason as string,
+    taskify<Instance>(() => {
+      const client = Redis.createClient({ url });
+      return client.connect().then(() => ({
+        client,
+        namespace,
+      }));
+    }),
+    taskEither.map(
+      (instance): Client => ({
+        streamAdd: createStreamAdd(instance),
+        streamSubscribe: createStreamSubscribe(instance),
+        streamRange: createStreamRange(instance),
+        close: createClientClose(instance),
+      }),
     ),
   );
 };
-
-export const buildKey = (prefix: string, key: string) =>
-  prefix === "" ? key : `${prefix}-${key}`;
-
-export const XADD = (
-  { instance, prefix }: Client,
-  key: string,
-  id: string,
-  content: MessageContent,
-) =>
-  taskEither.tryCatch(
-    () => instance.XADD(buildKey(prefix, key), id, content),
-    unsafeAsString,
-  );
-
-export const XRANGE = (
-  { instance, prefix }: Client,
-  key: string,
-  from: string,
-  to: string,
-) =>
-  taskEither.tryCatch(
-    () => instance.XRANGE(buildKey(prefix, key), from, to),
-    unsafeAsString,
-  );
-
-export const XINFO_STREAM = ({ instance, prefix }: Client, key: string) =>
-  taskEither.tryCatch(
-    () => instance.XINFO_STREAM(buildKey(prefix, key)),
-    unsafeAsString,
-  );
-
-export const XREAD = (
-  { instance, prefix }: Client,
-  options: Parameters<typeof commandOptions>[0],
-  readOptions: Partial<{ COUNT: number; BLOCK: number }>,
-  ...streams: Array<{ key: string; id: string }>
-) =>
-  taskEither.tryCatch(
-    () =>
-      instance.XREAD(
-        commandOptions(options),
-        streams.map(({ key, id }) => ({ key: buildKey(prefix, key), id })),
-        readOptions,
-      ),
-    unsafeAsString,
-  );
-
-export const isOpen = ({ instance }: Client) => instance.isOpen;
-
-export const commandOptions = Redis.commandOptions;
-
-export const disconnect = ({
-  instance,
-}: Client): taskEither.TaskEither<string, void> =>
-  taskEither.tryCatch(
-    () => instance.quit(),
-    (reason) => reason as string,
-  );

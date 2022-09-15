@@ -90,7 +90,7 @@ export const createAdapters = ({
       }
       if (either.isLeft(mongo) && either.isRight(redis)) {
         return pipe(
-          Adapters.Redis.disconnect(redis.right),
+          redis.right.close(),
           task.map(() => mongo),
         );
       }

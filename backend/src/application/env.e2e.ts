@@ -115,7 +115,7 @@ Jest.testGivenThen<
         pipe(
           taskEither.Do,
           taskEither.apS("mongo", mongo.disconnect()),
-          taskEither.apS("redis", Adapters.Redis.disconnect(redis)),
+          taskEither.apS("redis", redis.close()),
         ),
       ),
       task.map(ignore),
