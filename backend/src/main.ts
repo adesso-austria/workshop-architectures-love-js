@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
+import { throwException } from "utils";
 import * as Boundary from "./boundary";
 import * as Application from "./application";
 
@@ -14,7 +15,15 @@ export const start = pipe(
       process.exit(1);
     },
     (env) => {
-      Application.create(env).start();
+      const startApplication = pipe(
+        Application.create(env).start,
+        taskEither.match(throwException, (stream) =>
+          stream.subscribe((errors) => {
+            console.log(errors);
+          }),
+        ),
+      );
+      startApplication();
 
       Boundary.create(env)
         .listen({

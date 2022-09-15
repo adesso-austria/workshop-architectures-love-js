@@ -1,4 +1,4 @@
-import { array, either, task } from "fp-ts";
+import { array, either, task, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Rx from "rxjs";
 import * as Domain from "../domain";
@@ -36,20 +36,20 @@ export const create = (env: Env.Env) => {
   const aggregatedEventHandler = (event: Domain.Event.Event) =>
     pipe([todoEventHandler(event)], array.sequence(task.ApplicativePar));
 
-  const handler$ = env.repositories.event.events$.pipe(
-    Rx.concatMap((event) => {
-      const handleEvent = pipe(
-        aggregatedEventHandler(event),
-        task.map(aggregageErrors),
-      );
-      return Rx.from(handleEvent());
-    }),
-  );
-
   return {
-    start: () =>
-      handler$.subscribe((errors) => {
-        console.log(...errors);
-      }),
+    start: pipe(
+      env.repositories.event.eventStream,
+      taskEither.map((stream) =>
+        stream.pipe(
+          Rx.concatMap((event) => {
+            const handleEvent = pipe(
+              aggregatedEventHandler(event),
+              task.map(aggregageErrors),
+            );
+            return Rx.from(handleEvent());
+          }),
+        ),
+      ),
+    ),
   };
 };

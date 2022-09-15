@@ -4,38 +4,9 @@ import * as Mongo from "mongodb";
 import { omit } from "ramda";
 import * as Domain from "../domain";
 
-/**
- * Represents a collection of T with tracked events that led to the current state
- */
-type Consumer<T extends Mongo.Document> = {
-  collection: Mongo.Collection<T>;
-  events: Mongo.Collection<Domain.Event.Event>;
-};
-
-const createConsumer = <T extends Mongo.Document>(
-  db: Mongo.Db,
-  key: string,
-): ioEither.IOEither<string, Consumer<T>> =>
-  pipe(
-    ioEither.Do,
-    ioEither.apS(
-      "collection",
-      ioEither.tryCatch(
-        () => db.collection<T>(key),
-        (reason) => `could not create collection ${key}: ${reason}`,
-      ),
-    ),
-    ioEither.apS(
-      "events",
-      ioEither.tryCatch(
-        () => db.collection<Domain.Event.Event>(`${key}Events`),
-        (reason) => `could not create events collection for ${key}: ${reason}`,
-      ),
-    ),
-  );
-
 export type Client = {
-  todos: Consumer<Domain.Todo.Todo>;
+  todos: Mongo.Collection<Domain.Todo.Todo>;
+  acknowledgedEvents: Mongo.Collection<{ consumer: string; eventId: string }>;
   disconnect: () => taskEither.TaskEither<string, void>;
 };
 
@@ -74,7 +45,23 @@ export const connect = ({
     taskEither.chain(([client, db]) =>
       pipe(
         ioEither.Do,
-        ioEither.apS("todos", createConsumer<Domain.Todo.Todo>(db, "todos")),
+        ioEither.apS(
+          "todos",
+          ioEither.tryCatch(
+            () => db.collection<Domain.Todo.Todo>("todos"),
+            (reason) => reason as string,
+          ),
+        ),
+        ioEither.apS(
+          "acknowledgedEvents",
+          ioEither.tryCatch(
+            () =>
+              db.collection<{ consumer: string; eventId: string }>(
+                "acknowledgedEvents",
+              ),
+            (reason) => reason as string,
+          ),
+        ),
         taskEither.fromIOEither,
         taskEither.map((collections) => ({
           ...collections,

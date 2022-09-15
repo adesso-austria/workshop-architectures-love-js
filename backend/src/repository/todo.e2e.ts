@@ -62,26 +62,4 @@ describe("todo", () => {
       ),
     );
   });
-
-  describe("logEventId", () => {
-    withRepo(
-      flow(
-        taskEither.chainFirst(({ repo }) =>
-          repo.logEvent(TestData.Event.createBuyIcecream),
-        ),
-        taskEither.chain(({ mongo }) =>
-          taskEither.tryCatch(
-            () =>
-              mongo.todos.events.findOne({
-                id: TestData.Event.createBuyIcecream.id,
-              }),
-            (reason) => reason as string,
-          ),
-        ),
-        taskEither.match(throwException, (event) =>
-          expect(event).toEqual(TestData.Event.createBuyIcecream),
-        ),
-      ),
-    );
-  });
 });

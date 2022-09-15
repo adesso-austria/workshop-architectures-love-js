@@ -114,7 +114,7 @@ export const createEnv = ({
   redis: Adapters.Redis.Client;
 }): Env => ({
   repositories: {
-    event: Repository.Event.create({ redis }),
+    event: Repository.Event.create({ mongo, redis }),
     todo: Repository.Todo.create({ mongo }),
   },
 });

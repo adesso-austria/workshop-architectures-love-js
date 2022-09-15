@@ -70,12 +70,16 @@ export const XINFO_STREAM = ({ instance, prefix }: Client, key: string) =>
 
 export const XREAD = (
   { instance, prefix }: Client,
+  options: Parameters<typeof commandOptions>[0],
+  readOptions: Partial<{ COUNT: number; BLOCK: number }>,
   ...streams: Array<{ key: string; id: string }>
 ) =>
   taskEither.tryCatch(
     () =>
       instance.XREAD(
+        commandOptions(options),
         streams.map(({ key, id }) => ({ key: buildKey(prefix, key), id })),
+        readOptions,
       ),
     unsafeAsString,
   );
