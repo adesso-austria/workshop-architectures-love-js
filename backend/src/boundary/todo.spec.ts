@@ -1,6 +1,7 @@
 import { expect } from "@jest/globals";
 import { LightMyRequestResponse } from "fastify";
 import { option, taskEither } from "fp-ts";
+import { Bounded } from "fp-ts/lib/number";
 import { Jest } from "test-utils";
 import { DeepPartial } from "utils";
 import * as Application from "../application";
@@ -219,6 +220,62 @@ Jest.testGivenWhenThen<
       (res) => {
         expect(res.statusCode).toEqual(200);
         expect(res.body).toEqual(TestData.Todo.buyIcecream.content);
+      },
+    ),
+  ],
+);
+
+Jest.testGivenThen<
+  DeepPartial<Application.Env.Env>,
+  (response: LightMyRequestResponse) => void
+>(
+  "GET /todos",
+  async (givenEnv, assertExpectation) => {
+    const root = Main.create(TestData.Env.create(givenEnv));
+
+    const response = await root.inject({
+      path: "/todos",
+    });
+
+    assertExpectation(response);
+  },
+  [
+    Jest.givenThen(
+      "should return with 200 + empty array if repo returns no todos",
+      {
+        repositories: {
+          todo: {
+            getTodos: () => taskEither.right([]),
+          },
+        },
+      },
+      (res) => {
+        expect(res.statusCode).toEqual(200);
+        expect(res.json()).toEqual([]);
+      },
+    ),
+    Jest.givenThen(
+      "should reject with 500 if repo throws",
+      {
+        repositories: {
+          todo: {
+            getTodos: () => taskEither.left("some error"),
+          },
+        },
+      },
+      (res) => expect(res.statusCode).toEqual(500),
+    ),
+    Jest.givenThen(
+      "should map domain to contract",
+      {
+        repositories: {
+          todo: {
+            getTodos: () => taskEither.right([TestData.Todo.buyMilk]),
+          },
+        },
+      },
+      (res) => {
+        expect(res.json()).toEqual([Todo.fromDomain(TestData.Todo.buyMilk)]);
       },
     ),
   ],
