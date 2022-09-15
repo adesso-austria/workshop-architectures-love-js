@@ -1,4 +1,4 @@
-import { ioEither, option, taskEither } from "fp-ts";
+import { array, ioEither, option, taskEither } from "fp-ts";
 import { flow, pipe } from "fp-ts/lib/function";
 import * as Mongo from "mongodb";
 import { omit } from "ramda";
@@ -13,6 +13,10 @@ export type Adapter = {
     collection: string,
     like: Mongo.Filter<T>,
   ) => taskEither.TaskEither<string, option.Option<T>>;
+  findAll: <T extends Mongo.Document>(
+    collection: string,
+    like: Mongo.Filter<T>,
+  ) => taskEither.TaskEither<string, Array<T>>;
   findLast: <T extends Mongo.Document>(
     collection: string,
     like?: Mongo.Filter<T>,
@@ -78,6 +82,12 @@ const createFindOne = ({ db }: Instance) =>
         .then(flow(option.fromNullable, option.map(stripId))),
     )) as Adapter["findOne"]; // assertion is necessary because Mongo id types cannot be related to T
 
+const createFindAll = ({ db }: Instance) =>
+  ((collection, like) =>
+    taskify(() =>
+      db.collection(collection).find(like).toArray().then(array.map(stripId)),
+    )) as Adapter["findAll"];
+
 const createFindLast = ({ db }: Instance) =>
   ((collection, like = {}) =>
     taskify(() =>
@@ -103,6 +113,7 @@ export const createClient = (instance: Instance): Adapter => ({
   updateOne: createUpdateOne(instance),
   deleteOne: createDeleteOne(instance),
   findOne: createFindOne(instance),
+  findAll: createFindAll(instance),
   findLast: createFindLast(instance),
   close: createClose(instance),
 });
