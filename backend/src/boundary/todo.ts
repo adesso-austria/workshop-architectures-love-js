@@ -1,9 +1,10 @@
 import * as Crypto from "crypto";
 import * as Contracts from "contracts";
 import { FastifyPluginAsync } from "fastify";
-import { taskEither } from "fp-ts";
+import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { match } from "ts-pattern";
+import { JSONSchemaType } from "ajv";
 import * as Application from "../application";
 import * as Domain from "../domain";
 
@@ -17,6 +18,8 @@ export const fromDomain = (
     rel: "content",
   },
 });
+
+const schema = <T>(schema: JSONSchemaType<T>) => schema;
 
 export const createRoutes =
   (env: Application.Env.Env): FastifyPluginAsync =>
@@ -32,7 +35,7 @@ export const createRoutes =
       "/todo",
       {
         schema: {
-          querystring: {
+          querystring: schema<{ id: string }>({
             type: "object",
             required: ["id"],
             properties: {
@@ -40,7 +43,7 @@ export const createRoutes =
                 type: "string",
               },
             },
-          },
+          }),
         },
       },
       async (req) => {
@@ -69,11 +72,14 @@ export const createRoutes =
       },
     );
 
+    //////////////////////////////////////////////////////
+    // POST /todo
+    //////////////////////////////////////////////////////
     app.post<{ Body: Domain.AddTodo.AddTodo }>(
       "/todo",
       {
         schema: {
-          body: {
+          body: schema<{ title: string; content: string }>({
             type: "object",
             required: ["title", "content"],
             properties: {
@@ -86,7 +92,7 @@ export const createRoutes =
                 minLength: 1,
               },
             },
-          },
+          }),
         },
       },
       (req, res) => {
@@ -102,12 +108,58 @@ export const createRoutes =
           }),
           taskEither.map((event) => event.domainEvent.payload.id),
           taskEither.match(
-            (error) => {
+            () => {
               res.statusCode = 500;
-              console.error(error);
               res.send();
             },
             (id) => res.send(id),
+          ),
+        );
+
+        task();
+      },
+    );
+
+    //////////////////////////////////////////////////////
+    // GET /todoContent
+    //////////////////////////////////////////////////////
+    app.get<{
+      Querystring: {
+        id: string;
+      };
+    }>(
+      "/todoContent",
+      {
+        schema: {
+          querystring: schema<{ id: string }>({
+            type: "object",
+            required: ["id"],
+            properties: {
+              id: {
+                type: "string",
+                minLength: 1,
+              },
+            },
+          }),
+        },
+      },
+      (req, res) => {
+        const task = pipe(
+          env.repositories.todo.getTodo(req.query.id),
+          taskEither.match(
+            () => {
+              res.statusCode = 500;
+              res.send();
+            },
+            option.match(
+              () => {
+                res.statusCode = 404;
+                res.send();
+              },
+              (todo) => {
+                res.send(todo.content);
+              },
+            ),
           ),
         );
 
