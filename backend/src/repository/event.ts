@@ -26,7 +26,10 @@ export type Repository = {
   ) => taskEither.TaskEither<string, boolean>;
 };
 
-export type CreateOpts = { redis: Redis.Client; mongo: Mongo.Client };
+export type CreateOpts = { redis: Redis.Client; mongo: Mongo.Adapter };
+
+const eventsKey = "events";
+const ackEventsKey = "acknowledgedEvents";
 
 /**
  * transform a domain event into a redis message without id
@@ -56,7 +59,7 @@ const addEvent =
   ({ redis }: CreateOpts): Repository["addEvent"] =>
   (event) => {
     return pipe(
-      redis.streamAdd("events", createMessageContent(event)),
+      redis.streamAdd(eventsKey, createMessageContent(event)),
       taskEither.map((id) => ({ id, domainEvent: event })),
     );
   };
@@ -69,7 +72,7 @@ const getEvents =
   (since) =>
     pipe(
       redis.streamRange(
-        "events",
+        eventsKey,
         pipe(
           since,
           option.map((id) => `(${id}`),
@@ -80,6 +83,7 @@ const getEvents =
       taskEither.map((events) => events.map(parseMessage)),
     );
 
+// TODO: implement
 const getLastKnownEventId = (
   _: CreateOpts,
 ): taskEither.TaskEither<string, string> => taskEither.right("0");
@@ -91,7 +95,7 @@ const createEventStream = (opts: CreateOpts): Repository["eventStream"] => {
   return pipe(
     getLastKnownEventId(opts),
     taskEither.map((id) =>
-      opts.redis.streamSubscribe("events", id).pipe(Rx.map(parseMessage)),
+      opts.redis.streamSubscribe(eventsKey, id).pipe(Rx.map(parseMessage)),
     ),
   );
 };
@@ -99,27 +103,14 @@ const createEventStream = (opts: CreateOpts): Repository["eventStream"] => {
 const acknowledgeEvent =
   ({ mongo }: CreateOpts): Repository["acknowledgeEvent"] =>
   (consumer, eventId) =>
-    pipe(
-      taskEither.tryCatch(
-        () =>
-          mongo.acknowledgedEvents
-            .insertOne({ consumer, eventId })
-            .then(ignore),
-        (reason) => reason as string,
-      ),
-    );
+    mongo.addOne(ackEventsKey, { consumer, eventId });
 
 const hasEventBeenAcknowledged =
   ({ mongo }: CreateOpts): Repository["hasEventBeenAcknowledged"] =>
   (consumer, eventId) =>
     pipe(
-      taskEither.tryCatch(
-        () =>
-          mongo.acknowledgedEvents
-            .findOne({ consumer, eventId })
-            .then((event) => event != null),
-        (reason) => reason as string,
-      ),
+      mongo.findOne(ackEventsKey, { consumer, eventId }),
+      taskEither.map(option.isSome),
     );
 
 export const create = (opts: CreateOpts): Repository => {

@@ -13,6 +13,9 @@ export const defaultEnv: Env.Env = {
 export const create = (overrides: DeepPartial<Env.Env>): Env.Env =>
   mergeDeepRight(defaultEnv, overrides);
 
+/**
+ * @deprecated - TODO: replace with mocked adapters
+ */
 export const withAdapters = (
   fn: (adapters: ReturnType<typeof Env["createAdapters"]>) => task.Task<void>,
 ) =>
@@ -27,7 +30,7 @@ export const withAdapters = (
     taskEither.chain(({ mongo, redis }) =>
       pipe(
         taskEither.Do,
-        taskEither.apS("mongo", mongo.disconnect()),
+        taskEither.apS("mongo", mongo.close()),
         taskEither.apS("redis", redis.close()),
       ),
     ),

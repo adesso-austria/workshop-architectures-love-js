@@ -11,7 +11,7 @@ const withRepo = (
   fn: (
     repoTask: taskEither.TaskEither<
       string,
-      { repo: Todo.Repository; mongo: Mongo.Client }
+      { repo: Todo.Repository; mongo: Mongo.Adapter }
     >,
   ) => task.Task<void>,
   url = "mongodb://localhost:27017",
@@ -28,7 +28,7 @@ const withRepo = (
         fn,
       ),
     ),
-    taskEither.chain((mongo) => mongo.disconnect()),
+    taskEither.chain((mongo) => mongo.close()),
   );
 
 describe("todo", () => {

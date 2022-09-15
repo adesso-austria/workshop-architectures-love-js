@@ -96,7 +96,7 @@ export const createAdapters = ({
       }
       if (either.isRight(mongo) && either.isLeft(redis)) {
         return pipe(
-          mongo.right.disconnect(),
+          mongo.right.close(),
           task.map(() => redis),
         );
       }
@@ -110,7 +110,7 @@ export const createEnv = ({
   mongo,
   redis,
 }: {
-  mongo: Adapters.Mongo.Client;
+  mongo: Adapters.Mongo.Adapter;
   redis: Adapters.Redis.Client;
 }): Env => ({
   repositories: {
