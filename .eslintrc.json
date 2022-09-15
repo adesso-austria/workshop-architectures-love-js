@@ -8,7 +8,9 @@
     "prettier"
   ],
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint"],
+  "plugins": [
+    "@typescript-eslint"
+  ],
   "settings": {
     "import/resolver": {
       "typescript": true,
@@ -20,10 +22,19 @@
     "@typescript-eslint/no-namespace": "off",
     "import/order": "error",
     "import/namespace": "off",
+    "import/default": "off",
     "import/no-internal-modules": [
       "error",
       {
-        "allow": ["fp-ts/lib/function", "date-fns/fp", "react-icons/*"]
+        "allow": [
+          "fp-ts/lib/function",
+          "date-fns/fp",
+          "react-icons/*",
+          "react-dom/client",
+          "demoize/build/plugin.js",
+          "tailwindcss/colors",
+          "@material-tailwind/react/utils/withMT"
+        ]
       }
     ],
     "no-restricted-imports": [
