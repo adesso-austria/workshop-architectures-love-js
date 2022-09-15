@@ -1,17 +1,16 @@
-
 ```mermaid
 flowchart
-domain
-subgraph repositories
-	direction TB
-	repository-->adapters
-end
+application-->domain & repositories
+boundary-->domain & contracts & application
+repository-->domain
 subgraph adapters
 	redis
 	mongo
 end
-application-->domain & repositories
-boundary-->domain & contracts & application
+subgraph repositories
+	direction TB
+	repository-->redis & mongo
+end
 ```
 # Boundary
 - mapping from contracts to domain models
