@@ -30,7 +30,7 @@
   "labeledNav": false,
   "fullWidthMedia": true,
   "bordersToggle": true,
-  "bordersTitle": false,
+  "bordersTitle": true,
   "minimalStatus": true,
   "focusMode": false,
   "underlineInternal": true,
@@ -38,6 +38,6 @@
   "useSystemTheme": false,
   "folding": true,
   "lineNumbers": false,
-  "readableLineLength": true,
+  "readableLineLength": false,
   "devBlockWidth": false
 }
