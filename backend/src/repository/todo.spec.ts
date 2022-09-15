@@ -64,3 +64,21 @@ describe("addTodo", () => {
     );
   });
 });
+
+describe("getTodos", () => {
+  it("should simply return all from adapter", async () => {
+    const repo = create({
+      mongo: {
+        findAll: (() =>
+          taskEither.right([
+            TestData.Todo.buyMilk,
+          ])) as Mongo.Adapter["findAll"],
+      },
+    });
+
+    const task = repo.getTodos();
+    const result = await task();
+
+    expect(result).toEqual(either.right([TestData.Todo.buyMilk]));
+  });
+});
