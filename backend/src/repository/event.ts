@@ -1,5 +1,5 @@
 import { either, option, taskEither } from "fp-ts";
-import { pipe } from "fp-ts/lib/function";
+import { flow, pipe } from "fp-ts/lib/function";
 import * as Rx from "rxjs";
 import { ignore, throwException } from "utils";
 import { Mongo, Redis } from "../adapters";
@@ -28,13 +28,20 @@ export type Repository = {
 
 export type CreateOpts = { redis: Redis.Adapter; mongo: Mongo.Adapter };
 
-const eventsKey = "events";
-const ackEventsKey = "acknowledgedEvents";
+/**
+ * @internal - only exported for unit testing
+ */
+export const eventsKey = "events";
+/**
+ * @internal - only exported for unit testing
+ */
+export const ackEventsKey = "acknowledgedEvents";
 
 /**
+ * @interal - only exported for unit testing
  * transform a domain event into a redis message without id
  */
-const createMessageContent = (
+export const stringifyDomainEvent = (
   event: Domain.DomainEvent.DomainEvent,
 ): Redis.Message["message"] => ({
   type: event.type,
@@ -42,9 +49,13 @@ const createMessageContent = (
 });
 
 /**
+ * @interal - only exported for unit testing
  * parse a redis stream entry into an event
  */
-const parseMessage = ({ id, message }: Redis.Message): Domain.Event.Event => {
+export const parseMessage = ({
+  id,
+  message,
+}: Redis.Message): Domain.Event.Event => {
   const payload = {
     type: message["type"],
     payload: JSON.parse(message["payload"]?.toString() ?? ""),
@@ -55,11 +66,11 @@ const parseMessage = ({ id, message }: Redis.Message): Domain.Event.Event => {
 /**
  * add a new DomainEvent to the stream
  */
-const addEvent =
+const createAddEvent =
   ({ redis }: CreateOpts): Repository["addEvent"] =>
   (event) => {
     return pipe(
-      redis.streamAdd(eventsKey, createMessageContent(event)),
+      redis.streamAdd(eventsKey, stringifyDomainEvent(event)),
       taskEither.map((id) => ({ id, domainEvent: event })),
     );
   };
@@ -83,22 +94,29 @@ const getEvents =
       taskEither.map((events) => events.map(parseMessage)),
     );
 
-// TODO: implement
-const getLastKnownEventId = (
-  _: CreateOpts,
-): taskEither.TaskEither<string, string> => taskEither.right("0");
+const getLastKnownEventId = ({
+  mongo,
+}: CreateOpts): taskEither.TaskEither<string, string> =>
+  pipe(
+    mongo.findLast<{ consumer: string; id: string }>(ackEventsKey),
+    taskEither.map(
+      flow(
+        option.map(({ id }) => id),
+        option.getOrElse(() => "0"),
+      ),
+    ),
+  );
 
 /**
  * create the observable of events
  */
-const createEventStream = (opts: CreateOpts): Repository["eventStream"] => {
-  return pipe(
+const createEventStream = (opts: CreateOpts): Repository["eventStream"] =>
+  pipe(
     getLastKnownEventId(opts),
     taskEither.map((id) =>
       opts.redis.streamSubscribe(eventsKey, id).pipe(Rx.map(parseMessage)),
     ),
   );
-};
 
 const acknowledgeEvent =
   ({ mongo }: CreateOpts): Repository["acknowledgeEvent"] =>
@@ -115,7 +133,7 @@ const hasEventBeenAcknowledged =
 
 export const create = (opts: CreateOpts): Repository => {
   return {
-    addEvent: addEvent(opts),
+    addEvent: createAddEvent(opts),
     getEvents: getEvents(opts),
     eventStream: createEventStream(opts),
     acknowledgeEvent: acknowledgeEvent(opts),
