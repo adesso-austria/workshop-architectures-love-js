@@ -1,3 +1,4 @@
+import { option, taskEither } from "fp-ts";
 import { mergeDeepRight } from "ramda";
 import { DeepPartial, throwIfCalled } from "utils";
 import { Mongo } from "../../adapters";
@@ -7,7 +8,7 @@ const mocked = throwIfCalled("not sensible to call on mock");
 const adapter: Mongo.Adapter = {
   addOne: mocked,
   findOne: mocked,
-  findLast: mocked,
+  findLast: () => taskEither.right(option.none),
   updateOne: mocked,
   deleteOne: mocked,
   close: mocked,
