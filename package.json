@@ -25,6 +25,7 @@
     "pretest": "npm run -w backend up",
     "test": "jest",
     "posttest": "npm run -w backend down",
+    "test:coverage": "npm test -- --coverage",
     "test:watch": "CI=true npm test -- --watch --coverage --colors"
   },
   "keywords": [],
