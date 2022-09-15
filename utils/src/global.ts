@@ -5,3 +5,6 @@ export const ignore = () => {};
 export const throwException = (data: unknown) => {
   throw data;
 };
+
+export const throwIfCalled = (message: unknown) => () =>
+  throwException(message);
