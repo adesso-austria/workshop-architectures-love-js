@@ -3,7 +3,7 @@ import * as Fs from "fs/promises";
 import * as Path from "path";
 import * as Http from "http";
 import process from "process";
-import {URL} from "url";
+import { URL } from "url";
 import * as Esbuild from "esbuild";
 import autoprefixer from "autoprefixer";
 import postcss from "postcss";
@@ -24,7 +24,7 @@ const shouldMinify = hasFlag("--minify");
  */
 const options = {
   entryPoints: {
-    index: "build/application/index.js",
+    index: "build/index.js",
   },
   bundle: true,
   format: "esm",
