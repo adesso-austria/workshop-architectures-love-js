@@ -1,8 +1,9 @@
 import React from "react";
+import * as ReactRouter from "react-router";
 import { render } from "../test-utils";
 import { App } from "./app";
 
-it("should render Hello World", () => {
+it("should render a router outlet", () => {
   const result = render(<App />);
-  expect(result.container).toHaveTextContent("Hello World");
+  expect(() => result.root.findByType(ReactRouter.Outlet)).not.toThrow();
 });

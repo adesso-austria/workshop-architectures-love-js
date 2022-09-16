@@ -1,5 +1,6 @@
 import React from "react";
+import * as ReactRouter from "react-router";
 
 export const App = function App() {
-  return <div>Hello World</div>;
+  return <ReactRouter.Outlet />;
 };
