@@ -20,12 +20,15 @@
     "lint": "eslint .",
     "lint:file-casing": "node scripts/check-file-casing.js",
     "prestart": "(npm run build || exit 0) && npm run -w backend up",
-    "start": "concurrently -k --raw npm:build:watch 'npm -w backend --ignore-scripts start' npm:gen:contracts:watch 'npm run --ignore-scripts test:watch'",
+    "start": "concurrently -k --raw npm:build:watch 'npm run backend --ignore-scripts' npm:frontend npm:gen:contracts:watch 'npm run --ignore-scripts test:watch'",
     "poststart": "npm run -w backend down",
     "pretest": "npm run -w backend up",
     "test": "jest",
     "posttest": "npm run -w backend down",
-    "test:watch": "CI=true npm test -- --watch --coverage --colors"
+    "test:coverage": "npm test -- --coverage",
+    "test:watch": "CI=true npm test -- --watch --coverage --colors",
+    "backend": "npm -w backend start",
+    "frontend": "npm -w frontend start"
   },
   "keywords": [],
   "author": "",

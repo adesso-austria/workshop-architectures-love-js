@@ -1,5 +1,5 @@
 ```mermaid
-flowchart LR
+flowchart
 API-->Contracts
 API-->Domain
 Store-->API
