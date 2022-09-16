@@ -5,13 +5,18 @@ import { ThemeProvider } from "@material-tailwind/react";
 import * as ReactTestRenderer from "react-test-renderer";
 import * as TestingLibrary from "@testing-library/react";
 import React from "react";
+import * as Store from "../store";
 
 globalThis.ResizeObserver = resizeObserverPolyfill;
 
 export type RenderOptions = unknown;
 
 function TestBed({ children }: React.PropsWithChildren) {
-  return <ThemeProvider>{children}</ThemeProvider>;
+  return (
+    <ThemeProvider>
+      <Store.Provider>{children}</Store.Provider>
+    </ThemeProvider>
+  );
 }
 
 export const render = (element: JSX.Element, options: RenderOptions = {}) => {
