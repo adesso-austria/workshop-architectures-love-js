@@ -1,7 +1,12 @@
 import "@testing-library/jest-dom";
+import resizeObserverPolyfill from "resize-observer-polyfill";
+import userEvent from "@testing-library/user-event";
 import { ThemeProvider } from "@material-tailwind/react";
+import * as ReactTestRenderer from "react-test-renderer";
 import * as TestingLibrary from "@testing-library/react";
 import React from "react";
+
+globalThis.ResizeObserver = resizeObserverPolyfill;
 
 export type RenderOptions = unknown;
 
@@ -9,6 +14,13 @@ function TestBed({ children }: React.PropsWithChildren) {
   return <ThemeProvider>{children}</ThemeProvider>;
 }
 
-export const render = (component: JSX.Element, options: RenderOptions = {}) => {
-  return TestingLibrary.render(<TestBed>{component}</TestBed>);
+export const render = (element: JSX.Element, options: RenderOptions = {}) => {
+  const user = userEvent.setup();
+  const Wrapper = ({ children }: React.PropsWithChildren) => (
+    <TestBed>{children}</TestBed>
+  );
+  const component = ReactTestRenderer.create(<Wrapper>{element}</Wrapper>);
+
+  const dom = TestingLibrary.render(element, { wrapper: Wrapper });
+  return { ...component, ...dom, user };
 };
