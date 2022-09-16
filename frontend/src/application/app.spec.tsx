@@ -4,5 +4,5 @@ import { App } from "./app";
 
 it("should render Hello World", () => {
   const result = render(<App />);
-  expect(result).toHaveTextContent("Hello World");
+  expect(result.container).toHaveTextContent("Hello World");
 });
