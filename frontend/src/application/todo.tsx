@@ -1,3 +1,4 @@
+import { Button } from "@material-tailwind/react";
 import { option } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import React from "react";
@@ -20,6 +21,7 @@ export const Overview = function TodoOverview() {
           )}
         />
       ))}
+      <Button aria-label="add todo">Add Todo</Button>
     </>
   );
 };

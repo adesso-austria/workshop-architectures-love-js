@@ -27,4 +27,10 @@ describe("overview", () => {
 
     expect(result.root.findAllByType(Todo)).toHaveLength(todos.length);
   });
+
+  it("should display a button to add todos", () => {
+    const result = Test.render(<Overview />);
+
+    expect(result.queryByRole("button", { name: "add todo" })).not.toBeNull();
+  });
 });
