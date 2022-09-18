@@ -55,7 +55,15 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                type: object
+                properties:
+                  id:
+                    type: string
+                  content:
+                    $ref: "#/components/schemas/Identifier"
+                required:
+                  - id
+                  - content
   /todoContent:
     get:
       summary: get the content of a todo by id
