@@ -12,7 +12,7 @@ export type Response<Status, T> = {
 
 type Endpoint<
   Path extends keyof Contracts.paths = keyof Contracts.paths,
-  Method extends keyof Contracts.paths[Path] = keyof Contracts.paths[Path]
+  Method extends keyof Contracts.paths[Path] = keyof Contracts.paths[Path],
 > = `${Uppercase<Extract<Method, string>>} ${Path}`;
 
 type Endpoints = {
@@ -22,15 +22,36 @@ type Endpoints = {
   >]: unknown;
 };
 
+type Parameters<T> = T extends {
+  parameters: infer Parameters;
+}
+  ? Parameters
+  : unknown;
+
+type RequestBody<T> = T extends {
+  requestBody: {
+    content: infer Content;
+  };
+}
+  ? {
+      body: Content extends {
+        "application/json": infer JsonContent;
+      }
+        ? JsonContent
+        : Content extends {
+            "text/string": infer StringContent;
+          }
+        ? StringContent
+        : unknown;
+    }
+  : unknown;
+
 type Op<
   Path extends keyof Contracts.paths,
-  Method extends keyof Contracts.paths[Path]
+  Method extends keyof Contracts.paths[Path],
 > = (
-  parameters: Contracts.paths[Path][Method] extends {
-    parameters: infer Parameters;
-  }
-    ? Parameters
-    : unknown
+  parameters: Parameters<Contracts.paths[Path][Method]> &
+    RequestBody<Contracts.paths[Path][Method]>,
 ) => Contracts.paths[Path][Method] extends {
   responses: infer Responses;
 }
@@ -83,7 +104,7 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
    */
   const createOp = <
     Path extends keyof Contracts.paths,
-    Method extends keyof Contracts.paths[Path]
+    Method extends keyof Contracts.paths[Path],
   >(
     path: Path,
     method: Method,
