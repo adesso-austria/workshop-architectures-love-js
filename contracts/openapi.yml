@@ -99,6 +99,9 @@ components:
           type: string
         content:
           type: string
+      required:
+        - title
+        - content
     Identifier:
       type: object
       properties:
