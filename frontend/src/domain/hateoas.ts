@@ -7,3 +7,8 @@ export const pending = <T>(identifier: Identifier.Identifier): Hateoas<T> => [
   identifier,
   Lazy.pending(),
 ];
+
+export const of = <T>(
+  identifier: Identifier.Identifier,
+  value: T,
+): Hateoas<T> => [identifier, Lazy.success(value)];

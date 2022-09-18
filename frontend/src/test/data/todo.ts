@@ -7,15 +7,17 @@ import * as Domain from "../../domain";
 export const buyIcecream: Domain.Todo.Todo = {
   id: option.some("foo"),
   title: "Buy Icecream",
-  content: Domain.Hateoas.pending({ href: "/todo" }),
+  content: Domain.Hateoas.pending({ href: "/todo", rel: "content" }),
 };
 
-export const create = (overrides: DeepPartial<Domain.Todo.Todo>) =>
+export const create = (
+  overrides: DeepPartial<Domain.Todo.Todo>,
+): Domain.Todo.Todo =>
   mergeDeepRight(
     {
       id: option.some(Crypto.randomUUID()),
       title: Crypto.randomUUID(),
-      content: Domain.Hateoas.pending({ href: "/todo" }),
+      content: Domain.Hateoas.pending({ href: "/todo", rel: "content" }),
     },
     overrides,
   ) as Domain.Todo.Todo;
