@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/eslintrc.json",
+  "overrides": [
+    {
+      "files": [
+        "src/**/*.{spec,e2e,demoize}.{ts,tsx}",
+        "src/test-utils/**/*.{ts,tsx}",
+        "src/test-data/**/*.{ts,tsx}",
+        "esbuild.js",
+        "tailwind.config.cjs"
+      ],
+      "rules": {
+        "import/no-internal-modules": "off",
+        "import/no-restricted-paths": "off"
+      }
+    }
+  ],
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "name": "react-redux",
+        "importNames": [
+          "useSelector",
+          "useDispatch"
+        ],
+        "message": "use store instead"
+      }
+    ]
+  }
+}
