@@ -11,12 +11,17 @@ import { Routes } from "../application";
 
 globalThis.ResizeObserver = resizeObserverPolyfill;
 
-export type RenderOptions = unknown;
+export type RenderOptions = { preloadedState?: Store.State };
 
-function TestBed({ children }: React.PropsWithChildren) {
+function TestBed({
+  children,
+  preloadedState,
+}: React.PropsWithChildren<RenderOptions>) {
   return (
     <ThemeProvider>
-      <Store.Provider>{children}</Store.Provider>
+      <Store.Provider preloadedState={preloadedState}>
+        {children}
+      </Store.Provider>
     </ThemeProvider>
   );
 }
@@ -24,7 +29,7 @@ function TestBed({ children }: React.PropsWithChildren) {
 export const render = (element: JSX.Element, options: RenderOptions = {}) => {
   const user = userEvent.setup();
   const Wrapper = ({ children }: React.PropsWithChildren) => (
-    <TestBed>{children}</TestBed>
+    <TestBed {...options}>{children}</TestBed>
   );
   const component = ReactTestRenderer.create(<Wrapper>{element}</Wrapper>);
 

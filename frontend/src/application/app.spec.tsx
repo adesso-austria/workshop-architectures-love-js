@@ -1,6 +1,6 @@
 import React from "react";
 import * as ReactRouter from "react-router";
-import { render } from "../test-utils";
+import { render } from "../test";
 import { App } from "./app";
 
 it("should render a router outlet", () => {

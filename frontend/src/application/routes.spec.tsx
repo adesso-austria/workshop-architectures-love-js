@@ -1,4 +1,4 @@
-import { renderRoute } from "../test-utils";
+import { renderRoute } from "../test";
 import * as App from "./app";
 import * as Todo from "./todo";
 
