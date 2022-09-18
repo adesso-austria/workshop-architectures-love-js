@@ -86,6 +86,7 @@ export default {
     "!**/*.{demoize,e2e,spec}.{ts,tsx}",
     "!**/test-utils/**/*.{ts,tsx}",
     "!**/test-data/**/*.{ts,tsx}",
+    "!**/test/**/*.{ts,tsx}",
   ],
   coverageProvider: "v8",
   projects,
