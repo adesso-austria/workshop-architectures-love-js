@@ -3,7 +3,6 @@ import { taskEither } from "fp-ts";
 
 export type Response<Status, T> = {
   readonly headers: Headers;
-  readonly url: string;
   readonly ok: boolean;
   readonly statusText: string;
   readonly status: Status;
