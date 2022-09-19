@@ -123,7 +123,7 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
               method: method as string,
             },
           ).then((res) => res.json().catch(() => res.text())),
-        () => "could not fetch",
+        (reason) => `could not fetch: ${reason}`,
       )) as Op<Path, Method>;
   };
 
