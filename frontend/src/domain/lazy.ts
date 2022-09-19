@@ -38,3 +38,5 @@ export const match =
         flow(either.match(onError, onSuccess)),
       )
       .exhaustive();
+
+export const isPending = <T>(lazy: Lazy<T>): boolean => lazy.type === "pending";
