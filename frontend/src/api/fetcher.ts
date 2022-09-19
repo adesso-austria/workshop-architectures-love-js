@@ -110,7 +110,7 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
   ) => {
     // type gets a bit too complicated here...
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return ((args: any) =>
+    return ((args: any = {}) =>
       taskEither.tryCatch(
         () =>
           fetch(
@@ -123,7 +123,10 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
               method: method as string,
             },
           ).then((res) => res.json().catch(() => res.text())),
-        (reason) => `could not fetch: ${reason}`,
+        (reason) =>
+          `could not fetch ${method
+            .toString()
+            .toUpperCase()} ${path}: ${reason}`,
       )) as Op<Path, Method>;
   };
 
