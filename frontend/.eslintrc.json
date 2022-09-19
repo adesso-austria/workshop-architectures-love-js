@@ -25,6 +25,63 @@
         ],
         "message": "use store instead"
       }
+    ],
+    "import/no-restricted-paths": [
+      "error",
+      {
+        "zones": [
+          {
+            "target": "src/application/**/*",
+            "from": "../node_modules/contracts",
+            "message": "application must not use contracts directly"
+          },
+          {
+            "target": "src/application/**/*",
+            "from": "src/api/**/*",
+            "message": "application should be store driven"
+          },
+          {
+            "target": "src/store/**/*",
+            "from": "src/application/**/*",
+            "message": "store is driving application, not the other way around"
+          },
+          {
+            "target": "src/store/**/*",
+            "from": "../node_modules/contracts",
+            "message": "store must not use contracts directly"
+          },
+          {
+            "target": "src/api/**/*",
+            "from": "src/store/**/*",
+            "message": "store depends on api, not the other way around"
+          },
+          {
+            "target": "src/api/**/*",
+            "from": "src/application/**/*",
+            "message": "api should never get in direct contact with application layer"
+          },
+          {
+            "target": "src/domain/**/*",
+            "from": "../node_modules/contracts",
+            "message": "domain layer must be pure"
+          },
+          {
+            "target": "src/domain/**/*",
+            "from": "src/application/**/*",
+            "message": "domain layer must be pure"
+          },
+          {
+            "target": "src/domain/**/*",
+            "from": "src/api/**/*",
+            "message": "domain layer must be pure"
+          },
+          {
+            "target": "src/domain/**/*",
+            "from": "src/store/**/*",
+            "message": "domain layer must be pure"
+          }
+        ]
+      }
     ]
   }
 }
