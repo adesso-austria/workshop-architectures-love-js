@@ -43,3 +43,7 @@ export const renderRoute = (route: string) => {
   });
   return render(<ReactRouter.RouterProvider router={router} />);
 };
+
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+export const act = async (fn: () => Promise<void> = async () => {}) =>
+  await TestingLibrary.act(fn);
