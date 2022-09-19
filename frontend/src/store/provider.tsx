@@ -10,6 +10,11 @@ import * as Todo from "./todo";
 export type State = {
   todo: Todo.State;
 };
+
+export const initialState: State = {
+  todo: Todo.initialState,
+};
+
 type SliceActions<Actions> = Actions extends {
   [k: string]: infer ActionCreator;
 }
