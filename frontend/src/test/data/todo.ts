@@ -7,7 +7,7 @@ import * as Domain from "../../domain";
 export const buyIcecream: Domain.Todo.Todo = {
   id: option.some("foo"),
   title: "Buy Icecream",
-  content: Domain.Hateoas.pending({ href: "/todo", rel: "content" }),
+  content: Domain.Async.pending(),
 };
 
 export const create = (
@@ -17,7 +17,7 @@ export const create = (
     {
       id: option.some(Crypto.randomUUID()),
       title: Crypto.randomUUID(),
-      content: Domain.Hateoas.pending({ href: "/todo", rel: "content" }),
+      content: Domain.Async.pending(),
     },
     overrides,
   ) as Domain.Todo.Todo;

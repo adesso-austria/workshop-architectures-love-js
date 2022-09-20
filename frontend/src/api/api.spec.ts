@@ -23,10 +23,7 @@ describe("addTodo", () => {
       either.right({
         id: option.some("foo"),
         title: "test",
-        content: Domain.Hateoas.of(
-          { href: "/todo/foo", rel: "content" },
-          "test",
-        ),
+        content: Domain.Async.pending(),
       }),
     );
   });

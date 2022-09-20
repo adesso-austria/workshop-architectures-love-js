@@ -7,5 +7,5 @@ export const toDomain = (
 ): Domain.Todo.Todo => ({
   id: option.some(contract.id),
   title: contract.title,
-  content: Domain.Hateoas.pending(contract.content),
+  content: Domain.Async.pending(),
 });

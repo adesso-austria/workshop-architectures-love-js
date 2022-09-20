@@ -19,7 +19,7 @@ export const create = (fetcher: Fetcher): Api => ({
         (res): Domain.Todo.Todo => ({
           id: option.some(res.data.id),
           title: addTodo.title,
-          content: Domain.Hateoas.of(res.data.content, addTodo.content),
+          content: Domain.Async.pending(),
         }),
       ),
     ),

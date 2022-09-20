@@ -1,8 +1,8 @@
 import { option } from "fp-ts";
-import * as Hateoas from "./hateoas";
+import * as Async from "./async";
 
 export type Todo = {
   id: option.Option<string>;
   title: string;
-  content: Hateoas.Hateoas<string>;
+  content: Async.Async<string>;
 };
