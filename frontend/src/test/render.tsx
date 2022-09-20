@@ -6,35 +6,58 @@ import * as ReactTestRenderer from "react-test-renderer";
 import * as TestingLibrary from "@testing-library/react";
 import React from "react";
 import * as ReactRouter from "react-router";
+import { DeepPartial } from "utils";
+import { mergeDeepRight } from "ramda";
+import { mockAnimationsApi } from "jsdom-testing-mocks";
+import * as Api from "../api";
 import * as Store from "../store";
 import { Routes } from "../application";
+import * as TestApi from "./api";
 
 globalThis.ResizeObserver = resizeObserverPolyfill;
 
-export type RenderOptions = { preloadedState?: Store.State };
+mockAnimationsApi();
+
+export type RenderOptions = {
+  preloadedState?: DeepPartial<Store.State>;
+  api?: DeepPartial<Api.Api>;
+};
 
 function TestBed({
   children,
-  preloadedState,
-}: React.PropsWithChildren<RenderOptions>) {
+  api,
+  store,
+}: React.PropsWithChildren<{ api: Api.Api; store: Store.Store }>) {
   return (
     <ThemeProvider>
-      <Store.Provider preloadedState={preloadedState}>
-        {children}
-      </Store.Provider>
+      <Api.Provider api={api}>
+        <Store.Provider store={store}>{children}</Store.Provider>
+      </Api.Provider>
     </ThemeProvider>
   );
 }
 
 export const render = (element: JSX.Element, options: RenderOptions = {}) => {
+  const mockedApi = TestApi.create(options.api ?? {});
+
+  const mockedPreloadedState = mergeDeepRight(
+    Store.initialState,
+    options.preloadedState ?? {},
+  ) as Store.State;
+
+  const mockedStore = Store.create({ api: mockedApi }, mockedPreloadedState);
+
   const user = userEvent.setup();
+
   const Wrapper = ({ children }: React.PropsWithChildren) => (
-    <TestBed {...options}>{children}</TestBed>
+    <TestBed api={mockedApi} store={mockedStore}>
+      {children}
+    </TestBed>
   );
   const component = ReactTestRenderer.create(<Wrapper>{element}</Wrapper>);
 
   const dom = TestingLibrary.render(element, { wrapper: Wrapper });
-  return { ...component, ...dom, user };
+  return { ...component, ...dom, user, store: mockedStore };
 };
 
 export const renderRoute = (route: string) => {

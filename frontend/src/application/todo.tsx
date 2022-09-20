@@ -1,4 +1,4 @@
-import { Button } from "@material-tailwind/react";
+import { Button, Input, Textarea } from "@material-tailwind/react";
 import { option } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import React from "react";
@@ -9,19 +9,57 @@ export const Todo = () => {
 };
 
 export const Overview = function TodoOverview() {
-  const { todos } = Store.Todo.useTodos();
+  const { todos, pending } = Store.Todo.useTodos();
+
+  const addTodo = Store.Todo.useAddTodo();
+
+  const [newTodo, setNewTodo] = Store.Todo.useNewTodo();
 
   return (
     <>
+      <form aria-label="new todo">
+        <Input
+          variant="static"
+          aria-label="title"
+          value={newTodo.title}
+          onChange={(e) =>
+            setNewTodo((current) => ({
+              ...current,
+              title: e.target.value,
+            }))
+          }
+        />
+        <Textarea
+          variant="static"
+          aria-label="content"
+          value={newTodo.content}
+          onChange={(e) =>
+            setNewTodo((current) => ({
+              ...current,
+              content: e.target.value,
+            }))
+          }
+        />
+        <Button
+          aria-label="save todo"
+          disabled={pending || newTodo.title === "" || newTodo.content === ""}
+          onClick={() => addTodo(newTodo)}
+        >
+          Save
+        </Button>
+      </form>
       {todos.map((todo, i) => (
-        <Todo
+        <div
           key={pipe(
             todo.id,
             option.getOrElse(() => i.toString()),
           )}
-        />
+          role="listitem"
+          aria-label="todo"
+        >
+          <Todo />
+        </div>
       ))}
-      <Button aria-label="add todo">Add Todo</Button>
     </>
   );
 };

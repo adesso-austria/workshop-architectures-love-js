@@ -11,4 +11,4 @@ export const pending = <T>(identifier: Identifier.Identifier): Hateoas<T> => [
 export const of = <T>(
   identifier: Identifier.Identifier,
   value: T,
-): Hateoas<T> => [identifier, Lazy.success(value)];
+): Hateoas<T> => [identifier, Lazy.of(value)];

@@ -1,42 +1,40 @@
-import { either } from "fp-ts";
-import { flow } from "fp-ts/lib/function";
-import * as Pattern from "ts-pattern";
+import { option } from "fp-ts";
+import { pipe } from "fp-ts/lib/function";
 
-export type Result<T> = either.Either<string, T>;
-export type Lazy<T> =
-  | { type: "settled"; result: Result<T> }
-  | { type: "pending" };
+export type Lazy<T> = {
+  state: "settled" | "pending";
+  current: option.Option<T>;
+};
 
-export const pending = <T>(): Lazy<T> => ({ type: "pending" });
+export const getOrElse =
+  <T>(fallback: () => T) =>
+  (lazy: Lazy<T>): T =>
+    pipe(lazy.current, option.getOrElse(fallback));
 
-export const of = <T>(result: Result<T>): Lazy<T> => ({
-  type: "settled",
-  result,
+export const pending = <T>(from?: Lazy<T>): Lazy<T> => ({
+  state: "pending",
+  current: from?.current ?? option.none,
 });
 
-export const success = <T>(value: T): Lazy<T> => ({
-  type: "settled",
-  result: either.right(value),
+export const of = <T>(value: T): Lazy<T> => ({
+  state: "settled",
+  current: option.some(value),
 });
 
-export const error = <T>(error: string): Lazy<T> => ({
-  type: "settled",
-  result: either.left(error),
+export const settle = <T>(lazy: Lazy<T>): Lazy<T> => ({
+  ...lazy,
+  state: "settled",
 });
 
-export const match =
-  <T, U>(
-    onPending: () => U,
-    onError: (error: string) => U,
-    onSuccess: (value: T) => U,
-  ) =>
-  (lazy: Lazy<T>) =>
-    Pattern.match(lazy)
-      .with({ type: "pending" }, onPending)
-      .with(
-        { type: "settled", result: Pattern.P.select() },
-        flow(either.match(onError, onSuccess)),
-      )
-      .exhaustive();
+export const isPending = <T>(lazy: Lazy<T>): boolean =>
+  lazy.state === "pending";
 
-export const isPending = <T>(lazy: Lazy<T>): boolean => lazy.type === "pending";
+export const isSettled = <T>(lazy: Lazy<T>): boolean =>
+  lazy.state === "settled";
+
+export const map =
+  <T, U>(fn: (value: T) => U) =>
+  (lazy: Lazy<T>): Lazy<U> => ({
+    ...lazy,
+    current: pipe(lazy.current, option.map(fn)),
+  });
