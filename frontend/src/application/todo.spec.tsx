@@ -138,6 +138,28 @@ describe("overview", () => {
       });
     });
 
-    it.todo("should not clear the form on erroneous save");
+    it("should not clear the form on erroneous save", async () => {
+      const result = Test.render(<Overview />, {
+        api: {
+          fetchTodos: () => taskEither.right([]),
+          addTodo: () => taskEither.left("some error"),
+        },
+      });
+
+      const title = result.getByRole(...titleQuery);
+      await result.user.clear(title);
+      await result.user.keyboard("foo");
+
+      const content = result.getByRole(...contentQuery);
+      await result.user.clear(content);
+      await result.user.keyboard("bar");
+
+      await result.user.click(result.getByRole(...saveQuery));
+
+      await waitFor(() => {
+        expect(title).toHaveValue("foo");
+        expect(content).toHaveValue("bar");
+      });
+    });
   });
 });
