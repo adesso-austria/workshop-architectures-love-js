@@ -20,6 +20,7 @@
   "root": true,
   "rules": {
     "@typescript-eslint/no-namespace": "off",
+    "@typescript-eslint/no-unused-vars": "off",
     "import/order": "error",
     "import/namespace": "off",
     "import/default": "off",
