@@ -33,14 +33,16 @@ export const of = <T>(value: T): Async<T> => {
   };
 };
 
+export const valueOf = <T>(async: Async<T>): option.Option<T> =>
+  pipe(
+    async.current,
+    option.map(({ value }) => value),
+  );
+
 export const getOrElse =
   <T>(fallback: () => T) =>
   (async: Async<T>): T =>
-    pipe(
-      async.current,
-      option.map(({ value }) => value),
-      option.getOrElse(fallback),
-    );
+    pipe(async, valueOf, option.getOrElse(fallback));
 
 export const map =
   <T, U>(fn: (current: T) => U) =>
