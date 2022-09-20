@@ -2,10 +2,15 @@ import { Button, Input, Textarea } from "@material-tailwind/react";
 import { option } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import React from "react";
+import * as Domain from "../domain";
 import * as Store from "../store";
 
-export const Todo = () => {
-  return <>Todo</>;
+export const Todo = ({ todo }: { todo: Domain.Todo.Todo }) => {
+  return (
+    <div>
+      <h3>{todo.title}</h3>
+    </div>
+  );
 };
 
 export const Overview = function TodoOverview() {
@@ -57,7 +62,7 @@ export const Overview = function TodoOverview() {
           role="listitem"
           aria-label="todo"
         >
-          <Todo />
+          <Todo todo={todo} />
         </div>
       ))}
     </>
