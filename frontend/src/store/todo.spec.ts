@@ -1,5 +1,6 @@
 import { waitFor } from "@testing-library/react";
 import { taskEither } from "fp-ts";
+import { pipe } from "fp-ts/lib/function";
 import * as Domain from "../domain";
 import * as Test from "../test";
 import * as Store from "./store";
@@ -15,9 +16,12 @@ describe("epic", () => {
 
     expect(addTodo).toHaveBeenCalled();
     await waitFor(() =>
-      expect(store.getState().todo.todos).toEqual(
-        Domain.Async.of([Test.Data.Todo.buyIcecream]),
-      ),
+      expect(
+        pipe(
+          store.getState().todo.todos,
+          Domain.Async.getOrElse(() => [] as Domain.Todo.Todo[]),
+        ),
+      ).toEqual([Test.Data.Todo.buyIcecream]),
     );
   });
 

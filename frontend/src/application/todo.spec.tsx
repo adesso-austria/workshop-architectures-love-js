@@ -6,6 +6,7 @@ import {
   within,
 } from "@testing-library/react";
 import { taskEither } from "fp-ts";
+import { pipe } from "fp-ts/lib/function";
 import * as Test from "../test";
 import * as Domain from "../domain";
 import { Overview } from "./todo";
@@ -104,9 +105,12 @@ describe("overview", () => {
       await result.user.click(saveButton);
 
       await waitFor(() =>
-        expect(result.store.getState().todo.todos).toEqual(
-          Domain.Async.of([Test.Data.Todo.buyIcecream]),
-        ),
+        expect(
+          pipe(
+            result.store.getState().todo.todos,
+            Domain.Async.getOrElse(() => [] as Domain.Todo.Todo[]),
+          ),
+        ).toEqual([Test.Data.Todo.buyIcecream]),
       );
     });
 
