@@ -9,13 +9,13 @@ import { taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Test from "../test";
 import * as Domain from "../domain";
-import { Todo, Overview } from "./todo";
+import { TodoPreview, Overview } from "./todo";
 
-describe("todo", () => {
+describe("todo preview", () => {
   it("should display the title", async () => {
     const todo = Test.Data.Todo.buyIcecream;
 
-    const result = Test.render(<Todo todo={todo} />);
+    const result = Test.render(<TodoPreview todo={todo} />);
 
     expect(result.getByRole("heading")).toHaveTextContent(todo.title);
   });

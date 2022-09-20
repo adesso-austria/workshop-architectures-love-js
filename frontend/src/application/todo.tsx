@@ -5,7 +5,7 @@ import React from "react";
 import * as Domain from "../domain";
 import * as Store from "../store";
 
-export const Todo = ({ todo }: { todo: Domain.Todo.Todo }) => {
+export const TodoPreview = ({ todo }: { todo: Domain.Todo.Todo }) => {
   return (
     <div>
       <h3>{todo.title}</h3>
@@ -62,7 +62,7 @@ export const Overview = function TodoOverview() {
           role="listitem"
           aria-label="todo"
         >
-          <Todo todo={todo} />
+          <TodoPreview todo={todo} />
         </div>
       ))}
     </>
