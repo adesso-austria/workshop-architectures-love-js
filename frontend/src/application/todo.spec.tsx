@@ -5,7 +5,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { taskEither } from "fp-ts";
+import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Test from "../test";
 import * as Domain from "../domain";
@@ -20,11 +20,49 @@ describe("todo preview", () => {
     expect(result.getByRole("heading")).toHaveTextContent(todo.title);
   });
 
-  it.todo("should display a skeleton for the content while pending");
-
-  it.todo("should display the content when resolved");
-
   it.todo("should display an error message when fetching the content failed");
+
+  describe("content", () => {
+    it("should display a skeleton while pending", async () => {
+      const todo: Domain.Todo.Todo = {
+        id: option.some("foo"),
+        title: "bar",
+        content: Domain.Async.pending(),
+      };
+
+      const result = Test.render(<TodoPreview todo={todo} />);
+
+      const expandContent = result.getByRole("button", {
+        name: "show content",
+      });
+
+      await result.user.click(expandContent);
+
+      expect(
+        result.queryByRole("presentation", { name: "skeleton" }),
+      ).not.toBeNull();
+    });
+
+    it("should display the content when resolved", async () => {
+      const todo: Domain.Todo.Todo = {
+        id: option.some("foo"),
+        title: "bar",
+        content: Domain.Async.of("baz"),
+      };
+
+      const result = Test.render(<TodoPreview todo={todo} />);
+
+      const expandContent = result.getByRole("button", {
+        name: "show content",
+      });
+
+      await result.user.click(expandContent);
+
+      expect(
+        result.getByRole("presentation", { name: "content" }),
+      ).toHaveTextContent("baz");
+    });
+  });
 });
 
 describe("overview", () => {

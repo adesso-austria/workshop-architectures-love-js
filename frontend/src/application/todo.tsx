@@ -1,4 +1,11 @@
-import { Button, Input, Textarea } from "@material-tailwind/react";
+import {
+  Accordion,
+  AccordionBody,
+  AccordionHeader,
+  Button,
+  Input,
+  Textarea,
+} from "@material-tailwind/react";
 import { option } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import React from "react";
@@ -6,9 +13,35 @@ import * as Domain from "../domain";
 import * as Store from "../store";
 
 export const TodoPreview = ({ todo }: { todo: Domain.Todo.Todo }) => {
+  const [showContent, setShowContent] = React.useState(false);
+
   return (
     <div>
       <h3>{todo.title}</h3>
+      <Accordion open={showContent}>
+        <AccordionHeader
+          role="button"
+          aria-label="show content"
+          onClick={() => setShowContent((current) => !current)}
+        >
+          Content
+        </AccordionHeader>
+        <AccordionBody>
+          {pipe(
+            todo.content,
+            Domain.Async.map((content) => (
+              <div role="presentation" aria-label="content">
+                {content}
+              </div>
+            )),
+            Domain.Async.getOrElse(() => (
+              <div role="presentation" aria-label="skeleton">
+                loading...
+              </div>
+            )),
+          )}
+        </AccordionBody>
+      </Accordion>
     </div>
   );
 };
