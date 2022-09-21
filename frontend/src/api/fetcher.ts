@@ -12,7 +12,7 @@ export type Response<Status, T> = {
 
 type Endpoint<
   Path extends keyof Contracts.paths = keyof Contracts.paths,
-  Method extends keyof Contracts.paths[Path] = keyof Contracts.paths[Path]
+  Method extends keyof Contracts.paths[Path] = keyof Contracts.paths[Path],
 > = `${Uppercase<Extract<Method, string>>} ${Path}`;
 
 type Endpoints = {
@@ -24,13 +24,13 @@ type Endpoints = {
 
 type Op<
   Path extends keyof Contracts.paths,
-  Method extends keyof Contracts.paths[Path]
+  Method extends keyof Contracts.paths[Path],
 > = (
   parameters: Contracts.paths[Path][Method] extends {
     parameters: infer Parameters;
   }
     ? Parameters
-    : unknown
+    : unknown,
 ) => Contracts.paths[Path][Method] extends {
   responses: infer Responses;
 }
@@ -83,7 +83,7 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
    */
   const createOp = <
     Path extends keyof Contracts.paths,
-    Method extends keyof Contracts.paths[Path]
+    Method extends keyof Contracts.paths[Path],
   >(
     path: Path,
     method: Method,
@@ -112,5 +112,6 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
     getTodos: createOp("/todos", "get"),
     postTodo: createOp("/todo", "post"),
     getTodoContent: createOp("/todoContent", "get"),
+    deleteTodo: createOp("/todo", "delete"),
   };
 };
