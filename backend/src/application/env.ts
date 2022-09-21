@@ -11,6 +11,7 @@ export type Env = {
     event: Repository.Event.Repository;
     todo: Repository.Todo.Repository;
   };
+  consumers: Set<string>;
 };
 
 export const readEnv =
@@ -117,6 +118,7 @@ export const createEnv = ({
     event: Repository.Event.create({ mongo, redis }),
     todo: Repository.Todo.create({ mongo }),
   },
+  consumers: new Set(),
 });
 
 export const loadEnv = (env: NodeJS.ProcessEnv) =>

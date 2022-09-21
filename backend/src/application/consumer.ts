@@ -1,20 +1,15 @@
-import { either, taskEither } from "fp-ts";
-import { pipe } from "fp-ts/lib/function";
+import { array, either, taskEither } from "fp-ts";
+import { flow, pipe } from "fp-ts/lib/function";
 import * as Rx from "rxjs";
 import * as Domain from "../domain";
 import { Env } from "./env";
-
-const existingConsumers = new Set<string>();
 
 export type ProcessedEvent = {
   consumer: string;
   event: Domain.Event.Event;
   result: either.Either<string, void>;
 };
-export type Consumer = taskEither.TaskEither<
-  string,
-  Rx.Observable<ProcessedEvent>
->;
+export type Consumer = Rx.Observable<ProcessedEvent>;
 
 export const create = (
   env: Env,
@@ -23,10 +18,12 @@ export const create = (
     event: Domain.DomainEvent.DomainEvent,
   ) => taskEither.TaskEither<string, void>,
 ): Consumer => {
-  if (existingConsumers.has(name)) {
-    return taskEither.left(`consumer with name ${name} alread exists!`);
+  if (env.consumers.has(name)) {
+    // since consumers are not supposed to be dynamically added during runtime, this should
+    // simply prevent startup and be noticed during development.
+    throw `consumer with name ${name} already exists!`;
   }
-  existingConsumers.add(name);
+  env.consumers.add(name);
 
   const processEvent = (
     event: Domain.Event.Event,
@@ -50,23 +47,29 @@ export const create = (
     );
   };
 
-  /**
-   * fetch unknown events and start listening for new events
-   */
-  const createEventStream = pipe(
-    taskEither.Do,
-    taskEither.apS(
-      "unknownEvents",
-      env.repositories.event.getUnknownEvents(name),
-    ),
-    taskEither.apS("eventStream", env.repositories.event.eventStream),
-    taskEither.map(({ unknownEvents, eventStream }) =>
-      Rx.concat(Rx.of(...unknownEvents), eventStream),
+  const unknownEvents = pipe(
+    env.repositories.event.getUnknownEvents(name),
+    taskEither.map((events) => Rx.from(events)),
+  );
+  const newEvents = env.repositories.event.eventStream;
+
+  const eventStream = Rx.forkJoin([
+    Rx.from(unknownEvents()),
+    Rx.from(newEvents()),
+  ]).pipe(
+    Rx.mergeMap(
+      flow(
+        array.sequence(either.Applicative),
+        either.match(
+          (error) => Rx.throwError(() => error),
+          (stream) => Rx.concat(...stream),
+        ),
+      ),
     ),
   );
 
-  return pipe(
-    createEventStream,
-    taskEither.map((events$) => events$.pipe(Rx.concatMap(processEvent))),
-  );
+  return eventStream.pipe(Rx.concatMap(processEvent));
 };
+
+export const listConsumers = (env: Env): Readonly<string[]> =>
+  Array.from(env.consumers);
