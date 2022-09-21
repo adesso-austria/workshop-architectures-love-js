@@ -1,9 +1,8 @@
 import { option, taskEither } from "fp-ts";
 import { mergeDeepRight } from "ramda";
-import { DeepPartial, throwIfCalled } from "utils";
-import { Mongo } from "../../adapters";
-
-const mocked = throwIfCalled("not sensible to call on mock");
+import { DeepPartial } from "utils";
+import * as Mongo from "../../adapters/mongo";
+import { mocked } from "../utils";
 
 const adapter: Mongo.Adapter = {
   addOne: mocked,

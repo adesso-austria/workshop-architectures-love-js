@@ -1,25 +1,25 @@
 import { describe, it } from "@jest/globals";
 import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
-import { ignore, throwException } from "utils";
+import { DeepPartial, ignore, throwException } from "utils";
+import { Repository } from "../repository";
 import * as TestData from "../test-data";
-import { getTodo } from "./todo";
+import * as Todo from "./todo";
+
+const create = (repository: DeepPartial<Repository>): Todo.Application =>
+  Todo.create(TestData.Repository.create(repository));
 
 describe("todo", () => {
   describe("getTodo", () => {
     it(
       "should return left if the repository throws an error",
       pipe(
-        getTodo(
-          TestData.Env.create({
-            repositories: {
-              todo: {
-                getTodo: () => taskEither.left("something's up"),
-              },
-            },
-          }),
-          "foo",
-        ),
+        create({
+          todo: {
+            getTodo: () => taskEither.left("something's up"),
+          },
+        }),
+        (app) => app.getTodo("foo"),
         taskEither.match(ignore, () => throwException("expected a left")),
       ),
     );
@@ -27,16 +27,12 @@ describe("todo", () => {
     it(
       "should return left if the repository can't find the todo",
       pipe(
-        getTodo(
-          TestData.Env.create({
-            repositories: {
-              todo: {
-                getTodo: () => taskEither.right(option.none),
-              },
-            },
-          }),
-          "foo",
-        ),
+        create({
+          todo: {
+            getTodo: () => taskEither.right(option.none),
+          },
+        }),
+        (app) => app.getTodo("foo"),
         taskEither.match(ignore, () => throwException("expected a left")),
       ),
     );
@@ -44,17 +40,13 @@ describe("todo", () => {
     it(
       "should return a right if the repository can find the todo",
       pipe(
-        getTodo(
-          TestData.Env.create({
-            repositories: {
-              todo: {
-                getTodo: () =>
-                  taskEither.right(option.some(TestData.Todo.buyIcecream)),
-              },
-            },
-          }),
-          "foo",
-        ),
+        create({
+          todo: {
+            getTodo: () =>
+              taskEither.right(option.some(TestData.Todo.buyIcecream)),
+          },
+        }),
+        (app) => app.getTodo("foo"),
         taskEither.match(() => throwException("expected a right"), ignore),
       ),
     );

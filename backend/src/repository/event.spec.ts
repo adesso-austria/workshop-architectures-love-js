@@ -5,8 +5,9 @@ import { mergeDeepRight } from "ramda";
 import { Jest } from "test-utils";
 import { DeepPartial } from "utils";
 import * as Rx from "rxjs";
-import * as Adapters from "../adapters";
 import * as TestData from "../test-data";
+import { Adapters } from "../adapters";
+import { Message } from "../adapters/redis";
 import * as Event from "./event";
 
 const create = (opts: DeepPartial<Event.CreateOpts>): Event.Repository =>
@@ -118,7 +119,7 @@ describe("eventStream", () => {
         findLast: (() =>
           taskEither.right(
             option.some({ consumer: "foo", id: "bar" }),
-          )) as Adapters.Mongo.Adapter["findLast"],
+          )) as Adapters["mongo"]["findLast"],
       },
       redis: {
         streamSubscribe,
@@ -134,7 +135,7 @@ describe("eventStream", () => {
     const repo = create({
       redis: {
         streamSubscribe: () =>
-          Rx.of<Adapters.Redis.Message>({
+          Rx.of<Message>({
             id: "foo",
             message: Event.stringifyDomainEvent(
               TestData.DomainEvent.createBuyIcecream,
@@ -168,7 +169,7 @@ describe("getUnknownEvents", () => {
         findLast: (() =>
           taskEither.right(
             option.some({ consumer: "foo", id: "bar" }),
-          )) as Adapters.Mongo.Adapter["findLast"],
+          )) as Adapters["mongo"]["findLast"],
       },
       redis: {
         streamRange,
@@ -190,7 +191,7 @@ Jest.testGivenThen<option.Option<{ consumer: string; id: string }>, boolean>(
         findOne: (() =>
           taskEither.right(
             givenAdapterResponse,
-          )) as Adapters.Mongo.Adapter["findOne"],
+          )) as Adapters["mongo"]["findOne"],
       },
     });
 
