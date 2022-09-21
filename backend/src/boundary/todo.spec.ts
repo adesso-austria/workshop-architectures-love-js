@@ -1,7 +1,6 @@
 import { expect } from "@jest/globals";
 import { LightMyRequestResponse } from "fastify";
 import { option, taskEither } from "fp-ts";
-import { Bounded } from "fp-ts/lib/number";
 import { Jest } from "test-utils";
 import { DeepPartial } from "utils";
 import * as Application from "../application";
