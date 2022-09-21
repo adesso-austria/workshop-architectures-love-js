@@ -10,7 +10,7 @@ import * as Domain from "../domain";
 export type Repository = {
   addEvent: <T extends Domain.DomainEvent.DomainEvent>(
     event: T,
-  ) => taskEither.TaskEither<string, Domain.Event.Event<T>>;
+  ) => taskEither.TaskEither<string, Domain.Event.Event>;
   getEvents: (
     since: option.Option<string>,
   ) => taskEither.TaskEither<string, Domain.Event.Event[]>;
