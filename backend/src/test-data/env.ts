@@ -6,12 +6,14 @@ import { DeepPartial, ignore } from "utils";
 import { Env } from "../application";
 import { Event, Todo } from "./repository";
 
-export const defaultEnv: Env.Env = {
-  repositories: { event: Event.repository, todo: Todo.repository },
-};
-
 export const create = (overrides: DeepPartial<Env.Env>): Env.Env =>
-  mergeDeepRight(defaultEnv, overrides);
+  mergeDeepRight(
+    {
+      repositories: { event: Event.repository, todo: Todo.repository },
+      consumers: new Set(),
+    },
+    overrides,
+  );
 
 /**
  * @deprecated - TODO: replace with mocked adapters
