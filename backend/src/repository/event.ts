@@ -8,9 +8,9 @@ import * as Domain from "../domain";
  * public api
  */
 export type Repository = {
-  addEvent: (
-    event: Domain.DomainEvent.DomainEvent,
-  ) => taskEither.TaskEither<string, Domain.Event.Event>;
+  addEvent: <T extends Domain.DomainEvent.DomainEvent>(
+    event: T,
+  ) => taskEither.TaskEither<string, Domain.Event.Event<T>>;
   getEvents: (
     since: option.Option<string>,
   ) => taskEither.TaskEither<string, Domain.Event.Event[]>;
