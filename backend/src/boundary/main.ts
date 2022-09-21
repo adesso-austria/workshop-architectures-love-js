@@ -3,11 +3,13 @@ import * as Application from "../application";
 import * as Todo from "./todo";
 
 export const create = (env: Application.Env.Env) => {
-  const app = fastify();
+  const processedEvents = Application.create(env);
 
-  app.get("/_heartbeat", () => "online");
+  const server = fastify();
 
-  app.register(Todo.createRoutes(env));
+  server.get("/_heartbeat", () => "online");
 
-  return app;
+  server.register(Todo.createRoutes(env));
+
+  return { ...server, processedEvents };
 };
