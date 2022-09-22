@@ -230,3 +230,14 @@ describe("acknowledging events", () => {
     });
   });
 });
+
+describe("createEventStream", () => {
+  it("should emit subscribe since $ if no eventId is given", () => {
+    const streamSubscribe = jest.fn(() => Rx.of());
+    const repo = create({ redis: { streamSubscribe } });
+
+    repo.createEventStream(option.none);
+
+    expect(streamSubscribe).toHaveBeenCalledWith("events", "$");
+  });
+});
