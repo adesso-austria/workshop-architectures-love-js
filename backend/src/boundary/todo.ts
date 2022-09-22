@@ -171,4 +171,42 @@ export const createRoutes =
 
       task();
     });
+
+    //////////////////////////////////////////////////////
+    // DELETE /todo
+    //////////////////////////////////////////////////////
+    app.delete<{ Querystring: { id: string } }>(
+      "/todo",
+      {
+        schema: {
+          querystring: schema<{ id: string }>({
+            type: "object",
+            required: ["id"],
+            properties: {
+              id: {
+                type: "string",
+                minLength: 1,
+              },
+            },
+          }),
+        },
+      },
+      (req, res) => {
+        const task = pipe(
+          application.todo.deleteTodo(req.query.id),
+          taskEither.match(
+            () => {
+              res.statusCode = 500;
+              res.send();
+            },
+            () => {
+              res.statusCode = 204;
+              res.send();
+            },
+          ),
+        );
+
+        task();
+      },
+    );
   };

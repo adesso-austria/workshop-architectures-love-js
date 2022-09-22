@@ -6,7 +6,9 @@ type Event<Type extends string, Payload> = {
   payload: Payload;
 };
 
-export type DomainEvent = Event<"create todo", Todo.Todo>;
+export type DomainEvent =
+  | Event<"create todo", Todo.Todo>
+  | Event<"delete todo", string>;
 
 export const isDomainEvent = TypeGuards.hasKeys(["type", "payload"]) as (
   x: unknown,

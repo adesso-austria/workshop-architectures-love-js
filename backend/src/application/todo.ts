@@ -14,6 +14,7 @@ export type Application = {
   addTodo(
     addTodo: Domain.AddTodo.AddTodo,
   ): taskEither.TaskEither<string, Domain.Todo.Todo>;
+  deleteTodo(id: string): taskEither.TaskEither<string, void>;
 };
 
 //////////////////////////////////////////////////////
@@ -25,6 +26,9 @@ const createEventHandler = (repository: Repository) =>
     match(event)
       .with({ type: "create todo" }, ({ payload }) =>
         repository.todo.addTodo(payload),
+      )
+      .with({ type: "delete todo" }, ({ payload }) =>
+        repository.todo.deleteTodo(payload),
       )
       .otherwise(() => taskEither.right(undefined)),
   );
@@ -71,12 +75,14 @@ const createAddTodo =
       taskEither.map(() => todo),
     );
   };
-/**
- * 1. dispatch event
- * 2. listen for "EventProcessed"
- * 3. resolve task with processing result
- */
-taskEither.left("not implemented");
+
+const createDeleteTodo =
+  (eventHandler: EventHandler.EventHandler): Application["deleteTodo"] =>
+  (id) =>
+    eventHandler({
+      type: "delete todo",
+      payload: id,
+    });
 
 export const create = (repository: Repository): Application => {
   const eventHandler = createEventHandler(repository);
@@ -85,5 +91,6 @@ export const create = (repository: Repository): Application => {
     getTodo: createGetTodo(repository),
     getTodos: createGetTodos(repository),
     addTodo: createAddTodo(eventHandler),
+    deleteTodo: createDeleteTodo(eventHandler),
   };
 };

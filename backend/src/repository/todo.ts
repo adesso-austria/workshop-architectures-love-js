@@ -8,6 +8,7 @@ export type Repository = {
   getTodo: (
     id: string,
   ) => taskEither.TaskEither<string, option.Option<Domain.Todo.Todo>>;
+  deleteTodo: (id: string) => taskEither.TaskEither<string, void>;
 };
 
 export type CreateOpts = Adapters;
@@ -32,10 +33,16 @@ const getTodos =
   () =>
     mongo.findAll<Domain.Todo.Todo>(collectionKey, {});
 
+const createDeleteTodo =
+  ({ mongo }: CreateOpts): Repository["deleteTodo"] =>
+  (id) =>
+    mongo.deleteOne(collectionKey, { id });
+
 export const create = (opts: CreateOpts): Repository => {
   return {
     addTodo: addTodo(opts),
     getTodos: getTodos(opts),
     getTodo: getTodo(opts),
+    deleteTodo: createDeleteTodo(opts),
   };
 };

@@ -82,3 +82,15 @@ describe("getTodos", () => {
     expect(result).toEqual(either.right([TestData.Todo.buyMilk]));
   });
 });
+
+describe("deleteTodo", () => {
+  it("should delete the todo via mongo", async () => {
+    const deleteOne = jest.fn(() => taskEither.right(undefined));
+    const repo = create({ mongo: { deleteOne } });
+
+    const deleteTodo = repo.deleteTodo("foo");
+    await deleteTodo();
+
+    expect(deleteOne).toHaveBeenCalledWith(Todo.collectionKey, { id: "foo" });
+  });
+});

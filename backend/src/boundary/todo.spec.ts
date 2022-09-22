@@ -251,3 +251,37 @@ Jest.testGivenThen<
     ),
   ],
 );
+
+test.each<
+  [
+    string,
+    DeepPartial<Application>,
+    string | undefined,
+    (res: LightMyRequestResponse) => void,
+  ]
+>([
+  [
+    "should reject with 400 if id is missing",
+    {},
+    undefined,
+    (res) => expect(res.statusCode).toEqual(400),
+  ],
+  [
+    "should reject with 400 if id is empty",
+    {},
+    "",
+    (res) => expect(res.statusCode).toEqual(400),
+  ],
+  [
+    "should reject with 500 if application errors",
+    { todo: { deleteTodo: () => taskEither.left("some error") } },
+    "foo",
+    (res) => expect(res.statusCode).toEqual(500),
+  ],
+  [
+    "should return 204 if application succeeds",
+    { todo: { deleteTodo: () => taskEither.right(undefined) } },
+    "foo",
+    (res) => expect(res.statusCode).toEqual(204),
+  ],
+]);
