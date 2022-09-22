@@ -10,7 +10,6 @@ export const create = (
 ): Repository.Event.Repository => {
   return mergeDeepRight(
     createMock<Repository.Event.Repository>({
-      eventStream: taskEither.right(Rx.of()),
       createEventStream: () => Rx.of(),
       getUnknownEvents: () => taskEither.right([]),
       acknowledgeEvent: () => taskEither.right(undefined),

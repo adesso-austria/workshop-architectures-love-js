@@ -111,56 +111,6 @@ describe("getEvents", () => {
   });
 });
 
-describe("eventStream", () => {
-  it("should subscribe to all events since the latest known id", async () => {
-    const streamSubscribe = jest.fn(() => Rx.of());
-    const repo = create({
-      mongo: {
-        findLast: (() =>
-          taskEither.right(
-            option.some({ consumer: "foo", id: "bar" }),
-          )) as Adapters["mongo"]["findLast"],
-      },
-      redis: {
-        streamSubscribe,
-      },
-    });
-
-    const task = repo.eventStream;
-    await task();
-    expect(streamSubscribe).toHaveBeenCalledWith(Event.eventsKey, "bar");
-  });
-
-  it("should parse the emitted messages", async () => {
-    const repo = create({
-      redis: {
-        streamSubscribe: () =>
-          Rx.of<Message>({
-            id: "foo",
-            message: Event.stringifyDomainEvent(
-              TestData.DomainEvent.createBuyIcecream,
-            ),
-          }),
-      },
-    });
-
-    const task = pipe(
-      repo.eventStream,
-      taskEither.chain(
-        (stream) => () =>
-          Rx.firstValueFrom(stream).then((value) =>
-            either.right<string, typeof value>(value),
-          ),
-      ),
-      taskEither.map((event) => event.domainEvent),
-    );
-    const result = await task();
-    expect(result).toEqual(
-      either.right(TestData.DomainEvent.createBuyIcecream),
-    );
-  });
-});
-
 describe("getUnknownEvents", () => {
   it("should call streamRange with the last known id", async () => {
     const streamRange = jest.fn(() => taskEither.right([]));

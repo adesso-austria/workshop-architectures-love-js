@@ -14,10 +14,6 @@ export type Repository = {
   getEvents: (
     since: option.Option<string>,
   ) => taskEither.TaskEither<string, Domain.Event.Event[]>;
-  /**
-   * @deprecated
-   */
-  eventStream: taskEither.TaskEither<string, Rx.Observable<Domain.Event.Event>>;
   createEventStream: (
     since: option.Option<string>,
   ) => Rx.Observable<Domain.Event.Event>;
@@ -121,19 +117,6 @@ const getLastKnownEventId = (
     ),
   );
 
-/**
- * create the observable of events
- */
-const createEventStreamFromLastKnownId = (
-  opts: CreateOpts,
-): Repository["eventStream"] =>
-  pipe(
-    getLastKnownEventId(opts),
-    taskEither.map((id) =>
-      opts.redis.streamSubscribe(eventsKey, id).pipe(Rx.map(parseMessage)),
-    ),
-  );
-
 const createEventStream =
   (opts: CreateOpts): Repository["createEventStream"] =>
   (since) =>
@@ -172,7 +155,6 @@ export const create = (opts: CreateOpts): Repository => {
   return {
     addEvent: createAddEvent(opts),
     getEvents: getEvents(opts),
-    eventStream: createEventStreamFromLastKnownId(opts),
     getUnknownEvents: getUnknownEvents(opts),
     acknowledgeEvent: acknowledgeEvent(opts),
     hasEventBeenAcknowledged: hasEventBeenAcknowledged(opts),
