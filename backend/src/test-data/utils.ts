@@ -1,3 +1,4 @@
-import { throwIfCalled } from "utils";
+import { AnyRecord, DeepPartial } from "utils";
 
-export const mocked = throwIfCalled("not sensible to call on mock");
+export const createMock = <T extends AnyRecord>(overrides: DeepPartial<T>) =>
+  overrides as T;

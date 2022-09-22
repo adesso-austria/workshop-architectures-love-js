@@ -2,15 +2,12 @@ import { mergeDeepRight } from "ramda";
 import { DeepPartial } from "utils";
 import * as Rx from "rxjs";
 import { Application } from "../../application/todo";
-import { mocked } from "../utils";
+import { createMock } from "../utils";
 
 export const create = (overrides: DeepPartial<Application>): Application =>
   mergeDeepRight(
-    {
-      getTodos: mocked,
-      getTodo: mocked,
-      addTodo: mocked,
+    createMock<Application>({
       consumer: Rx.of(),
-    },
+    }),
     overrides,
   );
