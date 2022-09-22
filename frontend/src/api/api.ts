@@ -17,7 +17,7 @@ export const create = (fetcher: Fetcher): Api => ({
       fetcher.postTodo({ body: addTodo }),
       taskEither.map(
         (res): Domain.Todo.Todo => ({
-          id: option.some(res.data.id),
+          id: option.some(res.data),
           title: addTodo.title,
           content: Domain.Async.pending(),
         }),

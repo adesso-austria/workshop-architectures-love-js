@@ -55,15 +55,22 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                  content:
-                    $ref: "#/components/schemas/Identifier"
-                required:
-                  - id
-                  - content
+                type: string
+    delete:
+      summary: delete a todo
+      description: delete a todo
+      parameters:
+        - name: id
+          in: query
+          description: id of the todo to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            text/plain: {}
   /todoContent:
     get:
       summary: get the content of a todo by id

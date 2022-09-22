@@ -1,12 +1,11 @@
-import * as Crypto from "crypto";
 import * as Contracts from "contracts";
 import { FastifyPluginAsync } from "fastify";
-import { option, taskEither } from "fp-ts";
+import { taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { match } from "ts-pattern";
 import { JSONSchemaType } from "ajv";
-import * as Application from "../application";
 import * as Domain from "../domain";
+import { Application } from "../application";
 
 export const fromDomain = (
   todo: Domain.Todo.Todo,
@@ -22,7 +21,7 @@ export const fromDomain = (
 const schema = <T>(schema: JSONSchemaType<T>) => schema;
 
 export const createRoutes =
-  (env: Application.Env.Env): FastifyPluginAsync =>
+  (application: Application): FastifyPluginAsync =>
   async (app) => {
     //////////////////////////////////////////////////////
     // GET /todo
@@ -48,7 +47,7 @@ export const createRoutes =
       },
       async (req) => {
         const task = pipe(
-          Application.Todo.getTodo(env, req.query.id),
+          application.todo.getTodo(req.query.id),
           taskEither.match(
             (error) =>
               match(error)
@@ -96,23 +95,14 @@ export const createRoutes =
         },
       },
       (req, res) => {
-        const todo: Domain.Todo.Todo = {
-          ...req.body,
-          id: Crypto.randomUUID(),
-        };
-
         const task = pipe(
-          env.repositories.event.addEvent({
-            type: "create todo",
-            payload: todo,
-          }),
-          taskEither.map((event) => event.domainEvent.payload.id),
+          application.todo.addTodo(req.body),
           taskEither.match(
             () => {
               res.statusCode = 500;
               res.send();
             },
-            (id) => res.send(id),
+            (todo) => res.send(todo.id),
           ),
         );
 
@@ -145,21 +135,18 @@ export const createRoutes =
       },
       (req, res) => {
         const task = pipe(
-          env.repositories.todo.getTodo(req.query.id),
+          application.todo.getTodo(req.query.id),
           taskEither.match(
-            () => {
-              res.statusCode = 500;
+            (error) => {
+              res.statusCode = match(error)
+                .with("db error", () => 500)
+                .with("not found", () => 404)
+                .exhaustive();
               res.send();
             },
-            option.match(
-              () => {
-                res.statusCode = 404;
-                res.send();
-              },
-              (todo) => {
-                res.send(todo.content);
-              },
-            ),
+            (todo) => {
+              res.send(todo.content);
+            },
           ),
         );
 
@@ -172,7 +159,7 @@ export const createRoutes =
     //////////////////////////////////////////////////////
     app.get("/todos", (_, res) => {
       const task = pipe(
-        env.repositories.todo.getTodos(),
+        application.todo.getTodos(),
         taskEither.match(
           () => {
             res.statusCode = 500;
@@ -184,4 +171,42 @@ export const createRoutes =
 
       task();
     });
+
+    //////////////////////////////////////////////////////
+    // DELETE /todo
+    //////////////////////////////////////////////////////
+    app.delete<{ Querystring: { id: string } }>(
+      "/todo",
+      {
+        schema: {
+          querystring: schema<{ id: string }>({
+            type: "object",
+            required: ["id"],
+            properties: {
+              id: {
+                type: "string",
+                minLength: 1,
+              },
+            },
+          }),
+        },
+      },
+      (req, res) => {
+        const task = pipe(
+          application.todo.deleteTodo(req.query.id),
+          taskEither.match(
+            () => {
+              res.statusCode = 500;
+              res.send();
+            },
+            () => {
+              res.statusCode = 204;
+              res.send();
+            },
+          ),
+        );
+
+        task();
+      },
+    );
   };

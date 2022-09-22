@@ -7,6 +7,7 @@ const defaultFetcher: Fetcher.Fetcher = {
   postTodo: () => throwException("not implemented"),
   getTodos: () => throwException("not implemented"),
   getTodoContent: () => throwException("not implemented"),
+  deleteTodo: () => throwException("not implemented"),
 };
 
 export const create = (

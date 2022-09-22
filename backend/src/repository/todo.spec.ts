@@ -2,7 +2,7 @@ import { describe, expect, it, jest } from "@jest/globals";
 import { either, option, taskEither } from "fp-ts";
 import { DeepPartial } from "utils";
 import { mergeDeepRight } from "ramda";
-import { Mongo } from "../adapters";
+import type * as Mongo from "../adapters/mongo";
 import * as TestData from "../test-data";
 import * as Todo from "./todo";
 
@@ -80,5 +80,17 @@ describe("getTodos", () => {
     const result = await task();
 
     expect(result).toEqual(either.right([TestData.Todo.buyMilk]));
+  });
+});
+
+describe("deleteTodo", () => {
+  it("should delete the todo via mongo", async () => {
+    const deleteOne = jest.fn(() => taskEither.right(undefined));
+    const repo = create({ mongo: { deleteOne } });
+
+    const deleteTodo = repo.deleteTodo("foo");
+    await deleteTodo();
+
+    expect(deleteOne).toHaveBeenCalledWith(Todo.collectionKey, { id: "foo" });
   });
 });

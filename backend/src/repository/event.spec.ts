@@ -5,8 +5,9 @@ import { mergeDeepRight } from "ramda";
 import { Jest } from "test-utils";
 import { DeepPartial } from "utils";
 import * as Rx from "rxjs";
-import * as Adapters from "../adapters";
 import * as TestData from "../test-data";
+import { Adapters } from "../adapters";
+import { Message } from "../adapters/redis";
 import * as Event from "./event";
 
 const create = (opts: DeepPartial<Event.CreateOpts>): Event.Repository =>
@@ -110,56 +111,6 @@ describe("getEvents", () => {
   });
 });
 
-describe("eventStream", () => {
-  it("should subscribe to all events since the latest known id", async () => {
-    const streamSubscribe = jest.fn(() => Rx.of());
-    const repo = create({
-      mongo: {
-        findLast: (() =>
-          taskEither.right(
-            option.some({ consumer: "foo", id: "bar" }),
-          )) as Adapters.Mongo.Adapter["findLast"],
-      },
-      redis: {
-        streamSubscribe,
-      },
-    });
-
-    const task = repo.eventStream;
-    await task();
-    expect(streamSubscribe).toHaveBeenCalledWith(Event.eventsKey, "bar");
-  });
-
-  it("should parse the emitted messages", async () => {
-    const repo = create({
-      redis: {
-        streamSubscribe: () =>
-          Rx.of<Adapters.Redis.Message>({
-            id: "foo",
-            message: Event.stringifyDomainEvent(
-              TestData.DomainEvent.createBuyIcecream,
-            ),
-          }),
-      },
-    });
-
-    const task = pipe(
-      repo.eventStream,
-      taskEither.chain(
-        (stream) => () =>
-          Rx.firstValueFrom(stream).then((value) =>
-            either.right<string, typeof value>(value),
-          ),
-      ),
-      taskEither.map((event) => event.domainEvent),
-    );
-    const result = await task();
-    expect(result).toEqual(
-      either.right(TestData.DomainEvent.createBuyIcecream),
-    );
-  });
-});
-
 describe("getUnknownEvents", () => {
   it("should call streamRange with the last known id", async () => {
     const streamRange = jest.fn(() => taskEither.right([]));
@@ -168,7 +119,7 @@ describe("getUnknownEvents", () => {
         findLast: (() =>
           taskEither.right(
             option.some({ consumer: "foo", id: "bar" }),
-          )) as Adapters.Mongo.Adapter["findLast"],
+          )) as Adapters["mongo"]["findLast"],
       },
       redis: {
         streamRange,
@@ -190,7 +141,7 @@ Jest.testGivenThen<option.Option<{ consumer: string; id: string }>, boolean>(
         findOne: (() =>
           taskEither.right(
             givenAdapterResponse,
-          )) as Adapters.Mongo.Adapter["findOne"],
+          )) as Adapters["mongo"]["findOne"],
       },
     });
 
@@ -227,5 +178,16 @@ describe("acknowledging events", () => {
       consumer: "foo",
       eventId: "bar",
     });
+  });
+});
+
+describe("createEventStream", () => {
+  it("should emit subscribe since $ if no eventId is given", () => {
+    const streamSubscribe = jest.fn(() => Rx.of());
+    const repo = create({ redis: { streamSubscribe } });
+
+    repo.createEventStream(option.none);
+
+    expect(streamSubscribe).toHaveBeenCalledWith("events", "$");
   });
 });

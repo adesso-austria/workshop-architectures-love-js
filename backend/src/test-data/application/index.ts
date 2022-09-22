@@ -1,17 +1,13 @@
 import { mergeDeepRight } from "ramda";
 import { DeepPartial } from "utils";
-import { Repository } from "../../repository";
-
-import * as Event from "./event";
+import { Application } from "../../application";
 import * as Todo from "./todo";
 
-export * as Event from "./event";
 export * as Todo from "./todo";
 
-export const create = (overrides: DeepPartial<Repository>): Repository =>
+export const create = (overrides: DeepPartial<Application>): Application =>
   mergeDeepRight(
     {
-      event: Event.create({}),
       todo: Todo.create({}),
     },
     overrides,

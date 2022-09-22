@@ -9,13 +9,7 @@ describe("addTodo", () => {
   it("should return a domain todo for a 200 response", async () => {
     const api = Api.create(
       Test.Api.Fetcher.create({
-        postTodo: () =>
-          taskEither.right(
-            Test.Api.Fetcher.Response.ok({
-              id: "foo",
-              content: { href: "/todo/foo", rel: "content" },
-            }),
-          ),
+        postTodo: () => taskEither.right(Test.Api.Fetcher.Response.ok("foo")),
       }),
     );
 

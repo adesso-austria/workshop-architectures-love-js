@@ -135,5 +135,6 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
     getTodos: createOp("/todos", "get"),
     postTodo: createOp("/todo", "post"),
     getTodoContent: createOp("/todoContent", "get"),
+    deleteTodo: createOp("/todo", "delete"),
   };
 };

@@ -1,4 +1,12 @@
-export * as Env from "./env";
-export * as Todo from "./todo";
+import { Repository } from "../repository";
+import * as Todo from "./todo";
 
-export * from "./main";
+export type Application = {
+  todo: Todo.Application;
+};
+
+export const create = (repository: Repository): Application => {
+  return {
+    todo: Todo.create(repository),
+  };
+};

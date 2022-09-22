@@ -11,6 +11,7 @@ export const repository: Repository.Todo.Repository = {
     return taskEither.right(option.fromNullable(todo));
   },
   getTodos: () => taskEither.right(Todo.all),
+  deleteTodo: () => taskEither.right(undefined),
 };
 
 export const create = (
