@@ -1,16 +1,8 @@
 ```mermaid
 flowchart
-Application-->Domain & repositories
+Application-->Domain & Repository
 Boundary-->Domain & Contracts & Application
-Repository-->Domain
-subgraph adapters
-	Redis
-	Mongo
-end
-subgraph repositories
-	direction TB
-	Repository-->Redis & Mongo
-end
+Repository-->Domain & Adapter
 ```
 # Boundary
 - mapping from contracts to domain models

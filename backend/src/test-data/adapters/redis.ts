@@ -1,15 +1,9 @@
 import { mergeDeepRight } from "ramda";
-import { DeepPartial, throwIfCalled } from "utils";
+import { DeepPartial } from "utils";
 import { Redis } from "../../adapters";
+import { createMock } from "../utils";
 
-const mocked = throwIfCalled("not sensible to call on mock");
-
-const adapter: Redis.Adapter = {
-  streamAdd: mocked,
-  streamSubscribe: mocked,
-  streamRange: mocked,
-  close: mocked,
-};
+const adapter = createMock<Redis.Adapter>({});
 
 export const create = (overrides: DeepPartial<Redis.Adapter>): Redis.Adapter =>
   mergeDeepRight(adapter, overrides);

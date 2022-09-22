@@ -1,22 +1,17 @@
 import { expect } from "@jest/globals";
 import { LightMyRequestResponse } from "fastify";
-import { option, taskEither } from "fp-ts";
-import { Bounded } from "fp-ts/lib/number";
+import { taskEither } from "fp-ts";
 import { Jest } from "test-utils";
 import { DeepPartial } from "utils";
-import * as Application from "../application";
+import { Application } from "../application";
 import * as Domain from "../domain";
 import * as TestData from "../test-data";
-import * as Main from "./main";
-import * as Todo from "./todo";
+import * as Boundary from "./index";
 
-Jest.testGivenThen<
-  Application.Env.Env,
-  (response: LightMyRequestResponse) => void
->(
+Jest.testGivenThen<Application, (response: LightMyRequestResponse) => void>(
   "GET /todo",
-  async (givenEnv, checkExpectation) => {
-    const root = Main.create(TestData.Env.create(givenEnv));
+  async (givenApplication, checkExpectation) => {
+    const root = Boundary.create(TestData.Application.create(givenApplication));
     const response = await root.inject({
       path: "/todo",
       query: {
@@ -28,11 +23,9 @@ Jest.testGivenThen<
   [
     Jest.givenThen(
       "should return status 500 if the repository threw an error",
-      TestData.Env.create({
-        repositories: {
-          todo: {
-            getTodo: () => taskEither.left("something's up"),
-          },
+      TestData.Application.create({
+        todo: {
+          getTodo: () => taskEither.left("db error"),
         },
       }),
       (response) => {
@@ -41,11 +34,9 @@ Jest.testGivenThen<
     ),
     Jest.givenThen(
       "should return status 404 if the todo can't be found",
-      TestData.Env.create({
-        repositories: {
-          todo: {
-            getTodo: () => taskEither.right(option.none),
-          },
+      TestData.Application.create({
+        todo: {
+          getTodo: () => taskEither.left("not found"),
         },
       }),
       (response) => {
@@ -54,18 +45,15 @@ Jest.testGivenThen<
     ),
     Jest.givenThen(
       "should return the todo with status 200 if it could be found",
-      TestData.Env.create({
-        repositories: {
-          todo: {
-            getTodo: () =>
-              taskEither.right(option.some(TestData.Todo.buyIcecream)),
-          },
+      TestData.Application.create({
+        todo: {
+          getTodo: () => taskEither.right(TestData.Todo.buyIcecream),
         },
       }),
       (response) => {
         expect(response.statusCode).toEqual(200);
         expect(response.json()).toEqual(
-          Todo.fromDomain(TestData.Todo.buyIcecream),
+          Boundary.Todo.fromDomain(TestData.Todo.buyIcecream),
         );
       },
     ),
@@ -73,98 +61,92 @@ Jest.testGivenThen<
 );
 
 Jest.testGivenWhenThen<
+  DeepPartial<Application>,
   Partial<Domain.AddTodo.AddTodo>,
-  DeepPartial<Application.Env.Env>,
   (response: LightMyRequestResponse) => void
 >(
   "POST /todo",
-  async (givenPayload, whenEnv, expectResponse) => {
-    const root = Main.create(TestData.Env.create(whenEnv));
+  async (givenApplication, whenPayload, expectResponse) => {
+    const root = Boundary.create(TestData.Application.create(givenApplication));
 
     const response = await root.inject({
       path: "/todo",
       method: "POST",
-      ...(givenPayload == null ? {} : { payload: givenPayload }),
+      payload: whenPayload,
     });
     expectResponse(response);
   },
   [
     Jest.givenWhenThen(
       "should reject with 400 if no title is present in the body",
+      {},
       {
         content: "test",
       },
-      {},
       (response) => {
         expect(response.statusCode).toEqual(400);
       },
     ),
     Jest.givenWhenThen(
       "should reject with 400 if the title is empty",
-      { content: "valid", title: "" },
       {},
+      { content: "valid", title: "" },
       (response) => {
         expect(response.statusCode).toEqual(400);
       },
     ),
     Jest.givenWhenThen(
       "should reject with 400 if no content is present in the body",
+      {},
       {
         title: "test",
       },
-      {},
       (response) => {
         expect(response.statusCode).toEqual(400);
       },
     ),
     Jest.givenWhenThen(
       "should reject with 400 if the content is empty",
-      { content: "", title: "valid" },
       {},
+      { content: "", title: "valid" },
       (response) => expect(response.statusCode).toEqual(400),
     ),
     Jest.givenWhenThen(
-      "should reject with 500 if the repo throws",
-      { content: "foo", title: "bar" },
+      "should reject with 500 if the application errors",
       {
-        repositories: {
-          event: {
-            addEvent: () => taskEither.left("some error"),
-          },
+        todo: {
+          addTodo: () => taskEither.left("some error"),
         },
       },
+      { content: "foo", title: "bar" },
       (response) => {
         expect(response.statusCode).toEqual(500);
       },
     ),
     Jest.givenWhenThen(
       "should return with 200 + id of the created todo",
-      { content: "foo", title: "bar" },
       {
-        repositories: {
-          event: {
-            addEvent: () => taskEither.right(TestData.Event.createBuyIcecream),
-          },
+        todo: {
+          addTodo: () => taskEither.right(TestData.Todo.buyIcecream),
         },
       },
+      { content: "foo", title: "bar" },
       (response) => {
         expect(response.statusCode).toEqual(200);
-        expect(response.body).toEqual(
-          TestData.Event.createBuyIcecream.domainEvent.payload.id,
-        );
+        expect(response.body).toEqual(TestData.Todo.buyIcecream.id);
       },
     ),
   ],
 );
 
 Jest.testGivenWhenThen<
-  DeepPartial<Application.Env.Env>,
+  DeepPartial<Application>,
   Record<string, string>,
   (response: LightMyRequestResponse) => void
 >(
   "GET /todoContent",
-  async (givenEnv, whenRequestedQuery, assertExpectation) => {
-    const root = Main.create(TestData.Env.create(givenEnv));
+  async (givenApplication, whenRequestedQuery, assertExpectation) => {
+    const root = Boundary.create(TestData.Application.create(givenApplication));
     const response = await root.inject({
       path: "/todoContent",
       query: whenRequestedQuery,
@@ -185,22 +167,18 @@ Jest.testGivenWhenThen<
     Jest.givenWhenThen(
       "should return 404 if todo could not be found",
       {
-        repositories: {
-          todo: {
-            getTodo: () => taskEither.right(option.none),
-          },
+        todo: {
+          getTodo: () => taskEither.left("not found"),
         },
       },
       { id: "foo" },
       (res) => expect(res.statusCode).toEqual(404),
     ),
     Jest.givenWhenThen(
-      "should return 500 if repo throws",
+      "should return 500 if application throws",
       {
-        repositories: {
-          todo: {
-            getTodo: () => taskEither.left("bar"),
-          },
+        todo: {
+          getTodo: () => taskEither.left("db error"),
         },
       },
       { id: "foo" },
@@ -209,11 +187,8 @@ Jest.testGivenWhenThen<
     Jest.givenWhenThen(
       "should return 200 content if todo could be found",
       {
-        repositories: {
-          todo: {
-            getTodo: () =>
-              taskEither.right(option.some(TestData.Todo.buyIcecream)),
-          },
+        todo: {
+          getTodo: () => taskEither.right(TestData.Todo.buyIcecream),
         },
       },
       { id: "foo" },
@@ -226,12 +201,12 @@ Jest.testGivenWhenThen<
 );
 
 Jest.testGivenThen<
-  DeepPartial<Application.Env.Env>,
+  DeepPartial<Application>,
   (response: LightMyRequestResponse) => void
 >(
   "GET /todos",
-  async (givenEnv, assertExpectation) => {
-    const root = Main.create(TestData.Env.create(givenEnv));
+  async (givenApplication, assertExpectation) => {
+    const root = Boundary.create(TestData.Application.create(givenApplication));
 
     const response = await root.inject({
       path: "/todos",
@@ -241,12 +216,10 @@ Jest.testGivenThen<
   },
   [
     Jest.givenThen(
-      "should return with 200 + empty array if repo returns no todos",
+      "should return with 200 + empty array if application returns no todos",
       {
-        repositories: {
-          todo: {
-            getTodos: () => taskEither.right([]),
-          },
+        todo: {
+          getTodos: () => taskEither.right([]),
         },
       },
       (res) => {
@@ -257,10 +230,8 @@ Jest.testGivenThen<
     Jest.givenThen(
       "should reject with 500 if repo throws",
       {
-        repositories: {
-          todo: {
-            getTodos: () => taskEither.left("some error"),
-          },
+        todo: {
+          getTodos: () => taskEither.left("db error"),
         },
       },
       (res) => expect(res.statusCode).toEqual(500),
@@ -268,15 +239,49 @@ Jest.testGivenThen<
     Jest.givenThen(
       "should map domain to contract",
       {
-        repositories: {
-          todo: {
-            getTodos: () => taskEither.right([TestData.Todo.buyMilk]),
-          },
+        todo: {
+          getTodos: () => taskEither.right([TestData.Todo.buyMilk]),
         },
       },
       (res) => {
-        expect(res.json()).toEqual([Todo.fromDomain(TestData.Todo.buyMilk)]);
+        expect(res.json()).toEqual([
+          Boundary.Todo.fromDomain(TestData.Todo.buyMilk),
+        ]);
       },
     ),
   ],
 );
+
+test.each<
+  [
+    string,
+    DeepPartial<Application>,
+    string | undefined,
+    (res: LightMyRequestResponse) => void,
+  ]
+>([
+  [
+    "should reject with 400 if id is missing",
+    {},
+    undefined,
+    (res) => expect(res.statusCode).toEqual(400),
+  ],
+  [
+    "should reject with 400 if id is empty",
+    {},
+    "",
+    (res) => expect(res.statusCode).toEqual(400),
+  ],
+  [
+    "should reject with 500 if application errors",
+    { todo: { deleteTodo: () => taskEither.left("some error") } },
+    "foo",
+    (res) => expect(res.statusCode).toEqual(500),
+  ],
+  [
+    "should return 204 if application succeeds",
+    { todo: { deleteTodo: () => taskEither.right(undefined) } },
+    "foo",
+    (res) => expect(res.statusCode).toEqual(204),
+  ],
+]);

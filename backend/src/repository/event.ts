@@ -8,13 +8,15 @@ import * as Domain from "../domain";
  * public api
  */
 export type Repository = {
-  addEvent: (
-    event: Domain.DomainEvent.DomainEvent,
+  addEvent: <T extends Domain.DomainEvent.DomainEvent>(
+    event: T,
   ) => taskEither.TaskEither<string, Domain.Event.Event>;
   getEvents: (
     since: option.Option<string>,
   ) => taskEither.TaskEither<string, Domain.Event.Event[]>;
-  eventStream: taskEither.TaskEither<string, Rx.Observable<Domain.Event.Event>>;
+  createEventStream: (
+    since: option.Option<string>,
+  ) => Rx.Observable<Domain.Event.Event>;
   getUnknownEvents: (
     consumer: string,
   ) => taskEither.TaskEither<string, Domain.Event.Event[]>;
@@ -29,6 +31,8 @@ export type Repository = {
 };
 
 export type CreateOpts = { redis: Redis.Adapter; mongo: Mongo.Adapter };
+
+type ConsumedEvent = { consumer: string; id: string };
 
 /**
  * @internal - only exported for unit testing
@@ -101,7 +105,7 @@ const getLastKnownEventId = (
   forConsumer?: string,
 ): taskEither.TaskEither<string, string> =>
   pipe(
-    mongo.findLast<{ consumer: string; id: string }>(
+    mongo.findLast<ConsumedEvent>(
       ackEventsKey,
       forConsumer == null ? {} : { consumer: forConsumer },
     ),
@@ -113,16 +117,18 @@ const getLastKnownEventId = (
     ),
   );
 
-/**
- * create the observable of events
- */
-const createEventStream = (opts: CreateOpts): Repository["eventStream"] =>
-  pipe(
-    getLastKnownEventId(opts),
-    taskEither.map((id) =>
-      opts.redis.streamSubscribe(eventsKey, id).pipe(Rx.map(parseMessage)),
-    ),
-  );
+const createEventStream =
+  (opts: CreateOpts): Repository["createEventStream"] =>
+  (since) =>
+    opts.redis
+      .streamSubscribe(
+        eventsKey,
+        pipe(
+          since,
+          option.getOrElse(() => "$"),
+        ),
+      )
+      .pipe(Rx.map(parseMessage));
 
 const getUnknownEvents =
   (opts: CreateOpts): Repository["getUnknownEvents"] =>
@@ -149,9 +155,9 @@ export const create = (opts: CreateOpts): Repository => {
   return {
     addEvent: createAddEvent(opts),
     getEvents: getEvents(opts),
-    eventStream: createEventStream(opts),
     getUnknownEvents: getUnknownEvents(opts),
     acknowledgeEvent: acknowledgeEvent(opts),
     hasEventBeenAcknowledged: hasEventBeenAcknowledged(opts),
+    createEventStream: createEventStream(opts),
   };
 };
