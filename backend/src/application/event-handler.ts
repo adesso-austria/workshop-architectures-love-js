@@ -74,12 +74,12 @@ export const create = (
 
     return pipe(
       taskEither.Do,
-      taskEither.apS(
-        "addEvent",
+      taskEither.apS("addEvent", () =>
+        // lazily create the addEvent task so that waitForProcessing can subscribe in time
         pipe(
           repository.event.addEvent(domainEvent),
           taskEither.map(tap((event) => eventId$.next(event.id))),
-        ),
+        )(),
       ),
       taskEither.apS("waitForProcessing", () => {
         const processed$ = processedEvents$.pipe(
