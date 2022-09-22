@@ -1,6 +1,6 @@
 import { expect } from "@jest/globals";
 import { LightMyRequestResponse } from "fastify";
-import { option, taskEither } from "fp-ts";
+import { taskEither } from "fp-ts";
 import { Jest } from "test-utils";
 import { DeepPartial } from "utils";
 import { Application } from "../application";
@@ -61,85 +61,79 @@ Jest.testGivenThen<Application, (response: LightMyRequestResponse) => void>(
 );
 
 Jest.testGivenWhenThen<
-  Partial<Domain.AddTodo.AddTodo>,
   DeepPartial<Application>,
+  Partial<Domain.AddTodo.AddTodo>,
   (response: LightMyRequestResponse) => void
 >(
   "POST /todo",
-  async (givenPayload, whenApplication, expectResponse) => {
-    const root = Boundary.create(TestData.Application.create(whenApplication));
+  async (givenApplication, whenPayload, expectResponse) => {
+    const root = Boundary.create(TestData.Application.create(givenApplication));
 
     const response = await root.inject({
       path: "/todo",
       method: "POST",
-      ...(givenPayload == null ? {} : { payload: givenPayload }),
+      payload: whenPayload,
     });
     expectResponse(response);
   },
   [
     Jest.givenWhenThen(
       "should reject with 400 if no title is present in the body",
+      {},
       {
         content: "test",
       },
-      {},
       (response) => {
         expect(response.statusCode).toEqual(400);
       },
     ),
     Jest.givenWhenThen(
       "should reject with 400 if the title is empty",
-      { content: "valid", title: "" },
       {},
+      { content: "valid", title: "" },
       (response) => {
         expect(response.statusCode).toEqual(400);
       },
     ),
     Jest.givenWhenThen(
       "should reject with 400 if no content is present in the body",
+      {},
       {
         title: "test",
       },
-      {},
       (response) => {
         expect(response.statusCode).toEqual(400);
       },
     ),
     Jest.givenWhenThen(
       "should reject with 400 if the content is empty",
-      { content: "", title: "valid" },
       {},
+      { content: "", title: "valid" },
       (response) => expect(response.statusCode).toEqual(400),
     ),
     Jest.givenWhenThen(
-      "should reject with 500 if the repo throws",
-      { content: "foo", title: "bar" },
+      "should reject with 500 if the application errors",
       {
-        repositories: {
-          event: {
-            addEvent: () => taskEither.left("some error"),
-          },
+        todo: {
+          addTodo: () => taskEither.left("some error"),
         },
       },
+      { content: "foo", title: "bar" },
       (response) => {
         expect(response.statusCode).toEqual(500);
       },
     ),
     Jest.givenWhenThen(
       "should return with 200 + id of the created todo",
-      { content: "foo", title: "bar" },
       {
-        repositories: {
-          event: {
-            addEvent: () => taskEither.right(TestData.Event.createBuyIcecream),
-          },
+        todo: {
+          addTodo: () => taskEither.right(TestData.Todo.buyIcecream),
         },
       },
+      { content: "foo", title: "bar" },
       (response) => {
         expect(response.statusCode).toEqual(200);
-        expect(response.body).toEqual(
-          TestData.Event.createBuyIcecream.domainEvent.payload.id,
-        );
+        expect(response.body).toEqual(TestData.Todo.buyIcecream.id);
       },
     ),
   ],

@@ -1,4 +1,3 @@
-import * as Crypto from "crypto";
 import * as Contracts from "contracts";
 import { FastifyPluginAsync } from "fastify";
 import { taskEither } from "fp-ts";
@@ -103,7 +102,7 @@ export const createRoutes =
               res.statusCode = 500;
               res.send();
             },
-            (id) => res.send(id),
+            (todo) => res.send(todo.id),
           ),
         );
 
