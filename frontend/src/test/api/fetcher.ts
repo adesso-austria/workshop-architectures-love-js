@@ -15,11 +15,19 @@ export const create = (
 ): Fetcher.Fetcher => mergeDeepRight(defaultFetcher, overrides);
 
 export namespace Response {
-  export const ok = <T>(data: T): Fetcher.Response<200, T> => ({
-    headers: new Headers(),
-    ok: true,
-    status: 200,
-    statusText: "ok",
-    data,
-  });
+  export const status = <Status extends number, T>(
+    status: Status,
+    data: T,
+  ): Fetcher.Response<Status, T> => {
+    const isOk = status >= 200 && status < 300;
+    return {
+      headers: new Headers(),
+      ok: isOk,
+      status,
+      statusText: isOk ? "ok" : "not ok",
+      data,
+    };
+  };
+
+  export const ok = <T>(data: T) => status(200, data);
 }
