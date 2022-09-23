@@ -1,4 +1,4 @@
-import { record } from "fp-ts";
+import { option, record } from "fp-ts";
 
 type TaskState =
   | { state: "resolved" }
@@ -104,3 +104,10 @@ export const areAllSettled = <T, Task extends string>(async: Async<T, Task>) =>
   !isAnyPending(async);
 
 export const value = <T>(async: Async<T, string>) => async.current;
+
+export const getError =
+  <A extends Async<unknown, string>>(task: TaskNames<A>) =>
+  (async: A): option.Option<string> => {
+    const t = async.tasks[task];
+    return t?.state === "rejected" ? option.some(t.error) : option.none;
+  };

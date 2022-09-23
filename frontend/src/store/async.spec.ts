@@ -1,3 +1,4 @@
+import { option } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Async from "./async";
 
@@ -85,5 +86,22 @@ describe("chain", () => {
         Async.isPending("foo"),
       ),
     ).toEqual(false);
+  });
+});
+
+describe("getError", () => {
+  it("should return none if task isn't in an error state", () => {
+    expect(
+      pipe(Async.of(0, { foo: { state: "resolved" } }), Async.getError("foo")),
+    ).toEqual(option.none);
+  });
+
+  it("should return some error if task is in an error state", () => {
+    expect(
+      pipe(
+        Async.of(0, { foo: { state: "rejected", error: "some error" } }),
+        Async.getError("foo"),
+      ),
+    ).toEqual(option.some("some error"));
   });
 });
