@@ -31,6 +31,9 @@ namespace Selectors {
   export const selectTodos = ({ todos }: State) => todos;
 
   export const selectNewTodo = ({ newTodo }: State) => newTodo;
+
+  export const selectById = (id: string) =>
+    flow(selectTodos, Async.value, (todos) => todos[id]);
 }
 
 export const slice = createSlice({
@@ -65,6 +68,42 @@ export const slice = createSlice({
       state.todos = pipe(
         state.todos,
         Async.setError("adding todo", action.payload),
+      );
+    },
+    deleteTodo: (state, action: PayloadAction<string>) => {
+      state.todos = pipe(
+        state.todos,
+        Async.map((todos) =>
+          pipe(
+            todos,
+            record.modifyAt(action.payload, Async.setPending("deleting")),
+            option.getOrElse(() => todos),
+          ),
+        ),
+      );
+    },
+    deleteTodoSuccess: (state, action: PayloadAction<string>) => {
+      state.todos = pipe(
+        state.todos,
+        Async.map(record.deleteAt(action.payload)),
+      );
+    },
+    deleteTodoFailure: (
+      state,
+      action: PayloadAction<{ id: string; error: string }>,
+    ) => {
+      state.todos = pipe(
+        state.todos,
+        Async.map((todos) =>
+          pipe(
+            todos,
+            record.modifyAt(
+              action.payload.id,
+              Async.setError("deleting", action.payload.error),
+            ),
+            option.getOrElse(() => todos),
+          ),
+        ),
       );
     },
     fetchTodos: (state) => {
@@ -134,7 +173,28 @@ namespace Epics {
       }),
     );
 
-  export const epic = combineEpics(fetchTodosEpic, addTodoEpic);
+  const deleteTodoEpic: Store.Epic = (action$, state$, { api }) =>
+    action$.pipe(
+      Rx.filter(slice.actions.deleteTodo.match),
+      Rx.withLatestFrom(state$),
+      Rx.filter(
+        ([action, state]) =>
+          Selectors.selectById(action.payload)(state.todo) != null,
+      ),
+      Rx.switchMap(([{ payload: id }]) => {
+        const deleteAction = pipe(
+          api.deleteTodo(id),
+          taskEither.matchW(
+            (error) => slice.actions.deleteTodoFailure({ id, error }),
+            () => slice.actions.deleteTodoSuccess(id),
+          ),
+        );
+
+        return deleteAction();
+      }),
+    );
+
+  export const epic = combineEpics(fetchTodosEpic, addTodoEpic, deleteTodoEpic);
 }
 export const epic = Epics.epic;
 
