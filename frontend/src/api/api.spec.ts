@@ -1,7 +1,6 @@
 import { either, option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { throwException } from "utils";
-import * as Domain from "../domain";
 import * as Test from "../test";
 import * as Api from "./api";
 
@@ -18,11 +17,11 @@ describe("addTodo", () => {
     pipe(
       response,
       either.match(throwException, (todo) => {
-        expect(todo).toMatchObject({
+        expect(todo).toEqual({
           id: option.some("foo"),
           title: "test",
+          content: option.none,
         });
-        expect(Domain.Async.isPending(todo.content)).toBeTruthy();
       }),
     );
   });

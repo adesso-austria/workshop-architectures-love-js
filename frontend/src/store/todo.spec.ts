@@ -1,10 +1,31 @@
 import { waitFor } from "@testing-library/react";
 import { taskEither } from "fp-ts";
+import { DeepPartial } from "utils";
+import { mergeDeepRight } from "ramda";
 import { pipe } from "fp-ts/lib/function";
-import * as Domain from "../domain";
 import * as Test from "../test";
 import * as Store from "./store";
-import { slice } from "./todo";
+import { initialState, slice, State } from "./todo";
+import * as Async from "./async";
+
+describe("reducer", () => {
+  const createState = (overrides: DeepPartial<State>): State =>
+    mergeDeepRight(initialState, overrides);
+
+  describe("addTodo", () => {
+    it("should not change the state if todos are being added already", () => {
+      const initial = createState({
+        todos: pipe(Async.of({}), Async.setPending("adding todo")),
+      });
+      const next = slice.reducer(
+        initial,
+        slice.actions.addTodo({ content: "foo", title: "bar" }),
+      );
+
+      expect(next).toEqual(initial);
+    });
+  });
+});
 
 describe("epic", () => {
   it("should add a todo if addTodo is dispatched", async () => {
@@ -16,12 +37,9 @@ describe("epic", () => {
 
     expect(addTodo).toHaveBeenCalled();
     await waitFor(() =>
-      expect(
-        pipe(
-          store.getState().todo.todos,
-          Domain.Async.getOrElse(() => [] as Domain.Todo.Todo[]),
-        ),
-      ).toEqual([Test.Data.Todo.buyIcecream]),
+      expect(Object.values(Async.value(store.getState().todo.todos))).toEqual([
+        Async.of(Test.Data.Todo.buyIcecream),
+      ]),
     );
   });
 

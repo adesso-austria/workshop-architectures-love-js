@@ -1,69 +1,99 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { array, either, task, taskEither } from "fp-ts";
+import { option, record, taskEither } from "fp-ts";
 import * as Rx from "rxjs";
 import { flow, pipe } from "fp-ts/lib/function";
 import { combineEpics } from "redux-observable";
 import * as React from "react";
-import { match, P } from "ts-pattern";
 import { ignore } from "utils";
 import * as Domain from "../domain";
 import { useDispatch, useSelector } from "./provider";
 import * as Store from "./store";
+import * as Async from "./async";
+
+type Todo = Async.Async<Domain.Todo.Todo, "deleting" | "updating">;
+type Todos = Async.Async<Record<string, Todo>, "fetching" | "adding todo">;
 
 export type State = {
-  todos: Domain.Async.Async<Array<Domain.Todo.Todo>>;
+  todos: Todos;
   newTodo: Domain.AddTodo.AddTodo;
 };
 export const initialState: State = {
-  todos: Domain.Async.pending(),
+  todos: Async.of({}),
   newTodo: {
     title: "",
     content: "",
   },
 };
 
-const emptyTodos = () => [] as Domain.Todo.Todo[];
+namespace Selectors {
+  export const fromStore = (state: Store.State) => state.todo;
+
+  export const selectTodos = ({ todos }: State) => todos;
+
+  export const selectNewTodo = ({ newTodo }: State) => newTodo;
+}
 
 export const slice = createSlice({
   name: "todo",
   initialState,
   reducers: {
     addTodo: (state, _action: PayloadAction<Domain.AddTodo.AddTodo>) => {
-      if (!Domain.Async.isSettled(state.todos)) {
+      if (pipe(state.todos, Async.isPending("adding todo"))) {
         // ignore request to add todo while list is pending
         return;
       }
-      state.todos = Domain.Async.pending(state.todos);
+      state.todos = pipe(state.todos, Async.setPending("adding todo"));
     },
     addTodoSuccess: (state, action: PayloadAction<Domain.Todo.Todo>) => {
-      state.todos = pipe(
-        state.todos,
-        Domain.Async.getOrElse(emptyTodos),
-        array.append(action.payload),
-        Domain.Async.of,
+      pipe(
+        action.payload.id,
+        option.match(
+          // refusing to add a todo without id
+          ignore,
+          (id) => {
+            state.todos = pipe(
+              state.todos,
+              Async.setResolved("adding todo"),
+              Async.map(record.upsertAt(id, Async.of(action.payload))),
+            );
+            state.newTodo = { title: "", content: "" };
+          },
+        ),
       );
-      state.newTodo = { title: "", content: "" };
     },
-    addTodoFailure: (state, _action: PayloadAction<string>) => {
+    addTodoFailure: (state, action: PayloadAction<string>) => {
       state.todos = pipe(
         state.todos,
-        Domain.Async.getOrElse(emptyTodos),
-        Domain.Async.of,
+        Async.setError("adding todo", action.payload),
       );
     },
     fetchTodos: (state) => {
-      state.todos = Domain.Async.pending(state.todos);
+      state.todos = pipe(state.todos, Async.setPending("fetching"));
     },
-    fetchTodosResponse: (
-      state,
-      action: PayloadAction<either.Either<string, Domain.Todo.Todo[]>>,
-    ) => {
-      match(action.payload)
-        .with(either.left(P._), ignore)
-        .with(either.right(P.select()), (todos) => {
-          state.todos = Domain.Async.of(todos);
-        })
-        .exhaustive();
+    fetchTodosSuccess: (state, action: PayloadAction<Domain.Todo.Todo[]>) => {
+      state.todos = Async.of(
+        action.payload.reduce(
+          (dict, todo) =>
+            pipe(
+              todo.id,
+              option.match(
+                // ignore todos without ids; should be none but theoretically possible
+                () => dict,
+                (id) => {
+                  dict[id] = Async.of(todo);
+                  return dict;
+                },
+              ),
+            ),
+          {} as Record<string, Todo>,
+        ),
+      );
+    },
+    fetchTodosFailure: (state, action: PayloadAction<string>) => {
+      state.todos = pipe(
+        state.todos,
+        Async.setError("fetching", action.payload),
+      );
     },
     setNewTodo: (state, action: PayloadAction<Domain.AddTodo.AddTodo>) => {
       state.newTodo = action.payload;
@@ -71,44 +101,42 @@ export const slice = createSlice({
   },
 });
 
-const fetchTodosEpic: Store.Epic = (action$, _state$, { api }) =>
-  action$.pipe(
-    Rx.filter(slice.actions.fetchTodos.match),
-    Rx.switchMap(() => {
-      const getAction = pipe(
-        api.fetchTodos(),
-        task.map(slice.actions.fetchTodosResponse),
-      );
+namespace Epics {
+  const fetchTodosEpic: Store.Epic = (action$, _state$, { api }) =>
+    action$.pipe(
+      Rx.filter(slice.actions.fetchTodos.match),
+      Rx.switchMap(() => {
+        const getAction = pipe(
+          api.fetchTodos(),
+          taskEither.matchW(
+            slice.actions.fetchTodosFailure,
+            slice.actions.fetchTodosSuccess,
+          ),
+        );
 
-      return getAction();
-    }),
-  );
+        return getAction();
+      }),
+    );
 
-const addTodoEpic: Store.Epic = (action$, _state, { api }) =>
-  action$.pipe(
-    Rx.filter(slice.actions.addTodo.match),
-    Rx.switchMap(({ payload: addTodo }) => {
-      const addAction = pipe(
-        api.addTodo(addTodo),
-        taskEither.matchW(
-          slice.actions.addTodoFailure,
-          slice.actions.addTodoSuccess,
-        ),
-      );
+  const addTodoEpic: Store.Epic = (action$, _state, { api }) =>
+    action$.pipe(
+      Rx.filter(slice.actions.addTodo.match),
+      Rx.switchMap(({ payload: addTodo }) => {
+        const addAction = pipe(
+          api.addTodo(addTodo),
+          taskEither.matchW(
+            slice.actions.addTodoFailure,
+            slice.actions.addTodoSuccess,
+          ),
+        );
 
-      return addAction();
-    }),
-  );
+        return addAction();
+      }),
+    );
 
-export const epic = combineEpics(fetchTodosEpic, addTodoEpic);
-
-namespace Selectors {
-  const selecState = (state: Store.State) => state.todo;
-
-  export const selectTodos = flow(selecState, ({ todos }) => todos);
-
-  export const selectNewTodo = flow(selecState, ({ newTodo }) => newTodo);
+  export const epic = combineEpics(fetchTodosEpic, addTodoEpic);
 }
+export const epic = Epics.epic;
 
 export const useTodos = () => {
   const dispatch = useDispatch();
@@ -119,11 +147,13 @@ export const useTodos = () => {
     refresh();
   }, []);
 
-  const todosState = useSelector(Selectors.selectTodos);
+  const todosState = useSelector(
+    flow(Selectors.fromStore, Selectors.selectTodos),
+  );
 
   return {
-    todos: pipe(todosState, Domain.Async.getOrElse(emptyTodos)),
-    pending: Domain.Async.isPending(todosState),
+    todos: Object.values(Async.value(todosState)).map(Async.value),
+    pending: Async.isAnyPending(todosState),
     refresh,
   };
 };
@@ -135,7 +165,9 @@ export const useNewTodo = (): [
   ) => void,
 ] => {
   const dispatch = useDispatch();
-  const current = useSelector(Selectors.selectNewTodo);
+  const current = useSelector(
+    flow(Selectors.fromStore, Selectors.selectNewTodo),
+  );
   return [
     current,
     (updateFn) => dispatch(slice.actions.setNewTodo(updateFn(current))),
@@ -144,8 +176,13 @@ export const useNewTodo = (): [
 
 export const useAddTodo = () => {
   const dispatch = useDispatch();
-  const isPending = useSelector((state) =>
-    Domain.Async.isPending(state.todo.todos),
+
+  const isPending = useSelector(
+    flow(
+      Selectors.fromStore,
+      Selectors.selectTodos,
+      Async.isPending("adding todo"),
+    ),
   );
 
   return isPending

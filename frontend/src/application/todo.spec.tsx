@@ -1,68 +1,59 @@
 import React from "react";
 import {
+  act,
   ByRoleMatcher,
   ByRoleOptions,
   waitFor,
   within,
 } from "@testing-library/react";
 import { option, taskEither } from "fp-ts";
-import { pipe } from "fp-ts/lib/function";
 import * as Test from "../test";
 import * as Domain from "../domain";
 import { TodoPreview, Overview } from "./todo";
 
 describe("todo preview", () => {
-  it("should display the title", async () => {
-    const todo = Test.Data.Todo.buyIcecream;
-
-    const result = Test.render(<TodoPreview todo={todo} />);
-
-    expect(result.getByRole("heading")).toHaveTextContent(todo.title);
-  });
-
-  it.todo("should display an error message when fetching the content failed");
-
-  describe("content", () => {
-    it("should display a skeleton while pending", async () => {
-      const todo: Domain.Todo.Todo = {
-        id: option.some("foo"),
-        title: "bar",
-        content: Domain.Async.pending(),
-      };
-
-      const result = Test.render(<TodoPreview todo={todo} />);
-
-      const expandContent = result.getByRole("button", {
-        name: "show content",
-      });
-
-      await result.user.click(expandContent);
-
-      expect(
-        result.queryByRole("presentation", { name: "skeleton" }),
-      ).not.toBeNull();
-    });
-
-    it("should display the content when resolved", async () => {
-      const todo: Domain.Todo.Todo = {
-        id: option.some("foo"),
-        title: "bar",
-        content: Domain.Async.of("baz"),
-      };
-
-      const result = Test.render(<TodoPreview todo={todo} />);
-
-      const expandContent = result.getByRole("button", {
-        name: "show content",
-      });
-
-      await result.user.click(expandContent);
-
-      expect(
-        result.getByRole("presentation", { name: "content" }),
-      ).toHaveTextContent("baz");
-    });
-  });
+  // it("should display the title", async () => {
+  //   const todo = Test.Data.Todo.buyIcecream;
+  //   const result = Test.render(<TodoPreview todo={todo} />);
+  //   expect(result.getByRole("heading")).toHaveTextContent(todo.title);
+  // });
+  // it.todo("should display an error message when fetching the content failed");
+  // describe("content", () => {
+  //   it("should display a skeleton while content is missing", async () => {
+  //     const todo: Domain.Todo.Todo = {
+  //       id: option.some("foo"),
+  //       title: "bar",
+  //       content: option.none,
+  //     };
+  //     const result = Test.render(<TodoPreview todo={todo} />);
+  //     const expandContent = result.getByRole("button", {
+  //       name: "show content",
+  //     });
+  //     await result.user.click(expandContent);
+  //     expect(
+  //       result.queryByRole("presentation", { name: "skeleton" }),
+  //     ).not.toBeNull();
+  //   });
+  //   it("should display the content when present", async () => {
+  //     const todo: Domain.Todo.Todo = {
+  //       id: option.some("foo"),
+  //       title: "bar",
+  //       content: option.some("baz"),
+  //     };
+  //     const result = Test.render(<TodoPreview todo={todo} />);
+  //     const expandContent = result.getByRole("button", {
+  //       name: "show content",
+  //     });
+  //     await result.user.click(expandContent);
+  //     expect(
+  //       result.getByRole("presentation", { name: "content" }),
+  //     ).toHaveTextContent("baz");
+  //   });
+  // });
+  // describe("delete button", () => {
+  //   it.todo("should mark the todo as disabled while its deletion is pending");
+  //   it.todo("should delete the todo via api");
+  // });
 });
 
 describe("overview", () => {
@@ -107,13 +98,7 @@ describe("overview", () => {
       expect(result.getByRole(...saveQuery)).toBeDisabled();
     });
 
-    it("should be disabled if todos are pending", async () => {
-      const result = Test.render(<Overview />); // todos are initially pending
-
-      expect(result.getByRole(...saveQuery)).toBeDisabled();
-    });
-
-    it("should enable saving if todos are fetched and content + title are set", async () => {
+    it("should enable saving only after todos are fetched and content + title are set", async () => {
       const result = Test.render(<Overview />, {
         api: {
           fetchTodos: () => taskEither.right([]),
@@ -121,13 +106,19 @@ describe("overview", () => {
       });
 
       const form = result.getByRole(...formQuery);
+      const saveButton = within(form).getByRole(...saveQuery);
+
+      expect(saveButton).toBeDisabled();
+
       await result.user.clear(within(form).getByRole(...titleQuery));
       await result.user.keyboard("ignoring it in mock api");
+
+      expect(saveButton).toBeDisabled();
 
       await result.user.clear(within(form).getByRole(...contentQuery));
       await result.user.keyboard("ignoring it in mock api");
 
-      await waitFor(() => expect(result.getByRole(...saveQuery)).toBeEnabled());
+      await waitFor(() => expect(saveButton).toBeEnabled());
     });
 
     it("should add the todo on save", async () => {
@@ -148,14 +139,7 @@ describe("overview", () => {
       const saveButton = within(form).getByRole(...saveQuery);
       await result.user.click(saveButton);
 
-      await waitFor(() =>
-        expect(
-          pipe(
-            result.store.getState().todo.todos,
-            Domain.Async.getOrElse(() => [] as Domain.Todo.Todo[]),
-          ),
-        ).toEqual([Test.Data.Todo.buyIcecream]),
-      );
+      await result.findByRole("listitem", { name: "todo" });
     });
 
     it("should clear the form on successful save", async () => {

@@ -58,13 +58,3 @@ export const create = (
 
   return store;
 };
-
-export const stream = (store: Store): Rx.Observable<State> =>
-  new Rx.Observable<State>((observer) => {
-    const unsub = store.subscribe(() => {
-      const state = store.getState();
-      observer.next(state);
-    });
-
-    return () => unsub();
-  });

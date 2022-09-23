@@ -17,7 +17,10 @@ export const TodoPreview = ({ todo }: { todo: Domain.Todo.Todo }) => {
 
   return (
     <div>
-      <h3>{todo.title}</h3>
+      <div>
+        <h3>{todo.title}</h3>
+        <button aria-label="delete todo">Delete</button>
+      </div>
       <Accordion open={showContent}>
         <AccordionHeader
           role="button"
@@ -29,16 +32,18 @@ export const TodoPreview = ({ todo }: { todo: Domain.Todo.Todo }) => {
         <AccordionBody>
           {pipe(
             todo.content,
-            Domain.Async.map((content) => (
-              <div role="presentation" aria-label="content">
-                {content}
-              </div>
-            )),
-            Domain.Async.getOrElse(() => (
-              <div role="presentation" aria-label="skeleton">
-                loading...
-              </div>
-            )),
+            option.match(
+              () => (
+                <div role="presentation" aria-label="skeleton">
+                  loading...
+                </div>
+              ),
+              (content) => (
+                <div role="presentation" aria-label="content">
+                  {content}
+                </div>
+              ),
+            ),
           )}
         </AccordionBody>
       </Accordion>
