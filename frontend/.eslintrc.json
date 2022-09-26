@@ -10,7 +10,18 @@
       ],
       "rules": {
         "import/no-internal-modules": "off",
-        "import/no-restricted-paths": "off"
+        "import/no-restricted-paths": [
+          "error",
+          {
+            "zones": [
+              {
+                "target": "src/**/*.demoize.{ts,tsx}",
+                "from": "src/test/render",
+                "message": "includes jest related imports that won't work in the browser"
+              }
+            ]
+          }
+        ]
       }
     }
   ],

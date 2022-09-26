@@ -13,6 +13,7 @@ import * as Api from "../api";
 import * as Store from "../store";
 import { Routes } from "../application";
 import * as TestApi from "./api";
+import { TestBed } from "./testbed";
 
 globalThis.ResizeObserver = resizeObserverPolyfill;
 
@@ -23,41 +24,21 @@ export type RenderOptions = {
   api?: DeepPartial<Api.Api>;
 };
 
-function TestBed({
-  children,
-  api,
-  store,
-}: React.PropsWithChildren<{ api: Api.Api; store: Store.Store }>) {
-  return (
-    <ThemeProvider>
-      <Api.Provider api={api}>
-        <Store.Provider store={store}>{children}</Store.Provider>
-      </Api.Provider>
-    </ThemeProvider>
-  );
-}
-
-export const render = (element: JSX.Element, options: RenderOptions = {}) => {
-  const mockedApi = TestApi.create(options.api ?? {});
-
-  const mockedPreloadedState = mergeDeepRight(
-    Store.initialState,
-    options.preloadedState ?? {},
-  ) as Store.State;
-
-  const mockedStore = Store.create({ api: mockedApi }, mockedPreloadedState);
-
+export const render = (
+  element: JSX.Element,
+  { api = {}, preloadedState = {} }: RenderOptions = {},
+) => {
   const user = userEvent.setup();
 
   const Wrapper = ({ children }: React.PropsWithChildren) => (
-    <TestBed api={mockedApi} store={mockedStore}>
+    <TestBed api={api} store={preloadedState}>
       {children}
     </TestBed>
   );
   const component = ReactTestRenderer.create(<Wrapper>{element}</Wrapper>);
 
   const dom = TestingLibrary.render(element, { wrapper: Wrapper });
-  return { ...component, ...dom, user, store: mockedStore };
+  return { ...component, ...dom, user };
 };
 
 export const renderRoute = (route: string) => {

@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  act,
   ByRoleMatcher,
   ByRoleOptions,
   waitFor,
@@ -10,12 +9,13 @@ import { option, taskEither } from "fp-ts";
 import * as Test from "../test";
 import * as Domain from "../domain";
 import * as Async from "../store/async";
+import { render } from "../test/render";
 import { TodoPreview, Overview } from "./todo";
 
 describe("todo preview", () => {
   it("should display the title", async () => {
     const todo = Test.Data.Todo.buyIcecream;
-    const result = Test.render(<TodoPreview todo={todo} />);
+    const result = render(<TodoPreview todo={todo} />);
     expect(result.getByRole("heading")).toHaveTextContent(todo.title);
   });
 
@@ -30,7 +30,7 @@ describe("todo preview", () => {
         title: "bar",
         content: option.none,
       };
-      const result = Test.render(<TodoPreview todo={todo} />);
+      const result = render(<TodoPreview todo={todo} />);
       const expandContent = result.getByRole("button", {
         name: "show content",
       });
@@ -46,7 +46,7 @@ describe("todo preview", () => {
         title: "bar",
         content: option.some("baz"),
       };
-      const result = Test.render(<TodoPreview todo={todo} />);
+      const result = render(<TodoPreview todo={todo} />);
       const expandContent = result.getByRole("button", {
         name: "show content",
       });
@@ -61,7 +61,7 @@ describe("todo preview", () => {
     it("should be disabled while the deletion is pending", async () => {
       const todo = Test.Data.Todo.buyIcecream;
 
-      const result = Test.render(<TodoPreview todo={todo} />, {
+      const result = render(<TodoPreview todo={todo} />, {
         preloadedState: {
           todo: {
             todos: Async.of({
@@ -79,7 +79,7 @@ describe("todo preview", () => {
     it("should mark the whole todo as disabled if some tasks are pending", async () => {
       const todo = Test.Data.Todo.buyIcecream;
 
-      const result = Test.render(<TodoPreview todo={todo} />, {
+      const result = render(<TodoPreview todo={todo} />, {
         preloadedState: {
           todo: {
             todos: Async.of({
@@ -101,7 +101,7 @@ describe("overview", () => {
   it("should display one todo component for each fetched todo", async () => {
     const todos: Domain.Todo.Todo[] = [Test.Data.Todo.buyIcecream];
 
-    const result = Test.render(<Overview />, {
+    const result = render(<Overview />, {
       api: {
         fetchTodos: () => taskEither.right(todos),
       },
@@ -120,7 +120,7 @@ describe("overview", () => {
     const saveQuery: Query = ["button", { name: "save todo" }];
 
     it("should be disabled if title is empty", async () => {
-      const result = Test.render(<Overview />);
+      const result = render(<Overview />);
 
       const title = result.getByRole(...titleQuery);
 
@@ -130,7 +130,7 @@ describe("overview", () => {
     });
 
     it("should be disabled if content is empty", async () => {
-      const result = Test.render(<Overview />);
+      const result = render(<Overview />);
 
       const content = result.getByRole(...contentQuery);
 
@@ -140,7 +140,7 @@ describe("overview", () => {
     });
 
     it("should enable saving only after todos are fetched and content + title are set", async () => {
-      const result = Test.render(<Overview />, {
+      const result = render(<Overview />, {
         api: {
           fetchTodos: () => taskEither.right([]),
         },
@@ -163,7 +163,7 @@ describe("overview", () => {
     });
 
     it("should add the todo on save", async () => {
-      const result = Test.render(<Overview />, {
+      const result = render(<Overview />, {
         api: {
           fetchTodos: () => taskEither.right([]),
           addTodo: () => taskEither.right(Test.Data.Todo.buyIcecream),
@@ -184,7 +184,7 @@ describe("overview", () => {
     });
 
     it("should clear the form on successful save", async () => {
-      const result = Test.render(<Overview />, {
+      const result = render(<Overview />, {
         api: {
           fetchTodos: () => taskEither.right([]),
           addTodo: () => taskEither.right(Test.Data.Todo.buyIcecream),
@@ -208,7 +208,7 @@ describe("overview", () => {
     });
 
     it("should not clear the form on erroneous save", async () => {
-      const result = Test.render(<Overview />, {
+      const result = render(<Overview />, {
         api: {
           fetchTodos: () => taskEither.right([]),
           addTodo: () => taskEither.left("some error"),

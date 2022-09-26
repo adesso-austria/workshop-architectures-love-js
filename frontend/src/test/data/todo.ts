@@ -1,7 +1,7 @@
-import * as Crypto from "crypto";
 import { option } from "fp-ts";
 import { mergeDeepRight } from "ramda";
 import { DeepPartial } from "utils";
+import * as UUID from "uuid";
 import * as Domain from "../../domain";
 
 export const buyIcecream: Domain.Todo.Todo = {
@@ -15,8 +15,8 @@ export const create = (
 ): Domain.Todo.Todo =>
   mergeDeepRight(
     {
-      id: option.some(Crypto.randomUUID()),
-      title: Crypto.randomUUID(),
+      id: option.some(UUID.v4()),
+      title: "some title",
       content: option.none,
     },
     overrides,
