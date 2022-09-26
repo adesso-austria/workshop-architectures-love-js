@@ -3,15 +3,58 @@ import {
   AccordionBody,
   AccordionHeader,
   Button,
+  Checkbox,
   Input,
   Textarea,
 } from "@material-tailwind/react";
 import { option } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
+import { equals } from "ramda";
 import React from "react";
+import * as Icons from "react-icons/md";
 import * as Domain from "../domain";
 import * as Store from "../store";
 
+export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
+  const [todo, setTodo] = React.useState(propTodo);
+  const { title } = todo;
+
+  const hasUnsavedChanges = React.useMemo(
+    () => !equals(todo, propTodo),
+    [todo, propTodo],
+  );
+
+  return (
+    <div>
+      <Checkbox
+        checked={pipe(
+          todo.isDone,
+          option.getOrElse(() => false),
+        )}
+      />
+      <Input
+        aria-label="title"
+        label="Title"
+        placeholder="What to do..."
+        variant="static"
+        value={title}
+        onChange={(e) =>
+          setTodo((current) => ({
+            ...current,
+            title: e.target.value,
+          }))
+        }
+      />
+      {hasUnsavedChanges && (
+        <Icons.MdWarning role="status" aria-label="unsaved changes" />
+      )}
+    </div>
+  );
+};
+
+/**
+ * @deprecated
+ */
 export const TodoPreview = ({ todo }: { todo: Domain.Todo.Todo }) => {
   const [showContent, setShowContent] = React.useState(false);
 

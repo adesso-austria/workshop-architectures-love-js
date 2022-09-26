@@ -3,6 +3,7 @@ import {
   ByRoleMatcher,
   ByRoleOptions,
   waitFor,
+  waitForElementToBeRemoved,
   within,
 } from "@testing-library/react";
 import { option, taskEither } from "fp-ts";
@@ -10,7 +11,45 @@ import * as Test from "../test";
 import * as Domain from "../domain";
 import * as Async from "../store/async";
 import { render } from "../test/render";
-import { TodoPreview, Overview } from "./todo";
+import { TodoPreview, Overview, Todo } from "./todo";
+
+describe("todo", () => {
+  describe("title", () => {
+    it("should be possible to change it", async () => {
+      const result = render(<Todo todo={Test.Data.Todo.buyIcecream} />);
+
+      const title = result.getByRole("textbox", { name: "title" });
+
+      expect(title).toHaveValue(Test.Data.Todo.buyIcecream.title);
+
+      await result.user.clear(title);
+      await result.user.keyboard("foo");
+
+      expect(title).toHaveValue("foo");
+    });
+
+    it("should show an unsaved icon on change", async () => {
+      const result = render(<Todo todo={Test.Data.Todo.buyIcecream} />);
+
+      const title = result.getByRole("textbox", { name: "title" });
+
+      await result.user.clear(title);
+      await result.user.keyboard("foo");
+
+      await expect(
+        result.findByRole("status", { name: "unsaved changes" }),
+      ).resolves.toBeTruthy();
+    });
+
+    it.todo("should save on blur");
+  });
+
+  describe("content", () => {
+    it.todo("should be possible to change it");
+    it.todo("should show an unsaved icon on change");
+    it.todo("should save on blur");
+  });
+});
 
 describe("todo preview", () => {
   it("should display the title", async () => {
