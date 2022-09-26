@@ -70,35 +70,43 @@ export const Overview = function TodoOverview() {
   return (
     <>
       <form aria-label="new todo">
-        <Input
-          variant="static"
-          aria-label="title"
-          value={newTodo.title}
-          onChange={(e) =>
-            setNewTodo((current) => ({
-              ...current,
-              title: e.target.value,
-            }))
-          }
-        />
-        <Textarea
-          variant="static"
-          aria-label="content"
-          value={newTodo.content}
-          onChange={(e) =>
-            setNewTodo((current) => ({
-              ...current,
-              content: e.target.value,
-            }))
-          }
-        />
-        <Button
-          aria-label="save todo"
-          disabled={pending || newTodo.title === "" || newTodo.content === ""}
-          onClick={() => addTodo(newTodo)}
-        >
-          Save
-        </Button>
+        <div className="flex flex-col gap-6">
+          <Input
+            variant="static"
+            aria-label="title"
+            label="Title"
+            placeholder="What to do..."
+            value={newTodo.title}
+            onChange={(e) =>
+              setNewTodo((current) => ({
+                ...current,
+                title: e.target.value,
+              }))
+            }
+          />
+          <Textarea
+            variant="static"
+            aria-label="content"
+            label="Description"
+            placeholder="Could you elaborate?"
+            value={newTodo.content}
+            onChange={(e) =>
+              setNewTodo((current) => ({
+                ...current,
+                content: e.target.value,
+              }))
+            }
+          />
+        </div>
+        <div className="flex justify-end">
+          <Button
+            aria-label="save todo"
+            disabled={pending || newTodo.title === "" || newTodo.content === ""}
+            onClick={() => addTodo(newTodo)}
+          >
+            Save
+          </Button>
+        </div>
       </form>
       {todos.map((todo, i) => (
         <div
