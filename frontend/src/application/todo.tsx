@@ -1,12 +1,4 @@
-import {
-  Accordion,
-  AccordionBody,
-  AccordionHeader,
-  Button,
-  Checkbox,
-  Input,
-  Textarea,
-} from "@material-tailwind/react";
+import { Button, Checkbox, Input, Textarea } from "@material-tailwind/react";
 import { option } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { equals } from "ramda";
@@ -26,7 +18,7 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
 
   return (
     <div>
-      <Checkbox checked={Domain.Async.value(todo.isDone)} />
+      <Checkbox checked={todo.isDone} />
       <Input
         aria-label="title"
         label="Title"
