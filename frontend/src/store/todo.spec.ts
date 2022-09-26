@@ -4,7 +4,6 @@ import { option, record, taskEither } from "fp-ts";
 import { DeepPartial, ignore } from "utils";
 import { mergeDeepRight } from "ramda";
 import { pipe } from "fp-ts/lib/function";
-import { createStore } from "@reduxjs/toolkit";
 import { StateObservable } from "redux-observable";
 import * as Test from "../test";
 import { Api } from "../api";

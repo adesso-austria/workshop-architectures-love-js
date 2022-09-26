@@ -249,3 +249,36 @@ export const useAddTodo = () => {
     ? ignore
     : (todo: Domain.AddTodo.AddTodo) => dispatch(slice.actions.addTodo(todo));
 };
+
+export const useDeleteTodo = (todo: Pick<Domain.Todo.Todo, "id">) => {
+  const dispatch = useDispatch();
+
+  const deleteTodo = pipe(
+    todo.id,
+    option.match(
+      // no id, can't delete => ignore request to delete
+      () => ignore,
+      (id) => () => dispatch(slice.actions.deleteTodo(id)),
+    ),
+  );
+
+  const isPending = useSelector(
+    pipe(
+      todo.id,
+      option.match(
+        // no id, no information about pending state => assume not pending
+        () => () => false,
+        (id) =>
+          flow(
+            Selectors.fromStore,
+            Selectors.selectById(id),
+            option.fromNullable,
+            option.map(Async.isPending("deleting")),
+            option.getOrElse(() => false),
+          ),
+      ),
+    ),
+  );
+
+  return { deleteTodo, isPending };
+};
