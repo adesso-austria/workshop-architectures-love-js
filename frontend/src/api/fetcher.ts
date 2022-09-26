@@ -3,7 +3,6 @@ import { taskEither } from "fp-ts";
 
 export type Response<Status, T> = {
   readonly headers: Headers;
-  readonly url: string;
   readonly ok: boolean;
   readonly statusText: string;
   readonly status: Status;
@@ -22,15 +21,36 @@ type Endpoints = {
   >]: unknown;
 };
 
+type Parameters<T> = T extends {
+  parameters: infer Parameters;
+}
+  ? Parameters
+  : unknown;
+
+type RequestBody<T> = T extends {
+  requestBody: {
+    content: infer Content;
+  };
+}
+  ? {
+      body: Content extends {
+        "application/json": infer JsonContent;
+      }
+        ? JsonContent
+        : Content extends {
+            "text/string": infer StringContent;
+          }
+        ? StringContent
+        : unknown;
+    }
+  : unknown;
+
 type Op<
   Path extends keyof Contracts.paths,
   Method extends keyof Contracts.paths[Path],
 > = (
-  parameters: Contracts.paths[Path][Method] extends {
-    parameters: infer Parameters;
-  }
-    ? Parameters
-    : unknown,
+  parameters: Parameters<Contracts.paths[Path][Method]> &
+    RequestBody<Contracts.paths[Path][Method]>,
 ) => Contracts.paths[Path][Method] extends {
   responses: infer Responses;
 }
@@ -90,7 +110,7 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
   ) => {
     // type gets a bit too complicated here...
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return ((args: any) =>
+    return ((args: any = {}) =>
       taskEither.tryCatch(
         () =>
           fetch(
@@ -103,7 +123,10 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
               method: method as string,
             },
           ).then((res) => res.json().catch(() => res.text())),
-        () => "could not fetch",
+        (reason) =>
+          `could not fetch ${method
+            .toString()
+            .toUpperCase()} ${path}: ${reason}`,
       )) as Op<Path, Method>;
   };
 

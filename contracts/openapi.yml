@@ -48,7 +48,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Todo"
+              $ref: "#/components/schemas/AddTodo"
       responses:
         200:
           description: Ok
@@ -114,6 +114,9 @@ components:
           type: string
         content:
           type: string
+      required:
+        - title
+        - content
     Identifier:
       type: object
       properties:

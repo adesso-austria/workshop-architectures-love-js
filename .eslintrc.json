@@ -1,5 +1,15 @@
 {
   "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/eslintrc.json",
+  "overrides": [
+    {
+      "files": [
+        "**/*.{spec,e2e,demoize}.{ts,tsx}"
+      ],
+      "rules": {
+        "@typescript-eslint/no-non-null-assertion": "off"
+      }
+    }
+  ],
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
@@ -20,9 +30,12 @@
   "root": true,
   "rules": {
     "@typescript-eslint/no-namespace": "off",
+    "@typescript-eslint/no-unused-vars": "off",
     "import/order": "error",
     "import/namespace": "off",
     "import/default": "off",
+    "import/no-named-as-default": "off",
+    "import/no-named-as-default-member": "off",
     "import/no-internal-modules": [
       "error",
       {

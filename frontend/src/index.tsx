@@ -6,6 +6,7 @@ import { ThemeProvider } from "@material-tailwind/react";
 import * as ReactRouter from "react-router";
 import * as ReactRouterDom from "react-router-dom";
 import { Routes } from "./application";
+import * as Api from "./api";
 import * as Store from "./store";
 
 const container = document.getElementById("root");
@@ -19,8 +20,10 @@ const router = ReactRouterDom.createBrowserRouter(Routes.routes);
 const root = createRoot(container);
 root.render(
   <ThemeProvider>
-    <Store.Provider>
-      <ReactRouter.RouterProvider router={router} />
-    </Store.Provider>
+    <Api.Provider>
+      <Store.Provider>
+        <ReactRouter.RouterProvider router={router} />
+      </Store.Provider>
+    </Api.Provider>
   </ThemeProvider>,
 );

@@ -1,7 +1,15 @@
-import { renderRoute } from "../test-utils";
-import { App } from "./app";
+import { act, renderRoute } from "../test/render";
+import * as App from "./app";
+import * as Todo from "./todo";
 
-it("should render <App /> under /", () => {
+it("should render <App /> under /", async () => {
   const result = renderRoute("/");
-  expect(() => result.root.findByType(App)).not.toThrow();
+  await act();
+  expect(() => result.root.findByType(App.App)).not.toThrow();
+});
+
+it("should render <Todo.Overview /> under /", async () => {
+  const result = renderRoute("/");
+  await act();
+  expect(() => result.root.findByType(Todo.Overview)).not.toThrow();
 });
