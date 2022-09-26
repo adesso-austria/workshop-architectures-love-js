@@ -18,7 +18,8 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
   const { deleteTodo, isPending: isDeletePending } =
     Store.Todo.useDeleteTodo(propTodo);
 
-  const { content, isFetching, isUpdating } = Store.Todo.useContent(todo);
+  const { content, fetchContent, isFetching, isUpdating } =
+    Store.Todo.useContent(todo);
 
   const hasUnsavedChanges = React.useMemo(
     () => !equals(todo, propTodo),
@@ -26,6 +27,11 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
   );
 
   const [showContent, setShowContent] = React.useState(false);
+  React.useEffect(() => {
+    if (showContent) {
+      fetchContent();
+    }
+  }, [showContent]);
 
   return (
     <div>
