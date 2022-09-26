@@ -176,7 +176,7 @@ export const slice = createSlice({
 });
 
 namespace Epics {
-  const fetchTodosEpic: Store.Epic = (action$, _state$, { api }) =>
+  const fetchTodos: Store.Epic = (action$, _state$, { api }) =>
     action$.pipe(
       Rx.filter(slice.actions.fetchTodos.match),
       Rx.switchMap(() => {
@@ -192,7 +192,7 @@ namespace Epics {
       }),
     );
 
-  const addTodoEpic: Store.Epic = (action$, _state, { api }) =>
+  const addTodo: Store.Epic = (action$, _state, { api }) =>
     action$.pipe(
       Rx.filter(slice.actions.addTodo.match),
       Rx.switchMap(({ payload: addTodo }) => {
@@ -208,11 +208,11 @@ namespace Epics {
       }),
     );
 
-  const deleteTodoEpic: Store.Epic = (action$, _state$, { api }) =>
+  const deleteTodo: Store.Epic = (action$, _state$, { api }) =>
     action$.pipe(
       Rx.filter(slice.actions.deleteTodo.match),
       Rx.switchMap(({ payload: id }) => {
-        const deleteAction = pipe(
+        const deleteTodo = pipe(
           api.deleteTodo(id),
           taskEither.matchW(
             (error) => slice.actions.deleteTodoFailure({ id, error }),
@@ -220,11 +220,32 @@ namespace Epics {
           ),
         );
 
-        return deleteAction();
+        return deleteTodo();
       }),
     );
 
-  export const epic = combineEpics(fetchTodosEpic, addTodoEpic, deleteTodoEpic);
+  const fetchContent: Store.Epic = (action$, _state$, { api }) =>
+    action$.pipe(
+      Rx.filter(slice.actions.fetchContent.match),
+      Rx.switchMap(({ payload: id }) => {
+        const fetchContent = pipe(
+          api.fetchContent(id),
+          taskEither.matchW(
+            (error) => slice.actions.fetchContentFailure({ id, error }),
+            (content) => slice.actions.fetchContentSuccess({ id, content }),
+          ),
+        );
+
+        return fetchContent();
+      }),
+    );
+
+  export const epic = combineEpics(
+    fetchTodos,
+    addTodo,
+    deleteTodo,
+    fetchContent,
+  );
 }
 export const epic = Epics.epic;
 

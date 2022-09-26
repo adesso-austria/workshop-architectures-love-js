@@ -263,4 +263,30 @@ describe("epic", () => {
       );
     });
   });
+
+  describe("fetching content", () => {
+    it("should dispatch success on api success", async () => {
+      const action$ = createAction$(
+        Rx.of(slice.actions.fetchContent("foo")),
+        {},
+        { fetchContent: () => taskEither.right("bar") },
+      );
+
+      expect(await Rx.firstValueFrom(action$)).toEqual(
+        slice.actions.fetchContentSuccess({ id: "foo", content: "bar" }),
+      );
+    });
+
+    it("should dispatch failuer on api failure", async () => {
+      const action$ = createAction$(
+        Rx.of(slice.actions.fetchContent("foo")),
+        {},
+        { fetchContent: () => taskEither.left("bar") },
+      );
+
+      expect(await Rx.firstValueFrom(action$)).toEqual(
+        slice.actions.fetchContentFailure({ id: "foo", error: "bar" }),
+      );
+    });
+  });
 });
