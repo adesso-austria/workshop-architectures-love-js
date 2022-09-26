@@ -1,8 +1,9 @@
 import { option } from "fp-ts";
+import { Async } from "./async";
 
 export type Todo = {
   id: option.Option<string>;
   title: string;
-  content: option.Option<string>;
-  isDone: option.Option<boolean>;
+  content: Async<string, "fetching" | "updating">;
+  isDone: Async<boolean, "fetching" | "updating">;
 };

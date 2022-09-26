@@ -7,6 +7,6 @@ export const toDomain = (
 ): Domain.Todo.Todo => ({
   id: option.some(contract.id),
   title: contract.title,
-  content: option.none,
-  isDone: option.none,
+  content: Domain.Async.of(""),
+  isDone: Domain.Async.of(false),
 });

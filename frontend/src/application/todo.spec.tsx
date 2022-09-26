@@ -10,7 +10,7 @@ import { option, taskEither } from "fp-ts";
 import * as Test from "../test";
 import * as Domain from "../domain";
 import { render } from "../test/render";
-import { TodoPreview, Overview, Todo } from "./todo";
+import { Overview, Todo } from "./todo";
 
 describe("todo", () => {
   describe("title", () => {
@@ -47,93 +47,6 @@ describe("todo", () => {
     it.todo("should be possible to change it");
     it.todo("should show an unsaved icon on change");
     it.todo("should save on blur");
-  });
-});
-
-describe("todo preview", () => {
-  it("should display the title", async () => {
-    const todo = Test.Data.Todo.buyIcecream;
-    const result = render(<TodoPreview todo={todo} />);
-    expect(result.getByRole("heading")).toHaveTextContent(todo.title);
-  });
-
-  it.todo("should display an error message when fetching the content failed");
-
-  it.todo("should display as disabled while some task is pending");
-
-  describe("content", () => {
-    it("should display a skeleton while content is missing", async () => {
-      const todo: Domain.Todo.Todo = {
-        id: option.some("foo"),
-        title: "bar",
-        content: option.none,
-        isDone: option.none,
-      };
-      const result = render(<TodoPreview todo={todo} />);
-      const expandContent = result.getByRole("button", {
-        name: "show content",
-      });
-      await result.user.click(expandContent);
-      expect(
-        result.queryByRole("presentation", { name: "skeleton" }),
-      ).not.toBeNull();
-    });
-
-    it("should display the content when present", async () => {
-      const todo: Domain.Todo.Todo = {
-        id: option.some("foo"),
-        title: "bar",
-        content: option.some("baz"),
-        isDone: option.none,
-      };
-      const result = render(<TodoPreview todo={todo} />);
-      const expandContent = result.getByRole("button", {
-        name: "show content",
-      });
-      await result.user.click(expandContent);
-      expect(
-        result.getByRole("presentation", { name: "content" }),
-      ).toHaveTextContent("baz");
-    });
-  });
-
-  describe("delete button", () => {
-    it("should be disabled while the deletion is pending", async () => {
-      const todo = Test.Data.Todo.buyIcecream;
-
-      const result = render(<TodoPreview todo={todo} />, {
-        preloadedState: {
-          todo: {
-            todos: Domain.Async.of({
-              foo: Domain.Async.of(todo, { deleting: { state: "pending" } }),
-            }),
-          },
-        },
-      });
-
-      expect(
-        result.getByRole("button", { name: "delete todo" }),
-      ).toBeDisabled();
-    });
-
-    it("should mark the whole todo as disabled if some tasks are pending", async () => {
-      const todo = Test.Data.Todo.buyIcecream;
-
-      const result = render(<TodoPreview todo={todo} />, {
-        preloadedState: {
-          todo: {
-            todos: Domain.Async.of({
-              foo: Domain.Async.of(todo, { deleting: { state: "pending" } }),
-            }),
-          },
-        },
-      });
-
-      expect(result.container.firstElementChild!).toHaveAttribute(
-        "aria-disabled",
-        "true",
-      );
-    });
   });
 });
 

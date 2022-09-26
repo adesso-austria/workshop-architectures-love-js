@@ -21,8 +21,8 @@ export const create = (fetcher: Fetcher): Api => ({
         (res): Domain.Todo.Todo => ({
           id: option.some(res.data),
           title: addTodo.title,
-          content: option.none,
-          isDone: option.none,
+          content: Domain.Async.of(""),
+          isDone: Domain.Async.of(false),
         }),
       ),
     ),

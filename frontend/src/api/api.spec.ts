@@ -2,6 +2,7 @@ import { either, option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { ignore, throwException } from "utils";
 import * as Test from "../test";
+import * as Domain from "../domain";
 import * as Api from "./api";
 
 describe("addTodo", () => {
@@ -20,8 +21,8 @@ describe("addTodo", () => {
         expect(todo).toEqual({
           id: option.some("foo"),
           title: "test",
-          content: option.none,
-          isDone: option.none,
+          content: Domain.Async.of(""),
+          isDone: Domain.Async.of(false),
         });
       }),
     );

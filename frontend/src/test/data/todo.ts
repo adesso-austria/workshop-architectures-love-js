@@ -7,8 +7,8 @@ import * as Domain from "../../domain";
 export const buyIcecream: Domain.Todo.Todo = {
   id: option.some("foo"),
   title: "Buy Icecream",
-  content: option.none,
-  isDone: option.none,
+  content: Domain.Async.of("buy some ice cream"),
+  isDone: Domain.Async.of(false),
 };
 
 export const create = (

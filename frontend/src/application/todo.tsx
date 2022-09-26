@@ -26,12 +26,7 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
 
   return (
     <div>
-      <Checkbox
-        checked={pipe(
-          todo.isDone,
-          option.getOrElse(() => false),
-        )}
-      />
+      <Checkbox checked={Domain.Async.value(todo.isDone)} />
       <Input
         aria-label="title"
         label="Title"
@@ -48,57 +43,6 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
       {hasUnsavedChanges && (
         <Icons.MdWarning role="status" aria-label="unsaved changes" />
       )}
-    </div>
-  );
-};
-
-/**
- * @deprecated
- */
-export const TodoPreview = ({ todo }: { todo: Domain.Todo.Todo }) => {
-  const [showContent, setShowContent] = React.useState(false);
-
-  const { deleteTodo, isPending: isDeletePending } =
-    Store.Todo.useDeleteTodo(todo);
-
-  return (
-    <div aria-disabled={isDeletePending}>
-      <div>
-        <h3>{todo.title}</h3>
-        <button
-          aria-label="delete todo"
-          disabled={isDeletePending}
-          onClick={deleteTodo}
-        >
-          Delete
-        </button>
-      </div>
-      <Accordion open={showContent}>
-        <AccordionHeader
-          role="button"
-          aria-label="show content"
-          onClick={() => setShowContent((current) => !current)}
-        >
-          Content
-        </AccordionHeader>
-        <AccordionBody>
-          {pipe(
-            todo.content,
-            option.match(
-              () => (
-                <div role="presentation" aria-label="skeleton">
-                  loading...
-                </div>
-              ),
-              (content) => (
-                <div role="presentation" aria-label="content">
-                  {content}
-                </div>
-              ),
-            ),
-          )}
-        </AccordionBody>
-      </Accordion>
     </div>
   );
 };
@@ -160,7 +104,7 @@ export const Overview = function TodoOverview() {
           role="listitem"
           aria-label="todo"
         >
-          <TodoPreview todo={todo} />
+          <Todo todo={todo} />
         </div>
       ))}
     </>
