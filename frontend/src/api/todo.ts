@@ -8,5 +8,5 @@ export const toDomain = (
   id: contract.id,
   title: contract.title,
   content: option.none,
-  isDone: false,
+  isDone: contract.isDone,
 });
