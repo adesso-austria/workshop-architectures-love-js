@@ -15,11 +15,20 @@ import * as Store from "../store";
 export const TodoPreview = ({ todo }: { todo: Domain.Todo.Todo }) => {
   const [showContent, setShowContent] = React.useState(false);
 
+  const { deleteTodo, isPending: isDeletePending } =
+    Store.Todo.useDeleteTodo(todo);
+
   return (
-    <div>
+    <div aria-disabled={isDeletePending}>
       <div>
         <h3>{todo.title}</h3>
-        <button aria-label="delete todo">Delete</button>
+        <button
+          aria-label="delete todo"
+          disabled={isDeletePending}
+          onClick={deleteTodo}
+        >
+          Delete
+        </button>
       </div>
       <Accordion open={showContent}>
         <AccordionHeader
