@@ -39,6 +39,25 @@ namespace Selectors {
     flow(selectTodos, Async.value, (todos) => todos[id], option.fromNullable);
 }
 
+/**
+ * helper to modify one specific todo by id based on its current state
+ */
+const modifyTodo = (
+  todos: State["todos"],
+  id: string,
+  fn: (current: Todo) => Todo,
+): State["todos"] =>
+  pipe(
+    todos,
+    Async.map((todos) =>
+      pipe(
+        todos,
+        record.modifyAt(id, fn),
+        option.getOrElse(() => todos),
+      ),
+    ),
+  );
+
 export const slice = createSlice({
   name: "todo",
   initialState,
@@ -98,6 +117,39 @@ export const slice = createSlice({
             option.getOrElse(() => todos),
           ),
         ),
+      );
+    },
+    fetchContent: (state, action: PayloadAction<string>) => {
+      state.todos = modifyTodo(
+        state.todos,
+        action.payload,
+        Async.setPending("fetching content"),
+      );
+    },
+    fetchContentSuccess: (
+      state,
+      action: PayloadAction<{ id: string; content: string }>,
+    ) => {
+      state.todos = modifyTodo(
+        state.todos,
+        action.payload.id,
+        flow(
+          Async.map((todo) => ({
+            ...todo,
+            content: option.some(action.payload.content),
+          })),
+          Async.setResolved("fetching content"),
+        ),
+      );
+    },
+    fetchContentFailure: (
+      state,
+      action: PayloadAction<{ id: string; error: string }>,
+    ) => {
+      state.todos = modifyTodo(
+        state.todos,
+        action.payload.id,
+        Async.setError("fetching content", action.payload.error),
       );
     },
     fetchTodos: (state) => {
@@ -271,5 +323,7 @@ export const useContent = (todo: Pick<Domain.Todo.Todo, "id">) => {
     option.getOrElse(() => ""),
   );
 
-  return { content, isFetching, isUpdating };
+  const fetchContent = () => dispatch(slice.actions.fetchContent(todo.id));
+
+  return { content, isFetching, isUpdating, fetchContent };
 };

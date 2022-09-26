@@ -3,7 +3,7 @@ import * as Rx from "rxjs";
 import { option, record, taskEither } from "fp-ts";
 import { DeepPartial, ignore } from "utils";
 import { mergeDeepRight } from "ramda";
-import { pipe } from "fp-ts/lib/function";
+import { flow, pipe } from "fp-ts/lib/function";
 import { StateObservable } from "redux-observable";
 import * as Test from "../test";
 import { Api } from "../api";
@@ -86,6 +86,66 @@ describe("reducer", () => {
           option.chain(Async.getError("deleting")),
         ),
       ).toEqual(option.some("some error"));
+    });
+  });
+
+  describe("fetchContent", () => {
+    it("should set the respective todos task to pending", () => {
+      const initial = createState({
+        todos: Async.of({ foo: Async.of(Test.Data.Todo.buyIcecream) }),
+      });
+
+      const next = slice.reducer(initial, slice.actions.fetchContent("foo"));
+
+      expect(
+        pipe(
+          Async.value(next.todos),
+          record.lookup("foo"),
+          option.map(Async.isPending("fetching content")),
+        ),
+      ).toEqual(option.some(true));
+    });
+  });
+
+  describe("fetchContentSuccess", () => {
+    it("should resolve the respective todos task and set its content", () => {
+      const initial = createState({
+        todos: Async.of({ foo: Async.of(Test.Data.Todo.buyIcecream) }),
+      });
+
+      const next = slice.reducer(
+        initial,
+        slice.actions.fetchContentSuccess({ id: "foo", content: "bar" }),
+      );
+
+      expect(
+        pipe(
+          Async.value(next.todos),
+          record.lookup("foo"),
+          option.chain(flow(Async.value, (todo) => todo.content)),
+        ),
+      ).toEqual(option.some("bar"));
+    });
+  });
+
+  describe("fetchContentFailure", () => {
+    it("should set an error on the respective todos task", () => {
+      const initial = createState({
+        todos: Async.of({ foo: Async.of(Test.Data.Todo.buyIcecream) }),
+      });
+
+      const next = slice.reducer(
+        initial,
+        slice.actions.fetchContentFailure({ id: "foo", error: "bar" }),
+      );
+
+      expect(
+        pipe(
+          Async.value(next.todos),
+          record.lookup("foo"),
+          option.chain(Async.getError("fetching content")),
+        ),
+      ).toEqual(option.some("bar"));
     });
   });
 });
