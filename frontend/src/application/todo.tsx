@@ -87,15 +87,8 @@ export const Overview = function TodoOverview() {
           </Button>
         </div>
       </form>
-      {todos.map((todo, i) => (
-        <div
-          key={pipe(
-            todo.id,
-            option.getOrElse(() => i.toString()),
-          )}
-          role="listitem"
-          aria-label="todo"
-        >
+      {todos.map((todo) => (
+        <div key={todo.id} role="listitem" aria-label="todo">
           <Todo todo={todo} />
         </div>
       ))}

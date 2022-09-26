@@ -48,21 +48,12 @@ export const slice = createSlice({
       state.todos = pipe(state.todos, Async.setPending("adding todo"));
     },
     addTodoSuccess: (state, action: PayloadAction<Domain.Todo.Todo>) => {
-      pipe(
-        action.payload.id,
-        option.match(
-          // refusing to add a todo without id
-          ignore,
-          (id) => {
-            state.todos = pipe(
-              state.todos,
-              Async.setResolved("adding todo"),
-              Async.map(record.upsertAt(id, Async.of(action.payload))),
-            );
-            state.newTodo = { title: "", content: "" };
-          },
-        ),
+      state.todos = pipe(
+        state.todos,
+        Async.setResolved("adding todo"),
+        Async.map(record.upsertAt(action.payload.id, Async.of(action.payload))),
       );
+      state.newTodo = { title: "", content: "" };
     },
     addTodoFailure: (state, action: PayloadAction<string>) => {
       state.todos = pipe(
@@ -111,21 +102,10 @@ export const slice = createSlice({
     },
     fetchTodosSuccess: (state, action: PayloadAction<Domain.Todo.Todo[]>) => {
       state.todos = Async.of(
-        action.payload.reduce(
-          (dict, todo) =>
-            pipe(
-              todo.id,
-              option.match(
-                // ignore todos without ids; should be none but theoretically possible
-                () => dict,
-                (id) => {
-                  dict[id] = Async.of(todo);
-                  return dict;
-                },
-              ),
-            ),
-          {} as Record<string, Todo>,
-        ),
+        action.payload.reduce((dict, todo) => {
+          dict[todo.id] = Async.of(todo);
+          return dict;
+        }, {} as Record<string, Todo>),
       );
     },
     fetchTodosFailure: (state, action: PayloadAction<string>) => {
@@ -253,30 +233,15 @@ export const useAddTodo = () => {
 export const useDeleteTodo = (todo: Pick<Domain.Todo.Todo, "id">) => {
   const dispatch = useDispatch();
 
-  const deleteTodo = pipe(
-    todo.id,
-    option.match(
-      // no id, can't delete => ignore request to delete
-      () => ignore,
-      (id) => () => dispatch(slice.actions.deleteTodo(id)),
-    ),
-  );
+  const deleteTodo = () => dispatch(slice.actions.deleteTodo(todo.id));
 
   const isPending = useSelector(
-    pipe(
-      todo.id,
-      option.match(
-        // no id, no information about pending state => assume not pending
-        () => () => false,
-        (id) =>
-          flow(
-            Selectors.fromStore,
-            Selectors.selectById(id),
-            option.fromNullable,
-            option.map(Async.isPending("deleting")),
-            option.getOrElse(() => false),
-          ),
-      ),
+    flow(
+      Selectors.fromStore,
+      Selectors.selectById(todo.id),
+      option.fromNullable,
+      option.map(Async.isPending("deleting")),
+      option.getOrElse(() => false),
     ),
   );
 

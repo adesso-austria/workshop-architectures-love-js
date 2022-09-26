@@ -18,9 +18,9 @@ describe("addTodo", () => {
       response,
       either.match(throwException, (todo) => {
         expect(todo).toEqual({
-          id: option.some("foo"),
+          id: "foo",
           title: "test",
-          content: option.none,
+          content: option.some("test"),
           isDone: false,
         });
       }),

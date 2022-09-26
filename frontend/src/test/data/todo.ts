@@ -5,7 +5,7 @@ import * as UUID from "uuid";
 import * as Domain from "../../domain";
 
 export const buyIcecream: Domain.Todo.Todo = {
-  id: option.some("foo"),
+  id: "foo",
   title: "Buy Icecream",
   content: option.none,
   isDone: false,
