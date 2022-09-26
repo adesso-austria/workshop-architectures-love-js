@@ -15,7 +15,9 @@ export const demoize = (
 ) => {
   return Demoize.demoize(path, component, ({ children }) => (
     <TestBed.TestBed api={api} store={store}>
-      <Wrapper>{children}</Wrapper>
+      <div style={{ padding: "2rem" }}>
+        <Wrapper>{children}</Wrapper>
+      </div>
     </TestBed.TestBed>
   ));
 };
