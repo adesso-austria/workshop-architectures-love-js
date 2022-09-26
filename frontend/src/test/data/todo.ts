@@ -8,6 +8,7 @@ export const buyIcecream: Domain.Todo.Todo = {
   id: option.some("foo"),
   title: "Buy Icecream",
   content: option.none,
+  isDone: option.none,
 };
 
 export const create = (

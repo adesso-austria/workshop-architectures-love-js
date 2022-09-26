@@ -29,6 +29,7 @@ describe("todo preview", () => {
         id: option.some("foo"),
         title: "bar",
         content: option.none,
+        isDone: option.none,
       };
       const result = render(<TodoPreview todo={todo} />);
       const expandContent = result.getByRole("button", {
@@ -45,6 +46,7 @@ describe("todo preview", () => {
         id: option.some("foo"),
         title: "bar",
         content: option.some("baz"),
+        isDone: option.none,
       };
       const result = render(<TodoPreview todo={todo} />);
       const expandContent = result.getByRole("button", {

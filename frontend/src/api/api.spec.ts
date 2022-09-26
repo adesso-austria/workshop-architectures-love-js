@@ -21,6 +21,7 @@ describe("addTodo", () => {
           id: option.some("foo"),
           title: "test",
           content: option.none,
+          isDone: option.none,
         });
       }),
     );

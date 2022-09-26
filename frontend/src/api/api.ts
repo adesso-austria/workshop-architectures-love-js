@@ -22,6 +22,7 @@ export const create = (fetcher: Fetcher): Api => ({
           id: option.some(res.data),
           title: addTodo.title,
           content: option.none,
+          isDone: option.none,
         }),
       ),
     ),
