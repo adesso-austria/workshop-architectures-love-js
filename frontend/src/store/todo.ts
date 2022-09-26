@@ -10,7 +10,10 @@ import { useDispatch, useSelector } from "./provider";
 import * as Store from "./store";
 import * as Async from "./async";
 
-type Todo = Async.Async<Domain.Todo.Todo, "deleting" | "updating">;
+type Todo = Async.Async<
+  Domain.Todo.Todo,
+  "deleting" | "updating content" | "fetching content"
+>;
 type Todos = Async.Async<Record<string, Todo>, "fetching" | "adding todo">;
 
 export type State = {
@@ -33,7 +36,7 @@ namespace Selectors {
   export const selectNewTodo = ({ newTodo }: State) => newTodo;
 
   export const selectById = (id: string) =>
-    flow(selectTodos, Async.value, (todos) => todos[id]);
+    flow(selectTodos, Async.value, (todos) => todos[id], option.fromNullable);
 }
 
 export const slice = createSlice({
@@ -234,11 +237,39 @@ export const useDeleteTodo = (todo: Pick<Domain.Todo.Todo, "id">) => {
     flow(
       Selectors.fromStore,
       Selectors.selectById(todo.id),
-      option.fromNullable,
       option.map(Async.isPending("deleting")),
       option.getOrElse(() => false),
     ),
   );
 
   return { deleteTodo, isPending };
+};
+
+export const useContent = (todo: Pick<Domain.Todo.Todo, "id">) => {
+  const dispatch = useDispatch();
+
+  const stored = useSelector(
+    flow(Selectors.fromStore, Selectors.selectById(todo.id)),
+  );
+
+  const isFetching = pipe(
+    stored,
+    option.map(Async.isPending("fetching content")),
+    option.getOrElse(() => false),
+  );
+
+  const isUpdating = pipe(
+    stored,
+    option.map(Async.isPending("updating content")),
+    option.getOrElse(() => false),
+  );
+
+  const content = pipe(
+    stored,
+    option.map(Async.value),
+    option.chain((todo) => todo.content),
+    option.getOrElse(() => ""),
+  );
+
+  return { content, isFetching, isUpdating };
 };

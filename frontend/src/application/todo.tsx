@@ -18,10 +18,14 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
   const { deleteTodo, isPending: isDeletePending } =
     Store.Todo.useDeleteTodo(propTodo);
 
+  const { content, isFetching, isUpdating } = Store.Todo.useContent(todo);
+
   const hasUnsavedChanges = React.useMemo(
     () => !equals(todo, propTodo),
     [todo, propTodo],
   );
+
+  const [showContent, setShowContent] = React.useState(false);
 
   return (
     <div>
@@ -50,6 +54,31 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
       >
         <Icons.MdDelete />
       </IconButton>
+      <div>
+        <div className="flex justify-end">
+          <IconButton
+            size="sm"
+            onClick={() => setShowContent((current) => !current)}
+          >
+            <Icons.MdChevronLeft
+              style={{
+                transform: `rotate(${showContent ? -90 : 90}deg)`,
+                transition: "transform 300ms ease",
+              }}
+            />
+          </IconButton>
+        </div>
+        {showContent && (
+          <Textarea
+            variant="static"
+            aria-label="Description"
+            label="Description"
+            placeholder="Could you elaborate?"
+            disabled={isFetching || isUpdating}
+            value={content}
+          />
+        )}
+      </div>
     </div>
   );
 };
