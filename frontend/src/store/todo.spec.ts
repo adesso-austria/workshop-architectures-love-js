@@ -7,9 +7,9 @@ import { pipe } from "fp-ts/lib/function";
 import { StateObservable } from "redux-observable";
 import * as Test from "../test";
 import { Api } from "../api";
+import * as Domain from "../domain";
 import * as Store from "./store";
 import { epic, initialState, slice, State } from "./todo";
-import * as Async from "./async";
 
 const createState = (overrides: DeepPartial<State>): State =>
   mergeDeepRight(initialState, overrides);
@@ -18,7 +18,10 @@ describe("reducer", () => {
   describe("addTodo", () => {
     it("should not change the state if todos are being added already", () => {
       const initial = createState({
-        todos: pipe(Async.of({}), Async.setPending("adding todo")),
+        todos: pipe(
+          Domain.Async.of({}),
+          Domain.Async.setPending("adding todo"),
+        ),
       });
       const next = slice.reducer(
         initial,
@@ -32,8 +35,8 @@ describe("reducer", () => {
   describe("deleteTodo", () => {
     it("should set the respective todo state to pending", () => {
       const initial = createState({
-        todos: Async.of({
-          foo: Async.of(Test.Data.Todo.buyIcecream),
+        todos: Domain.Async.of({
+          foo: Domain.Async.of(Test.Data.Todo.buyIcecream),
         }),
       });
 
@@ -41,9 +44,9 @@ describe("reducer", () => {
 
       expect(
         pipe(
-          Async.value(next.todos),
+          Domain.Async.value(next.todos),
           record.lookup("foo"),
-          option.map(Async.isPending("deleting")),
+          option.map(Domain.Async.isPending("deleting")),
         ),
       ).toEqual(option.some(true));
     });
@@ -52,8 +55,8 @@ describe("reducer", () => {
   describe("deleteTodoSuccess", () => {
     it("should remove the respective todo from state", () => {
       const initial = createState({
-        todos: Async.of({
-          foo: Async.of(Test.Data.Todo.buyIcecream),
+        todos: Domain.Async.of({
+          foo: Domain.Async.of(Test.Data.Todo.buyIcecream),
         }),
       });
 
@@ -62,15 +65,15 @@ describe("reducer", () => {
         slice.actions.deleteTodoSuccess("foo"),
       );
 
-      expect(Async.value(next.todos)).toEqual({});
+      expect(Domain.Async.value(next.todos)).toEqual({});
     });
   });
 
   describe("deleteTodoFailure", () => {
     it("should set the respective todos task to an error state", () => {
       const initial = createState({
-        todos: Async.of({
-          foo: Async.of(Test.Data.Todo.buyIcecream),
+        todos: Domain.Async.of({
+          foo: Domain.Async.of(Test.Data.Todo.buyIcecream),
         }),
       });
 
@@ -81,9 +84,9 @@ describe("reducer", () => {
 
       expect(
         pipe(
-          Async.value(next.todos),
+          Domain.Async.value(next.todos),
           record.lookup("foo"),
-          option.chain(Async.getError("deleting")),
+          option.chain(Domain.Async.getError("deleting")),
         ),
       ).toEqual(option.some("some error"));
     });
@@ -109,9 +112,9 @@ describe("epic", () => {
 
     expect(addTodo).toHaveBeenCalled();
     await waitFor(() =>
-      expect(Object.values(Async.value(store.getState().todo.todos))).toEqual([
-        Async.of(Test.Data.Todo.buyIcecream),
-      ]),
+      expect(
+        Object.values(Domain.Async.value(store.getState().todo.todos)),
+      ).toEqual([Domain.Async.of(Test.Data.Todo.buyIcecream)]),
     );
   });
 
@@ -159,7 +162,11 @@ describe("epic", () => {
 
       const action$ = createAction$(
         Rx.of(slice.actions.deleteTodo("foo")),
-        { todos: Async.of({ foo: Async.of(Test.Data.Todo.buyIcecream) }) },
+        {
+          todos: Domain.Async.of({
+            foo: Domain.Async.of(Test.Data.Todo.buyIcecream),
+          }),
+        },
         { deleteTodo },
       );
       action$.subscribe(ignore);
@@ -182,7 +189,11 @@ describe("epic", () => {
     it("should dispatch failure if api fails", async () => {
       const action$ = createAction$(
         Rx.of(slice.actions.deleteTodo("foo")),
-        { todos: Async.of({ foo: Async.of(Test.Data.Todo.buyIcecream) }) },
+        {
+          todos: Domain.Async.of({
+            foo: Domain.Async.of(Test.Data.Todo.buyIcecream),
+          }),
+        },
         { deleteTodo: () => taskEither.left("nope") },
       );
 
@@ -194,7 +205,11 @@ describe("epic", () => {
     it("should dispatch success if api succeeds", async () => {
       const action$ = createAction$(
         Rx.of(slice.actions.deleteTodo("foo")),
-        { todos: Async.of({ foo: Async.of(Test.Data.Todo.buyIcecream) }) },
+        {
+          todos: Domain.Async.of({
+            foo: Domain.Async.of(Test.Data.Todo.buyIcecream),
+          }),
+        },
         { deleteTodo: () => taskEither.right(undefined) },
       );
 

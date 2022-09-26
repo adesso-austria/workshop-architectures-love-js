@@ -9,7 +9,6 @@ import {
 import { option, taskEither } from "fp-ts";
 import * as Test from "../test";
 import * as Domain from "../domain";
-import * as Async from "../store/async";
 import { render } from "../test/render";
 import { TodoPreview, Overview, Todo } from "./todo";
 
@@ -105,8 +104,8 @@ describe("todo preview", () => {
       const result = render(<TodoPreview todo={todo} />, {
         preloadedState: {
           todo: {
-            todos: Async.of({
-              foo: Async.of(todo, { deleting: { state: "pending" } }),
+            todos: Domain.Async.of({
+              foo: Domain.Async.of(todo, { deleting: { state: "pending" } }),
             }),
           },
         },
@@ -123,8 +122,8 @@ describe("todo preview", () => {
       const result = render(<TodoPreview todo={todo} />, {
         preloadedState: {
           todo: {
-            todos: Async.of({
-              foo: Async.of(todo, { deleting: { state: "pending" } }),
+            todos: Domain.Async.of({
+              foo: Domain.Async.of(todo, { deleting: { state: "pending" } }),
             }),
           },
         },

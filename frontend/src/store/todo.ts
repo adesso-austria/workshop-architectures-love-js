@@ -8,17 +8,19 @@ import { ignore } from "utils";
 import * as Domain from "../domain";
 import { useDispatch, useSelector } from "./provider";
 import * as Store from "./store";
-import * as Async from "./async";
 
-type Todo = Async.Async<Domain.Todo.Todo, "deleting" | "updating">;
-type Todos = Async.Async<Record<string, Todo>, "fetching" | "adding todo">;
+type Todo = Domain.Async.Async<Domain.Todo.Todo, "deleting" | "updating">;
+type Todos = Domain.Async.Async<
+  Record<string, Todo>,
+  "fetching" | "adding todo"
+>;
 
 export type State = {
   todos: Todos;
   newTodo: Domain.AddTodo.AddTodo;
 };
 export const initialState: State = {
-  todos: Async.of({}),
+  todos: Domain.Async.of({}),
   newTodo: {
     title: "",
     content: "",
@@ -33,7 +35,7 @@ namespace Selectors {
   export const selectNewTodo = ({ newTodo }: State) => newTodo;
 
   export const selectById = (id: string) =>
-    flow(selectTodos, Async.value, (todos) => todos[id]);
+    flow(selectTodos, Domain.Async.value, (todos) => todos[id]);
 }
 
 export const slice = createSlice({
@@ -41,11 +43,11 @@ export const slice = createSlice({
   initialState,
   reducers: {
     addTodo: (state, _action: PayloadAction<Domain.AddTodo.AddTodo>) => {
-      if (pipe(state.todos, Async.isPending("adding todo"))) {
+      if (pipe(state.todos, Domain.Async.isPending("adding todo"))) {
         // ignore request to add todo while list is pending
         return;
       }
-      state.todos = pipe(state.todos, Async.setPending("adding todo"));
+      state.todos = pipe(state.todos, Domain.Async.setPending("adding todo"));
     },
     addTodoSuccess: (state, action: PayloadAction<Domain.Todo.Todo>) => {
       pipe(
@@ -56,8 +58,10 @@ export const slice = createSlice({
           (id) => {
             state.todos = pipe(
               state.todos,
-              Async.setResolved("adding todo"),
-              Async.map(record.upsertAt(id, Async.of(action.payload))),
+              Domain.Async.setResolved("adding todo"),
+              Domain.Async.map(
+                record.upsertAt(id, Domain.Async.of(action.payload)),
+              ),
             );
             state.newTodo = { title: "", content: "" };
           },
@@ -67,16 +71,19 @@ export const slice = createSlice({
     addTodoFailure: (state, action: PayloadAction<string>) => {
       state.todos = pipe(
         state.todos,
-        Async.setError("adding todo", action.payload),
+        Domain.Async.setError("adding todo", action.payload),
       );
     },
     deleteTodo: (state, action: PayloadAction<string>) => {
       state.todos = pipe(
         state.todos,
-        Async.map((todos) =>
+        Domain.Async.map((todos) =>
           pipe(
             todos,
-            record.modifyAt(action.payload, Async.setPending("deleting")),
+            record.modifyAt(
+              action.payload,
+              Domain.Async.setPending("deleting"),
+            ),
             option.getOrElse(() => todos),
           ),
         ),
@@ -85,7 +92,7 @@ export const slice = createSlice({
     deleteTodoSuccess: (state, action: PayloadAction<string>) => {
       state.todos = pipe(
         state.todos,
-        Async.map(record.deleteAt(action.payload)),
+        Domain.Async.map(record.deleteAt(action.payload)),
       );
     },
     deleteTodoFailure: (
@@ -94,12 +101,12 @@ export const slice = createSlice({
     ) => {
       state.todos = pipe(
         state.todos,
-        Async.map((todos) =>
+        Domain.Async.map((todos) =>
           pipe(
             todos,
             record.modifyAt(
               action.payload.id,
-              Async.setError("deleting", action.payload.error),
+              Domain.Async.setError("deleting", action.payload.error),
             ),
             option.getOrElse(() => todos),
           ),
@@ -107,10 +114,10 @@ export const slice = createSlice({
       );
     },
     fetchTodos: (state) => {
-      state.todos = pipe(state.todos, Async.setPending("fetching"));
+      state.todos = pipe(state.todos, Domain.Async.setPending("fetching"));
     },
     fetchTodosSuccess: (state, action: PayloadAction<Domain.Todo.Todo[]>) => {
-      state.todos = Async.of(
+      state.todos = Domain.Async.of(
         action.payload.reduce(
           (dict, todo) =>
             pipe(
@@ -119,7 +126,7 @@ export const slice = createSlice({
                 // ignore todos without ids; should be none but theoretically possible
                 () => dict,
                 (id) => {
-                  dict[id] = Async.of(todo);
+                  dict[id] = Domain.Async.of(todo);
                   return dict;
                 },
               ),
@@ -131,7 +138,7 @@ export const slice = createSlice({
     fetchTodosFailure: (state, action: PayloadAction<string>) => {
       state.todos = pipe(
         state.todos,
-        Async.setError("fetching", action.payload),
+        Domain.Async.setError("fetching", action.payload),
       );
     },
     setNewTodo: (state, action: PayloadAction<Domain.AddTodo.AddTodo>) => {
@@ -212,8 +219,10 @@ export const useTodos = () => {
   );
 
   return {
-    todos: Object.values(Async.value(todosState)).map(Async.value),
-    pending: Async.isAnyPending(todosState),
+    todos: Object.values(Domain.Async.value(todosState)).map(
+      Domain.Async.value,
+    ),
+    pending: Domain.Async.isAnyPending(todosState),
     refresh,
   };
 };
@@ -241,7 +250,7 @@ export const useAddTodo = () => {
     flow(
       Selectors.fromStore,
       Selectors.selectTodos,
-      Async.isPending("adding todo"),
+      Domain.Async.isPending("adding todo"),
     ),
   );
 
@@ -273,7 +282,7 @@ export const useDeleteTodo = (todo: Pick<Domain.Todo.Todo, "id">) => {
             Selectors.fromStore,
             Selectors.selectById(id),
             option.fromNullable,
-            option.map(Async.isPending("deleting")),
+            option.map(Domain.Async.isPending("deleting")),
             option.getOrElse(() => false),
           ),
       ),
