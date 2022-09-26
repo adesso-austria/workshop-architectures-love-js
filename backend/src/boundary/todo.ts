@@ -75,7 +75,7 @@ export const createRoutes =
     //////////////////////////////////////////////////////
     // POST /todo
     //////////////////////////////////////////////////////
-    app.post<{ Body: Domain.AddTodo.AddTodo }>(
+    app.post<{ Body: Contracts.components["schemas"]["AddTodo"] }>(
       "/todo",
       {
         schema: {
