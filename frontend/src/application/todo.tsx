@@ -1,6 +1,10 @@
-import { Button, Checkbox, Input, Textarea } from "@material-tailwind/react";
-import { option } from "fp-ts";
-import { pipe } from "fp-ts/lib/function";
+import {
+  Button,
+  Checkbox,
+  IconButton,
+  Input,
+  Textarea,
+} from "@material-tailwind/react";
 import { equals } from "ramda";
 import React from "react";
 import * as Icons from "react-icons/md";
@@ -10,6 +14,9 @@ import * as Store from "../store";
 export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
   const [todo, setTodo] = React.useState(propTodo);
   const { title } = todo;
+
+  const { deleteTodo, isPending: isDeletePending } =
+    Store.Todo.useDeleteTodo(propTodo);
 
   const hasUnsavedChanges = React.useMemo(
     () => !equals(todo, propTodo),
@@ -35,6 +42,14 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
       {hasUnsavedChanges && (
         <Icons.MdWarning role="status" aria-label="unsaved changes" />
       )}
+      <IconButton
+        aria-label="delete todo"
+        size="sm"
+        disabled={isDeletePending}
+        onClick={deleteTodo}
+      >
+        <Icons.MdDelete />
+      </IconButton>
     </div>
   );
 };

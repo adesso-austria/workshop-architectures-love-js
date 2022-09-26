@@ -9,6 +9,7 @@ import { taskEither } from "fp-ts";
 import * as Test from "../test";
 import * as Domain from "../domain";
 import { render } from "../test/render";
+import * as Async from "../store/async";
 import { Overview, Todo } from "./todo";
 
 describe("todo", () => {
@@ -48,6 +49,33 @@ describe("todo", () => {
     it.todo("should be possible to change it");
     it.todo("should show an unsaved icon on change");
     it.todo("should save on blur");
+  });
+
+  describe("delete button", () => {
+    it("should request to remove the todo", async () => {
+      const todo = Test.Data.Todo.buyIcecream;
+      const deleteTodo = jest.fn(() => taskEither.right(undefined));
+      const result = render(<Todo todo={todo} />, {
+        preloadedState: {
+          todo: {
+            todos: Async.of({
+              [todo.id]: Async.of(todo),
+            }),
+          },
+        },
+        api: {
+          deleteTodo,
+        },
+      });
+
+      await result.user.click(
+        result.getByRole("button", { name: "delete todo" }),
+      );
+
+      expect(deleteTodo).toHaveBeenCalled();
+    });
+
+    it.todo("should be disabled during updates");
   });
 });
 

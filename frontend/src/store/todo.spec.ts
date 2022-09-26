@@ -171,18 +171,6 @@ describe("epic", () => {
       expect(deleteTodo).toHaveBeenCalled();
     });
 
-    it("should not call api if todo doesn't exist in state", async () => {
-      const deleteTodo = jest.fn();
-      const action$ = createAction$(
-        Rx.of(slice.actions.deleteTodo("foo")),
-        {},
-        { deleteTodo },
-      );
-      action$.subscribe(ignore);
-
-      expect(deleteTodo).not.toHaveBeenCalled();
-    });
-
     it("should dispatch failure if api fails", async () => {
       const action$ = createAction$(
         Rx.of(slice.actions.deleteTodo("foo")),

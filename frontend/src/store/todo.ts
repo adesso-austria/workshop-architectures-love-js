@@ -153,15 +153,10 @@ namespace Epics {
       }),
     );
 
-  const deleteTodoEpic: Store.Epic = (action$, state$, { api }) =>
+  const deleteTodoEpic: Store.Epic = (action$, _state$, { api }) =>
     action$.pipe(
       Rx.filter(slice.actions.deleteTodo.match),
-      Rx.withLatestFrom(state$),
-      Rx.filter(
-        ([action, state]) =>
-          Selectors.selectById(action.payload)(state.todo) != null,
-      ),
-      Rx.switchMap(([{ payload: id }]) => {
+      Rx.switchMap(({ payload: id }) => {
         const deleteAction = pipe(
           api.deleteTodo(id),
           taskEither.matchW(
