@@ -16,6 +16,7 @@ export const fromDomain = (
     href: `/todo?id=${todo.id}`,
     rel: "content",
   },
+  isDone: todo.isDone,
 });
 
 const schema = <T>(schema: JSONSchemaType<T>) => schema;

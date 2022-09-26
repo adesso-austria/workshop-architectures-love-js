@@ -63,8 +63,9 @@ const createGetTodos =
 const createAddTodo =
   (eventHandler: EventHandler.EventHandler): Application["addTodo"] =>
   (addTodo) => {
-    const todo = {
+    const todo: Domain.Todo.Todo = {
       ...addTodo,
+      isDone: false,
       id: Crypto.randomUUID(),
     };
     return pipe(

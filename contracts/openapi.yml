@@ -103,10 +103,13 @@ components:
           type: string
         content:
           $ref: "#/components/schemas/Identifier"
+        isDone:
+          type: boolean
       required:
         - id
         - title
         - content
+        - isDone
     AddTodo:
       type: object
       properties:
