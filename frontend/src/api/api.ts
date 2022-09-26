@@ -11,6 +11,7 @@ export type Api = {
   ) => taskEither.TaskEither<string, Domain.Todo.Todo>;
   fetchTodos: () => taskEither.TaskEither<string, Domain.Todo.Todo[]>;
   deleteTodo: (id: string) => taskEither.TaskEither<string, void>;
+  fetchContent: (id: string) => taskEither.TaskEither<string, string>;
 };
 
 export const create = (fetcher: Fetcher): Api => ({
@@ -33,4 +34,9 @@ export const create = (fetcher: Fetcher): Api => ({
     ),
   deleteTodo: (id) =>
     pipe(fetcher.deleteTodo({ query: { id } }), taskEither.map(ignore)),
+  fetchContent: (id) =>
+    pipe(
+      fetcher.getTodoContent({ query: { id } }),
+      taskEither.map((res) => res.data),
+    ),
 });

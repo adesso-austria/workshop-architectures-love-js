@@ -41,3 +41,18 @@ describe("deleteTodo", () => {
     pipe(response, either.match(throwException, ignore));
   });
 });
+
+describe("fetchContent", () => {
+  it("should return right content for a 200 response", async () => {
+    const api = Api.create(
+      Test.Api.Fetcher.create({
+        getTodoContent: () =>
+          taskEither.right(Test.Api.Fetcher.Response.ok("bar")),
+      }),
+    );
+
+    const task = api.fetchContent("foo");
+
+    expect(await task()).toEqual(either.right("bar"));
+  });
+});
