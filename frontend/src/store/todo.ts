@@ -12,7 +12,7 @@ import * as Async from "./async";
 
 type Todo = Async.Async<
   Domain.Todo.Todo,
-  "deleting" | "updating content" | "fetching content"
+  "deleting" | "updating" | "fetching content"
 >;
 type Todos = Async.Async<Record<string, Todo>, "fetching" | "adding todo">;
 
@@ -38,6 +38,19 @@ namespace Selectors {
   export const selectById = (id: string) =>
     flow(selectTodos, Async.value, (todos) => todos[id], option.fromNullable);
 }
+
+const modifyTodo =
+  (id: string, fn: (current: Todo) => Todo) => (todos: State["todos"]) =>
+    pipe(
+      todos,
+      Async.map((todos) =>
+        pipe(
+          todos,
+          record.modifyAt(id, fn),
+          option.getOrElse(() => todos),
+        ),
+      ),
+    );
 
 export const slice = createSlice({
   name: "todo",
@@ -115,6 +128,36 @@ export const slice = createSlice({
       state.todos = pipe(
         state.todos,
         Async.setError("fetching", action.payload),
+      );
+    },
+    updateTodo: (state, { payload: todo }: PayloadAction<Domain.Todo.Todo>) => {
+      state.todos = pipe(
+        state.todos,
+        modifyTodo(todo.id, Async.setPending("updating")),
+      );
+    },
+    updateTodoSuccess: (
+      state,
+      { payload: todo }: PayloadAction<Domain.Todo.Todo>,
+    ) => {
+      state.todos = pipe(
+        state.todos,
+        modifyTodo(
+          todo.id,
+          flow(
+            Async.setResolved("updating"),
+            Async.map(() => todo),
+          ),
+        ),
+      );
+    },
+    updateTodoFailure: (
+      state,
+      { payload: { id, error } }: PayloadAction<{ id: string; error: string }>,
+    ) => {
+      state.todos = pipe(
+        state.todos,
+        modifyTodo(id, Async.setError("updating", error)),
       );
     },
     setNewTodo: (state, action: PayloadAction<Domain.AddTodo.AddTodo>) => {
@@ -260,7 +303,7 @@ export const useContent = (todo: Pick<Domain.Todo.Todo, "id">) => {
 
   const isUpdating = pipe(
     stored,
-    option.map(Async.isPending("updating content")),
+    option.map(Async.isPending("updating")),
     option.getOrElse(() => false),
   );
 
