@@ -15,6 +15,10 @@ import * as Store from "../store";
 
 export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
   const [todo, setTodo] = React.useState(propTodo);
+  React.useLayoutEffect(() => {
+    setTodo(propTodo);
+  }, [propTodo]);
+
   const { title } = todo;
 
   const {
@@ -27,6 +31,7 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
   } = Store.Todo.useTodoTasks(todo);
 
   const [showContent, setShowContent] = React.useState(false);
+
   React.useEffect(() => {
     if (showContent) {
       fetchContent();

@@ -37,6 +37,7 @@ demoize(
       },
     },
     api: {
+      fetchContent: () => taskEither.right("foo"),
       updateTodo: () => taskEither.right(undefined),
     },
   },
