@@ -120,8 +120,6 @@ components:
           type: string
         title:
           type: string
-        content:
-          $ref: "#/components/schemas/Identifier"
         isDone:
           type: boolean
       required:
@@ -139,13 +137,3 @@ components:
       required:
         - title
         - content
-    Identifier:
-      type: object
-      properties:
-        href:
-          type: string
-        rel:
-          type: string
-      required:
-        - href
-        - rel
