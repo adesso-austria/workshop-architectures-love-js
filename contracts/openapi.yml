@@ -125,7 +125,6 @@ components:
       required:
         - id
         - title
-        - content
         - isDone
     AddTodo:
       type: object
