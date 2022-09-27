@@ -94,3 +94,19 @@ describe("deleteTodo", () => {
     expect(deleteOne).toHaveBeenCalledWith(Todo.collectionKey, { id: "foo" });
   });
 });
+
+describe("updateTodo", () => {
+  it("should update the todo by id via mongo", async () => {
+    const updateOne = jest.fn(() => taskEither.right(undefined));
+    const repo = create({ mongo: { updateOne } });
+
+    const updateTodo = repo.updateTodo(TestData.Todo.buyIcecream);
+    await updateTodo();
+
+    expect(updateOne).toHaveBeenCalledWith(
+      Todo.collectionKey,
+      { id: TestData.Todo.buyIcecream.id },
+      TestData.Todo.buyIcecream,
+    );
+  });
+});

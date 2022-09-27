@@ -12,6 +12,7 @@ export const repository: Repository.Todo.Repository = {
   },
   getTodos: () => taskEither.right(Todo.all),
   deleteTodo: () => taskEither.right(undefined),
+  updateTodo: () => taskEither.right(undefined),
 };
 
 export const create = (
