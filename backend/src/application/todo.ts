@@ -15,7 +15,9 @@ export type Application = {
     addTodo: Domain.AddTodo.AddTodo,
   ) => taskEither.TaskEither<string, Domain.Todo.Todo>;
   deleteTodo: (id: string) => taskEither.TaskEither<string, void>;
-  updateTodo: (todo: Domain.Todo.Todo) => taskEither.TaskEither<string, void>;
+  updateTodo: (
+    todo: Domain.Todo.Todo,
+  ) => taskEither.TaskEither<"not found" | "db error", void>;
 };
 
 //////////////////////////////////////////////////////
@@ -92,10 +94,17 @@ const createDeleteTodo =
 const createUpdateTodo =
   (eventHandler: EventHandler.EventHandler): Application["updateTodo"] =>
   (todo) =>
-    eventHandler({
-      type: "update todo",
-      payload: todo,
-    });
+    pipe(
+      eventHandler({
+        type: "update todo",
+        payload: todo,
+      }),
+      taskEither.mapLeft((error) =>
+        match(error)
+          .with("could not find document to update", () => "not found" as const)
+          .otherwise(() => "db error" as const),
+      ),
+    );
 
 export const create = (repository: Repository): Application => {
   const eventHandler = createEventHandler(repository);
