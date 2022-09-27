@@ -12,7 +12,7 @@ import * as Async from "./async";
 
 type Todo = Async.Async<
   Domain.Todo.Todo,
-  "deleting" | "updating content" | "fetching content"
+  "deleting" | "updating" | "fetching content"
 >;
 type Todos = Async.Async<Record<string, Todo>, "fetching" | "adding todo">;
 
@@ -39,24 +39,18 @@ namespace Selectors {
     flow(selectTodos, Async.value, (todos) => todos[id], option.fromNullable);
 }
 
-/**
- * helper to modify one specific todo by id based on its current state
- */
-const modifyTodo = (
-  todos: State["todos"],
-  id: string,
-  fn: (current: Todo) => Todo,
-): State["todos"] =>
-  pipe(
-    todos,
-    Async.map((todos) =>
-      pipe(
-        todos,
-        record.modifyAt(id, fn),
-        option.getOrElse(() => todos),
+const modifyTodo =
+  (id: string, fn: (current: Todo) => Todo) => (todos: State["todos"]) =>
+    pipe(
+      todos,
+      Async.map((todos) =>
+        pipe(
+          todos,
+          record.modifyAt(id, fn),
+          option.getOrElse(() => todos),
+        ),
       ),
-    ),
-  );
+    );
 
 export const slice = createSlice({
   name: "todo",
@@ -120,25 +114,26 @@ export const slice = createSlice({
       );
     },
     fetchContent: (state, action: PayloadAction<string>) => {
-      state.todos = modifyTodo(
+      state.todos = pipe(
         state.todos,
-        action.payload,
-        Async.setPending("fetching content"),
+        modifyTodo(action.payload, Async.setPending("fetching content")),
       );
     },
     fetchContentSuccess: (
       state,
       action: PayloadAction<{ id: string; content: string }>,
     ) => {
-      state.todos = modifyTodo(
+      state.todos = pipe(
         state.todos,
-        action.payload.id,
-        flow(
-          Async.map((todo) => ({
-            ...todo,
-            content: option.some(action.payload.content),
-          })),
-          Async.setResolved("fetching content"),
+        modifyTodo(
+          action.payload.id,
+          flow(
+            Async.map((todo) => ({
+              ...todo,
+              content: option.some(action.payload.content),
+            })),
+            Async.setResolved("fetching content"),
+          ),
         ),
       );
     },
@@ -146,10 +141,12 @@ export const slice = createSlice({
       state,
       action: PayloadAction<{ id: string; error: string }>,
     ) => {
-      state.todos = modifyTodo(
+      state.todos = pipe(
         state.todos,
-        action.payload.id,
-        Async.setError("fetching content", action.payload.error),
+        modifyTodo(
+          action.payload.id,
+          Async.setError("fetching content", action.payload.error),
+        ),
       );
     },
     fetchTodos: (state) => {
@@ -167,6 +164,36 @@ export const slice = createSlice({
       state.todos = pipe(
         state.todos,
         Async.setError("fetching", action.payload),
+      );
+    },
+    updateTodo: (state, { payload: todo }: PayloadAction<Domain.Todo.Todo>) => {
+      state.todos = pipe(
+        state.todos,
+        modifyTodo(todo.id, Async.setPending("updating")),
+      );
+    },
+    updateTodoSuccess: (
+      state,
+      { payload: todo }: PayloadAction<Domain.Todo.Todo>,
+    ) => {
+      state.todos = pipe(
+        state.todos,
+        modifyTodo(
+          todo.id,
+          flow(
+            Async.setResolved("updating"),
+            Async.map(() => todo),
+          ),
+        ),
+      );
+    },
+    updateTodoFailure: (
+      state,
+      { payload: { id, error } }: PayloadAction<{ id: string; error: string }>,
+    ) => {
+      state.todos = pipe(
+        state.todos,
+        modifyTodo(id, Async.setError("updating", error)),
       );
     },
     setNewTodo: (state, action: PayloadAction<Domain.AddTodo.AddTodo>) => {
@@ -240,10 +267,27 @@ namespace Epics {
       }),
     );
 
+  const updateTodo: Store.Epic = (action$, _state$, { api }) =>
+    action$.pipe(
+      Rx.filter(slice.actions.updateTodo.match),
+      Rx.switchMap(({ payload: todo }) => {
+        const updateAction = pipe(
+          api.updateTodo(todo),
+          taskEither.matchW(
+            (error) => slice.actions.updateTodoFailure({ id: todo.id, error }),
+            () => slice.actions.updateTodoSuccess(todo),
+          ),
+        );
+
+        return updateAction();
+      }),
+    );
+
   export const epic = combineEpics(
     fetchTodos,
     addTodo,
     deleteTodo,
+    updateTodo,
     fetchContent,
   );
 }
@@ -301,29 +345,18 @@ export const useAddTodo = () => {
     : (todo: Domain.AddTodo.AddTodo) => dispatch(slice.actions.addTodo(todo));
 };
 
-export const useDeleteTodo = (todo: Pick<Domain.Todo.Todo, "id">) => {
-  const dispatch = useDispatch();
-
-  const deleteTodo = () => dispatch(slice.actions.deleteTodo(todo.id));
-
-  const isPending = useSelector(
-    flow(
-      Selectors.fromStore,
-      Selectors.selectById(todo.id),
-      option.map(Async.isPending("deleting")),
-      option.getOrElse(() => false),
-    ),
-  );
-
-  return { deleteTodo, isPending };
-};
-
-export const useContent = (todo: Pick<Domain.Todo.Todo, "id">) => {
+export const useTodoTasks = (todo: Pick<Domain.Todo.Todo, "id">) => {
   const dispatch = useDispatch();
 
   const stored = useSelector(
     flow(Selectors.fromStore, Selectors.selectById(todo.id)),
   );
+
+  const saveTodo = (todo: Domain.Todo.Todo) => {
+    dispatch(slice.actions.updateTodo(todo));
+  };
+
+  const deleteTodo = () => dispatch(slice.actions.deleteTodo(todo.id));
 
   const isFetching = pipe(
     stored,
@@ -333,18 +366,24 @@ export const useContent = (todo: Pick<Domain.Todo.Todo, "id">) => {
 
   const isUpdating = pipe(
     stored,
-    option.map(Async.isPending("updating content")),
+    option.map(Async.isPending("updating")),
     option.getOrElse(() => false),
   );
 
-  const content = pipe(
+  const isDeleting = pipe(
     stored,
-    option.map(Async.value),
-    option.chain((todo) => todo.content),
-    option.getOrElse(() => ""),
+    option.map(Async.isPending("deleting")),
+    option.getOrElse(() => false),
   );
 
   const fetchContent = () => dispatch(slice.actions.fetchContent(todo.id));
 
-  return { content, isFetching, isUpdating, fetchContent };
+  return {
+    saveTodo,
+    deleteTodo,
+    fetchContent,
+    isFetching,
+    isUpdating,
+    isDeleting,
+  };
 };

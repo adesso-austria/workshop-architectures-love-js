@@ -15,78 +15,121 @@ const createState = (overrides: DeepPartial<State>): State =>
   mergeDeepRight(initialState, overrides);
 
 describe("reducer", () => {
-  describe("addTodo", () => {
-    it("should not change the state if todos are being added already", () => {
-      const initial = createState({
-        todos: pipe(Async.of({}), Async.setPending("adding todo")),
-      });
-      const next = slice.reducer(
-        initial,
-        slice.actions.addTodo({ content: "foo", title: "bar" }),
-      );
-
-      expect(next).toEqual(initial);
-    });
-  });
-
-  describe("deleteTodo", () => {
-    it("should set the respective todo state to pending", () => {
-      const initial = createState({
+  it.each<
+    [
+      string,
+      DeepPartial<State>,
+      Store.Action,
+      (state: State, initialState: State) => void,
+    ]
+  >([
+    [
+      "addTodo should not change state if todos are being added already",
+      { todos: pipe(Async.of({}), Async.setPending("adding todo")) },
+      slice.actions.addTodo({ content: "foo", title: "bar" }),
+      (state, initial) => expect(state).toEqual(initial),
+    ],
+    [
+      "deleteTodo should set the respective task to pending",
+      { todos: pipe(Async.of({ foo: Async.of(Test.Data.Todo.buyIcecream) })) },
+      slice.actions.deleteTodo("foo"),
+      (state) =>
+        expect(
+          pipe(
+            Async.value(state.todos),
+            record.lookup("foo"),
+            option.map(Async.isPending("deleting")),
+          ),
+        ).toEqual(option.some(true)),
+    ],
+    [
+      "deleteTodoSuccess should remove the respective todo from state",
+      { todos: Async.of({ foo: Async.of(Test.Data.Todo.buyIcecream) }) },
+      slice.actions.deleteTodoSuccess("foo"),
+      (state) => expect(Async.value(state.todos)).toEqual({}),
+    ],
+    [
+      "deleteTodoFailure should set the respective task to an error state",
+      { todos: Async.of({ foo: Async.of(Test.Data.Todo.buyIcecream) }) },
+      slice.actions.deleteTodoFailure({ id: "foo", error: "some error" }),
+      (state) =>
+        expect(
+          pipe(
+            Async.value(state.todos),
+            record.lookup("foo"),
+            option.chain(Async.getError("deleting")),
+          ),
+        ).toEqual(option.some("some error")),
+    ],
+    [
+      "updateTodo should set the respective task to pending",
+      {
         todos: Async.of({
-          foo: Async.of(Test.Data.Todo.buyIcecream),
+          [Test.Data.Todo.buyIcecream.id]: Async.of(Test.Data.Todo.buyIcecream),
         }),
-      });
-
-      const next = slice.reducer(initial, slice.actions.deleteTodo("foo"));
-
-      expect(
-        pipe(
-          Async.value(next.todos),
-          record.lookup("foo"),
-          option.map(Async.isPending("deleting")),
-        ),
-      ).toEqual(option.some(true));
-    });
-  });
-
-  describe("deleteTodoSuccess", () => {
-    it("should remove the respective todo from state", () => {
-      const initial = createState({
+      },
+      slice.actions.updateTodo(Test.Data.Todo.buyIcecream),
+      (state) =>
+        expect(
+          pipe(
+            Async.value(state.todos),
+            record.lookup(Test.Data.Todo.buyIcecream.id),
+            option.map(Async.isPending("updating")),
+          ),
+        ).toEqual(option.some(true)),
+    ],
+    [
+      "updateTodoSuccess should resolve the respective task and replace the todo",
+      {
         todos: Async.of({
-          foo: Async.of(Test.Data.Todo.buyIcecream),
+          [Test.Data.Todo.buyIcecream.id]: Async.of(Test.Data.Todo.buyIcecream),
         }),
-      });
+      },
+      slice.actions.updateTodoSuccess({
+        ...Test.Data.Todo.buyIcecream,
+        content: option.some("something updated"),
+      }),
+      (state) => {
+        const todo = pipe(
+          Async.value(state.todos),
+          record.lookup(Test.Data.Todo.buyIcecream.id),
+        );
+        expect(pipe(todo, option.map(Async.isSettled("updating")))).toEqual(
+          option.some(true),
+        );
 
-      const next = slice.reducer(
-        initial,
-        slice.actions.deleteTodoSuccess("foo"),
-      );
-
-      expect(Async.value(next.todos)).toEqual({});
-    });
-  });
-
-  describe("deleteTodoFailure", () => {
-    it("should set the respective todos task to an error state", () => {
-      const initial = createState({
+        expect(
+          pipe(todo, option.chain(flow(Async.value, (todo) => todo.content))),
+        ).toEqual(option.some("something updated"));
+      },
+    ],
+    [
+      "updateTodoFailure should set an error on the respective task",
+      {
         todos: Async.of({
-          foo: Async.of(Test.Data.Todo.buyIcecream),
+          [Test.Data.Todo.buyIcecream.id]: Async.of(Test.Data.Todo.buyIcecream),
         }),
-      });
+      },
+      slice.actions.updateTodoFailure({
+        id: Test.Data.Todo.buyIcecream.id,
+        error: "some error",
+      }),
+      (state) => {
+        expect(
+          pipe(
+            Async.value(state.todos),
+            record.lookup(Test.Data.Todo.buyIcecream.id),
+            option.chain(Async.getError("updating")),
+          ),
+        ).toEqual(option.some("some error"));
+      },
+    ],
+  ])("%s", (_, givenState, whenAction, assert) => {
+    const initial = createState(givenState);
 
-      const next = slice.reducer(
-        initial,
-        slice.actions.deleteTodoFailure({ id: "foo", error: "some error" }),
-      );
+    const next = slice.reducer(initial, whenAction);
 
-      expect(
-        pipe(
-          Async.value(next.todos),
-          record.lookup("foo"),
-          option.chain(Async.getError("deleting")),
-        ),
-      ).toEqual(option.some("some error"));
-    });
+    assert(next, initial);
   });
 
   describe("fetchContent", () => {
@@ -286,6 +329,70 @@ describe("epic", () => {
 
       expect(await Rx.firstValueFrom(action$)).toEqual(
         slice.actions.fetchContentFailure({ id: "foo", error: "bar" }),
+      );
+    });
+  });
+
+  describe("updating todos", () => {
+    it("should call api updateTodo", async () => {
+      const updateTodo = jest.fn(() => taskEither.right(undefined));
+      const action$ = createAction$(
+        Rx.of(slice.actions.updateTodo(Test.Data.Todo.buyIcecream)),
+        {
+          todos: Async.of({
+            [Test.Data.Todo.buyIcecream.id]: Async.of(
+              Test.Data.Todo.buyIcecream,
+            ),
+          }),
+        },
+        { updateTodo },
+      );
+
+      await Rx.firstValueFrom(action$);
+
+      expect(updateTodo).toHaveBeenCalled();
+    });
+
+    it("should dispatch success if api succeeds", async () => {
+      const action$ = createAction$(
+        Rx.of(slice.actions.updateTodo(Test.Data.Todo.buyIcecream)),
+        {
+          todos: Async.of({
+            [Test.Data.Todo.buyIcecream.id]: Async.of(
+              Test.Data.Todo.buyIcecream,
+            ),
+          }),
+        },
+        { updateTodo: () => taskEither.right(undefined) },
+      );
+
+      const action = await Rx.firstValueFrom(action$);
+
+      expect(action).toEqual(
+        slice.actions.updateTodoSuccess(Test.Data.Todo.buyIcecream),
+      );
+    });
+
+    it("should dispatch failure if api fails", async () => {
+      const action$ = createAction$(
+        Rx.of(slice.actions.updateTodo(Test.Data.Todo.buyIcecream)),
+        {
+          todos: Async.of({
+            [Test.Data.Todo.buyIcecream.id]: Async.of(
+              Test.Data.Todo.buyIcecream,
+            ),
+          }),
+        },
+        { updateTodo: () => taskEither.left("some error") },
+      );
+
+      const action = await Rx.firstValueFrom(action$);
+
+      expect(action).toEqual(
+        slice.actions.updateTodoFailure({
+          id: Test.Data.Todo.buyIcecream.id,
+          error: "some error",
+        }),
       );
     });
   });

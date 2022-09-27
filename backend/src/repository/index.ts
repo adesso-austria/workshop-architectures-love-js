@@ -7,6 +7,6 @@ export type Repository = { todo: Todo.Repository; event: Event.Repository };
 export * as Event from "./event";
 export * as Todo from "./todo";
 
-export const create = (adapter: Adapters): Repository => {
-  return { todo: Todo.create(adapter), event: Event.create(adapter) };
+export const create = (adapters: Adapters): Repository => {
+  return { todo: Todo.create(adapters), event: Event.create(adapters) };
 };

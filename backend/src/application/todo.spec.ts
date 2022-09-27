@@ -1,5 +1,5 @@
 import { describe, it } from "@jest/globals";
-import { option, taskEither } from "fp-ts";
+import { either, option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { DeepPartial, ignore, throwException } from "utils";
 import { Repository } from "../repository";
@@ -51,8 +51,50 @@ describe("getTodo", () => {
   );
 });
 
+describe("getTodos", () => {
+  it("should get the todos via repo", async () => {
+    const getTodos = jest.fn(() => taskEither.right([]));
+    const app = create({
+      todo: {
+        getTodos,
+      },
+    });
+
+    const task = app.getTodos();
+    await task();
+
+    expect(getTodos).toHaveBeenCalled();
+  });
+
+  it("should map repo rejection to 'db error'", async () => {
+    const app = create({
+      todo: {
+        getTodos: () => taskEither.left("some error"),
+      },
+    });
+
+    const task = app.getTodos();
+
+    expect(await task()).toEqual(either.left("db error"));
+  });
+});
+
 describe("addTodo", () => {
-  it.todo("should be idempotent");
+  it("should add the todo via repository", async () => {
+    const addTodo = jest.fn(() => taskEither.right(undefined));
+    const app = create({
+      todo: {
+        addTodo,
+      },
+    });
+
+    const task = app.addTodo(TestData.AddTodo.buyIcecream);
+    await task();
+
+    expect(addTodo).toHaveBeenCalledWith(
+      expect.objectContaining(TestData.AddTodo.buyIcecream),
+    );
+  });
 });
 
 describe("deleteTodo", () => {
@@ -68,5 +110,21 @@ describe("deleteTodo", () => {
     await task();
 
     expect(deleteTodo).toHaveBeenCalledWith("foo");
+  });
+});
+
+describe("updateTodo", () => {
+  it("should update the todo via repository", async () => {
+    const updateTodo = jest.fn(() => taskEither.right(undefined));
+    const app = create({
+      todo: {
+        updateTodo,
+      },
+    });
+
+    const task = app.updateTodo(TestData.Todo.buyIcecream);
+    await task();
+
+    expect(updateTodo).toHaveBeenCalledWith(TestData.Todo.buyIcecream);
   });
 });
