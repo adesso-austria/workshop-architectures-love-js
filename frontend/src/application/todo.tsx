@@ -28,21 +28,46 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
   const [showContent, setShowContent] = React.useState(false);
 
   return (
-    <div>
+    <div className="flex gap-2 items-start">
       <Checkbox checked={todo.isDone} />
-      <Input
-        aria-label="title"
-        label="Title"
-        placeholder="What to do..."
-        variant="static"
-        value={title}
-        onChange={(e) =>
-          setTodo((current) => ({
-            ...current,
-            title: e.target.value,
-          }))
-        }
-      />
+      <div className="flex flex-col grow">
+        <Input
+          aria-label="title"
+          label="Title"
+          placeholder="What to do..."
+          variant="static"
+          value={title}
+          onChange={(e) =>
+            setTodo((current) => ({
+              ...current,
+              title: e.target.value,
+            }))
+          }
+        />
+        <div
+          className="hover:bg-gray-100 flex justify-center"
+          onClick={() => setShowContent((current) => !current)}
+        >
+          <Icons.MdChevronLeft
+            style={{
+              transform: `rotate(${showContent ? -90 : 90}deg)`,
+              transition: "transform 150ms ease",
+            }}
+          />
+        </div>
+        {showContent && (
+          <div className="relative top-4">
+            <Textarea
+              variant="static"
+              aria-label="Description"
+              label="Description"
+              placeholder="Could you elaborate?"
+              disabled={isFetching || isUpdating}
+              value={content}
+            />
+          </div>
+        )}
+      </div>
       {hasUnsavedChanges && (
         <Icons.MdWarning role="status" aria-label="unsaved changes" />
       )}
@@ -55,29 +80,7 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
         <Icons.MdDelete />
       </IconButton>
       <div>
-        <div className="flex justify-end">
-          <IconButton
-            size="sm"
-            onClick={() => setShowContent((current) => !current)}
-          >
-            <Icons.MdChevronLeft
-              style={{
-                transform: `rotate(${showContent ? -90 : 90}deg)`,
-                transition: "transform 300ms ease",
-              }}
-            />
-          </IconButton>
-        </div>
-        {showContent && (
-          <Textarea
-            variant="static"
-            aria-label="Description"
-            label="Description"
-            placeholder="Could you elaborate?"
-            disabled={isFetching || isUpdating}
-            value={content}
-          />
-        )}
+        <div className="flex justify-end"></div>
       </div>
     </div>
   );
