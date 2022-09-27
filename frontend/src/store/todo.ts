@@ -12,7 +12,7 @@ import * as Async from "./async";
 
 type Todo = Async.Async<
   Domain.Todo.Todo,
-  "deleting" | "updating content" | "fetching content"
+  "deleting" | "updating" | "fetching content"
 >;
 type Todos = Async.Async<Record<string, Todo>, "fetching" | "adding todo">;
 
@@ -38,6 +38,19 @@ namespace Selectors {
   export const selectById = (id: string) =>
     flow(selectTodos, Async.value, (todos) => todos[id], option.fromNullable);
 }
+
+const modifyTodo =
+  (id: string, fn: (current: Todo) => Todo) => (todos: State["todos"]) =>
+    pipe(
+      todos,
+      Async.map((todos) =>
+        pipe(
+          todos,
+          record.modifyAt(id, fn),
+          option.getOrElse(() => todos),
+        ),
+      ),
+    );
 
 export const slice = createSlice({
   name: "todo",
@@ -117,6 +130,36 @@ export const slice = createSlice({
         Async.setError("fetching", action.payload),
       );
     },
+    updateTodo: (state, { payload: todo }: PayloadAction<Domain.Todo.Todo>) => {
+      state.todos = pipe(
+        state.todos,
+        modifyTodo(todo.id, Async.setPending("updating")),
+      );
+    },
+    updateTodoSuccess: (
+      state,
+      { payload: todo }: PayloadAction<Domain.Todo.Todo>,
+    ) => {
+      state.todos = pipe(
+        state.todos,
+        modifyTodo(
+          todo.id,
+          flow(
+            Async.setResolved("updating"),
+            Async.map(() => todo),
+          ),
+        ),
+      );
+    },
+    updateTodoFailure: (
+      state,
+      { payload: { id, error } }: PayloadAction<{ id: string; error: string }>,
+    ) => {
+      state.todos = pipe(
+        state.todos,
+        modifyTodo(id, Async.setError("updating", error)),
+      );
+    },
     setNewTodo: (state, action: PayloadAction<Domain.AddTodo.AddTodo>) => {
       state.newTodo = action.payload;
     },
@@ -124,7 +167,7 @@ export const slice = createSlice({
 });
 
 namespace Epics {
-  const fetchTodosEpic: Store.Epic = (action$, _state$, { api }) =>
+  const fetchTodos: Store.Epic = (action$, _state$, { api }) =>
     action$.pipe(
       Rx.filter(slice.actions.fetchTodos.match),
       Rx.switchMap(() => {
@@ -140,7 +183,7 @@ namespace Epics {
       }),
     );
 
-  const addTodoEpic: Store.Epic = (action$, _state, { api }) =>
+  const addTodo: Store.Epic = (action$, _state, { api }) =>
     action$.pipe(
       Rx.filter(slice.actions.addTodo.match),
       Rx.switchMap(({ payload: addTodo }) => {
@@ -156,7 +199,7 @@ namespace Epics {
       }),
     );
 
-  const deleteTodoEpic: Store.Epic = (action$, _state$, { api }) =>
+  const deleteTodo: Store.Epic = (action$, _state$, { api }) =>
     action$.pipe(
       Rx.filter(slice.actions.deleteTodo.match),
       Rx.switchMap(({ payload: id }) => {
@@ -172,7 +215,23 @@ namespace Epics {
       }),
     );
 
-  export const epic = combineEpics(fetchTodosEpic, addTodoEpic, deleteTodoEpic);
+  const updateTodo: Store.Epic = (action$, _state$, { api }) =>
+    action$.pipe(
+      Rx.filter(slice.actions.updateTodo.match),
+      Rx.switchMap(({ payload: todo }) => {
+        const updateAction = pipe(
+          api.updateTodo(todo),
+          taskEither.matchW(
+            (error) => slice.actions.updateTodoFailure({ id: todo.id, error }),
+            () => slice.actions.updateTodoSuccess(todo),
+          ),
+        );
+
+        return updateAction();
+      }),
+    );
+
+  export const epic = combineEpics(fetchTodos, addTodo, deleteTodo, updateTodo);
 }
 export const epic = Epics.epic;
 
@@ -228,29 +287,18 @@ export const useAddTodo = () => {
     : (todo: Domain.AddTodo.AddTodo) => dispatch(slice.actions.addTodo(todo));
 };
 
-export const useDeleteTodo = (todo: Pick<Domain.Todo.Todo, "id">) => {
-  const dispatch = useDispatch();
-
-  const deleteTodo = () => dispatch(slice.actions.deleteTodo(todo.id));
-
-  const isPending = useSelector(
-    flow(
-      Selectors.fromStore,
-      Selectors.selectById(todo.id),
-      option.map(Async.isPending("deleting")),
-      option.getOrElse(() => false),
-    ),
-  );
-
-  return { deleteTodo, isPending };
-};
-
-export const useContent = (todo: Pick<Domain.Todo.Todo, "id">) => {
+export const useTodoTasks = (todo: Pick<Domain.Todo.Todo, "id">) => {
   const dispatch = useDispatch();
 
   const stored = useSelector(
     flow(Selectors.fromStore, Selectors.selectById(todo.id)),
   );
+
+  const saveTodo = (todo: Domain.Todo.Todo) => {
+    dispatch(slice.actions.updateTodo(todo));
+  };
+
+  const deleteTodo = () => dispatch(slice.actions.deleteTodo(todo.id));
 
   const isFetching = pipe(
     stored,
@@ -260,16 +308,15 @@ export const useContent = (todo: Pick<Domain.Todo.Todo, "id">) => {
 
   const isUpdating = pipe(
     stored,
-    option.map(Async.isPending("updating content")),
+    option.map(Async.isPending("updating")),
     option.getOrElse(() => false),
   );
 
-  const content = pipe(
+  const isDeleting = pipe(
     stored,
-    option.map(Async.value),
-    option.chain((todo) => todo.content),
-    option.getOrElse(() => ""),
+    option.map(Async.isPending("deleting")),
+    option.getOrElse(() => false),
   );
 
-  return { content, isFetching, isUpdating };
+  return { saveTodo, deleteTodo, isFetching, isUpdating, isDeleting };
 };

@@ -3,9 +3,11 @@ import {
   ByRoleMatcher,
   ByRoleOptions,
   waitFor,
+  waitForElementToBeRemoved,
   within,
 } from "@testing-library/react";
-import { taskEither } from "fp-ts";
+import { option, taskEither } from "fp-ts";
+import { pipe } from "fp-ts/lib/function";
 import * as Test from "../test";
 import * as Domain from "../domain";
 import { render } from "../test/render";
@@ -46,9 +48,47 @@ describe("todo", () => {
   });
 
   describe("content", () => {
-    it.todo("should be possible to change it");
-    it.todo("should show an unsaved icon on change");
-    it.todo("should save on blur");
+    it("should show an unsaved icon on change", async () => {
+      const result = render(<Todo todo={Test.Data.Todo.buyIcecream} />);
+
+      const showContent = result.getByRole("button", { name: "show content" });
+
+      await result.user.click(showContent);
+
+      const content = result.getByRole("presentation", { name: "content" });
+      const textArea = within(content).getByRole("textbox");
+
+      await result.user.clear(textArea);
+      await result.user.keyboard("foo");
+
+      expect(
+        within(content).queryByRole("status", { name: "unsaved changes" }),
+      ).not.toBeNull();
+    });
+
+    it("should be disabled if todo is updating", async () => {
+      const result = render(<Todo todo={Test.Data.Todo.buyIcecream} />, {
+        preloadedState: {
+          todo: {
+            todos: Async.of({
+              [Test.Data.Todo.buyIcecream.id]: pipe(
+                Async.of(Test.Data.Todo.buyIcecream),
+                Async.setPending("updating"),
+              ),
+            }),
+          },
+        },
+      });
+
+      const showContent = result.getByRole("button", { name: "show content" });
+
+      await result.user.click(showContent);
+
+      const content = result.getByRole("presentation", { name: "content" });
+      const textArea = within(content).getByRole("textbox");
+
+      expect(textArea).toBeDisabled();
+    });
   });
 
   describe("delete button", () => {

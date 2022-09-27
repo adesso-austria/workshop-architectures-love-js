@@ -5,6 +5,8 @@ import {
   Input,
   Textarea,
 } from "@material-tailwind/react";
+import { option } from "fp-ts";
+import { pipe } from "fp-ts/lib/function";
 import { equals } from "ramda";
 import React from "react";
 import * as Icons from "react-icons/md";
@@ -15,25 +17,31 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
   const [todo, setTodo] = React.useState(propTodo);
   const { title } = todo;
 
-  const { deleteTodo, isPending: isDeletePending } =
-    Store.Todo.useDeleteTodo(propTodo);
-
-  const { content, isFetching, isUpdating } = Store.Todo.useContent(todo);
-
-  const hasUnsavedChanges = React.useMemo(
-    () => !equals(todo, propTodo),
-    [todo, propTodo],
-  );
+  const { saveTodo, deleteTodo, isDeleting, isFetching, isUpdating } =
+    Store.Todo.useTodoTasks(todo);
 
   const [showContent, setShowContent] = React.useState(false);
 
   return (
     <div className="flex gap-2 items-start">
-      <Checkbox checked={todo.isDone} />
-      <div className="flex flex-col grow">
+      <Checkbox
+        checked={propTodo.isDone}
+        onChange={(e) => saveTodo({ ...todo, isDone: e.target.checked })}
+      />
+      <div className="flex flex-col grow relative pt-2">
         <Input
           aria-label="title"
           label="Title"
+          color={todo.title === propTodo.title ? "blue" : "orange"}
+          icon={
+            todo.title === propTodo.title ? undefined : (
+              <Icons.MdWarning
+                role="status"
+                aria-label="unsaved changes"
+                fill="orange"
+              />
+            )
+          }
           placeholder="What to do..."
           variant="static"
           value={title}
@@ -43,10 +51,13 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
               title: e.target.value,
             }))
           }
+          onBlur={() => saveTodo(todo)}
         />
         <div
           className="hover:bg-gray-100 flex justify-center"
           onClick={() => setShowContent((current) => !current)}
+          role="button"
+          aria-label="show content"
         >
           <Icons.MdChevronLeft
             style={{
@@ -56,25 +67,45 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
           />
         </div>
         {showContent && (
-          <div className="relative top-4">
+          <div
+            role="presentation"
+            aria-label="content"
+            className="relative top-4"
+          >
+            {!equals(todo.content, propTodo.content) && (
+              <Icons.MdWarning
+                role="status"
+                aria-label="unsaved changes"
+                className="absolute top-0 right-0"
+                fill="orange"
+              />
+            )}
             <Textarea
               variant="static"
-              aria-label="Description"
+              color={equals(todo.content, propTodo.content) ? "blue" : "orange"}
+              aria-label="content"
               label="Description"
               placeholder="Could you elaborate?"
               disabled={isFetching || isUpdating}
-              value={content}
+              value={pipe(
+                todo.content,
+                option.getOrElse(() => ""),
+              )}
+              onChange={(e) =>
+                setTodo((current) => ({
+                  ...current,
+                  content: option.some(e.target.value),
+                }))
+              }
+              onBlur={() => saveTodo(todo)}
             />
           </div>
         )}
       </div>
-      {hasUnsavedChanges && (
-        <Icons.MdWarning role="status" aria-label="unsaved changes" />
-      )}
       <IconButton
         aria-label="delete todo"
         size="sm"
-        disabled={isDeletePending}
+        disabled={isDeleting}
         onClick={deleteTodo}
       >
         <Icons.MdDelete />
