@@ -56,6 +56,25 @@ paths:
             application/json:
               schema:
                 type: string
+    put:
+      summary: update a todo
+      description: updates an existing todo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTodo"
+      responses:
+        200:
+          description: Ok
+          content:
+            text/plain: {}
+        400:
+          description: Validation Error
+          content:
+            text/plain: {}
+        500:
+          description: Server Error
     delete:
       summary: delete a todo
       description: delete a todo
@@ -69,25 +88,6 @@ paths:
       responses:
         200:
           description: Ok
-          content:
-            text/plain: {}
-    put:
-      summary: update a todo
-      description: updates an existing todo
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Todo"
-      responses:
-        200:
-          description: Ok
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Todo"
-        400:
-          description: Validation Error
           content:
             text/plain: {}
   /todoContent:
@@ -136,3 +136,19 @@ components:
       required:
         - title
         - content
+    UpdateTodo:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        isDone:
+          type: boolean
+      required:
+        - id
+        - title
+        - content
+        - isDone
