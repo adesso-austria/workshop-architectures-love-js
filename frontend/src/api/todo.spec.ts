@@ -7,7 +7,6 @@ describe("toDomain", () => {
       toDomain({
         id: "foo",
         title: "bar",
-        content: { href: "", rel: "" },
         isDone: false,
       }),
     ).toEqual({ id: "foo", title: "bar", content: option.none, isDone: false });
