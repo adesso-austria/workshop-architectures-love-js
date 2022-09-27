@@ -7,14 +7,14 @@ import { Repository } from "../repository";
 import * as EventHandler from "./event-handler";
 
 export type Application = {
-  getTodo(
+  getTodo: (
     id: string,
-  ): taskEither.TaskEither<"db error" | "not found", Domain.Todo.Todo>;
-  getTodos(): taskEither.TaskEither<"db error", Domain.Todo.Todo[]>;
-  addTodo(
+  ) => taskEither.TaskEither<"db error" | "not found", Domain.Todo.Todo>;
+  getTodos: () => taskEither.TaskEither<"db error", Domain.Todo.Todo[]>;
+  addTodo: (
     addTodo: Domain.AddTodo.AddTodo,
-  ): taskEither.TaskEither<string, Domain.Todo.Todo>;
-  deleteTodo(id: string): taskEither.TaskEither<string, void>;
+  ) => taskEither.TaskEither<string, Domain.Todo.Todo>;
+  deleteTodo: (id: string) => taskEither.TaskEither<string, void>;
 };
 
 //////////////////////////////////////////////////////
