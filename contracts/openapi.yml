@@ -71,6 +71,25 @@ paths:
           description: Ok
           content:
             text/plain: {}
+    put:
+      summary: update a todo
+      description: updates an existing todo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Todo"
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Todo"
+        400:
+          description: Validation Error
+          content:
+            text/plain: {}
   /todoContent:
     get:
       summary: get the content of a todo by id
