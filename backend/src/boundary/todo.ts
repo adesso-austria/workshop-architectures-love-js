@@ -19,6 +19,15 @@ export const fromDomain = (
   isDone: todo.isDone,
 });
 
+export const toDomain = (
+  contract: Contracts.components["schemas"]["Todo"],
+): Domain.Todo.Todo => ({
+  id: contract.id,
+  title: contract.title,
+  content: "", // TODO: fix as soon as HATEOAS is dropped
+  isDone: contract.isDone,
+});
+
 const schema = <T>(schema: JSONSchemaType<T>) => schema;
 
 export const createRoutes =
