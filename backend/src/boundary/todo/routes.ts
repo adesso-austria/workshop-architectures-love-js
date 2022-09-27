@@ -1,27 +1,15 @@
 import * as Contracts from "contracts";
 import { FastifyPluginAsync } from "fastify";
-import { taskEither } from "fp-ts";
+import { task, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { match } from "ts-pattern";
 import { JSONSchemaType } from "ajv";
-import * as Domain from "../domain";
-import { Application } from "../application";
-
-export const fromDomain = (
-  todo: Domain.Todo.Todo,
-): Contracts.components["schemas"]["Todo"] => ({
-  id: todo.id,
-  title: todo.title,
-  content: {
-    href: `/todo?id=${todo.id}`,
-    rel: "content",
-  },
-  isDone: todo.isDone,
-});
+import { Application } from "../../application";
+import * as Mapper from "./mapper";
 
 const schema = <T>(schema: JSONSchemaType<T>) => schema;
 
-export const createRoutes =
+export const create =
   (application: Application): FastifyPluginAsync =>
   async (app) => {
     //////////////////////////////////////////////////////
@@ -46,8 +34,8 @@ export const createRoutes =
           }),
         },
       },
-      async (req) => {
-        const task = pipe(
+      async function getTodo(req) {
+        const processRequest = pipe(
           application.todo.getTodo(req.query.id),
           taskEither.match(
             (error) =>
@@ -65,21 +53,21 @@ export const createRoutes =
                   }),
                 )
                 .exhaustive(),
-            (todo) => Promise.resolve(fromDomain(todo)),
+            (todo) => Promise.resolve(Mapper.fromDomain(todo)),
           ),
         );
-        return task();
+        return processRequest();
       },
     );
 
     //////////////////////////////////////////////////////
     // POST /todo
     //////////////////////////////////////////////////////
-    app.post<{ Body: Domain.AddTodo.AddTodo }>(
+    app.post<{ Body: Contracts.components["schemas"]["AddTodo"] }>(
       "/todo",
       {
         schema: {
-          body: schema<{ title: string; content: string }>({
+          body: schema<Contracts.components["schemas"]["AddTodo"]>({
             type: "object",
             required: ["title", "content"],
             properties: {
@@ -95,8 +83,8 @@ export const createRoutes =
           }),
         },
       },
-      (req, res) => {
-        const task = pipe(
+      function postTodo(req, res) {
+        const processRequest = pipe(
           application.todo.addTodo(req.body),
           taskEither.match(
             () => {
@@ -107,7 +95,58 @@ export const createRoutes =
           ),
         );
 
-        task();
+        processRequest();
+      },
+    );
+
+    //////////////////////////////////////////////////////
+    // PUT /todo
+    //////////////////////////////////////////////////////
+    app.put<{ Body: Contracts.components["schemas"]["UpdateTodo"] }>(
+      "/todo",
+      {
+        schema: {
+          body: schema<Contracts.components["schemas"]["UpdateTodo"]>({
+            type: "object",
+            required: ["id", "title", "content", "isDone"],
+            properties: {
+              id: {
+                type: "string",
+                minLength: 1,
+              },
+              title: {
+                type: "string",
+                minLength: 1,
+              },
+              content: {
+                type: "string",
+                minLength: 1,
+              },
+              isDone: {
+                type: "boolean",
+              },
+            },
+          }),
+        },
+      },
+      function putTodo(req, res) {
+        const processRequest = pipe(
+          application.todo.updateTodo(req.body),
+          taskEither.match(
+            (error) =>
+              match(error)
+                .with("db error", () => 500)
+                .with("not found", () => 404)
+                .exhaustive(),
+            () => 204,
+          ),
+          task.map((status) => {
+            res.statusCode = status;
+            res.send();
+          }),
+        );
+
+        processRequest();
       },
     );
 
@@ -134,8 +173,8 @@ export const createRoutes =
           }),
         },
       },
-      (req, res) => {
-        const task = pipe(
+      function getTodoContent(req, res) {
+        const processRequest = pipe(
           application.todo.getTodo(req.query.id),
           taskEither.match(
             (error) => {
@@ -151,26 +190,26 @@ export const createRoutes =
           ),
         );
 
-        task();
+        processRequest();
       },
     );
 
     //////////////////////////////////////////////////////
     // GET /todos
     //////////////////////////////////////////////////////
-    app.get("/todos", (_, res) => {
-      const task = pipe(
+    app.get("/todos", function getTodos(_, res) {
+      const processRequest = pipe(
         application.todo.getTodos(),
         taskEither.match(
           () => {
             res.statusCode = 500;
             res.send();
           },
-          (todos) => res.send(todos.map(fromDomain)),
+          (todos) => res.send(todos.map(Mapper.fromDomain)),
         ),
       );
 
-      task();
+      processRequest();
     });
 
     //////////////////////////////////////////////////////
@@ -192,8 +231,8 @@ export const createRoutes =
           }),
         },
       },
-      (req, res) => {
-        const task = pipe(
+      function deleteTodo(req, res) {
+        const processRequest = pipe(
           application.todo.deleteTodo(req.query.id),
           taskEither.match(
             () => {
@@ -207,7 +246,7 @@ export const createRoutes =
           ),
         );
 
-        task();
+        processRequest();
       },
     );
   };

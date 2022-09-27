@@ -65,7 +65,14 @@ const createUpdateOne =
   ({ db }: Instance): Adapter["updateOne"] =>
   (collection, filter, next) =>
     taskify(() =>
-      db.collection(collection).updateOne(filter, { $set: next }).then(ignore),
+      db
+        .collection(collection)
+        .findOneAndUpdate(filter, { $set: next }, { upsert: false })
+        .then((result) =>
+          result.value === null
+            ? Promise.reject("could not find document to update")
+            : undefined,
+        ),
     );
 
 const createDeleteOne =

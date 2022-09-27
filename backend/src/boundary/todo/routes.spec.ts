@@ -1,12 +1,12 @@
+import * as Contracts from "contracts";
 import { expect } from "@jest/globals";
 import { LightMyRequestResponse } from "fastify";
 import { taskEither } from "fp-ts";
 import { Jest } from "test-utils";
 import { DeepPartial } from "utils";
-import { Application } from "../application";
-import * as Domain from "../domain";
-import * as TestData from "../test-data";
-import * as Boundary from "./index";
+import { Application } from "../../application";
+import * as TestData from "../../test-data";
+import * as Boundary from "../index";
 
 Jest.testGivenThen<Application, (response: LightMyRequestResponse) => void>(
   "GET /todo",
@@ -53,7 +53,7 @@ Jest.testGivenThen<Application, (response: LightMyRequestResponse) => void>(
       (response) => {
         expect(response.statusCode).toEqual(200);
         expect(response.json()).toEqual(
-          Boundary.Todo.fromDomain(TestData.Todo.buyIcecream),
+          Boundary.Todo.Mapper.fromDomain(TestData.Todo.buyIcecream),
         );
       },
     ),
@@ -62,7 +62,7 @@ Jest.testGivenThen<Application, (response: LightMyRequestResponse) => void>(
 
 Jest.testGivenWhenThen<
   DeepPartial<Application>,
-  Partial<Domain.AddTodo.AddTodo>,
+  Partial<Contracts.components["schemas"]["AddTodo"]>,
   (response: LightMyRequestResponse) => void
 >(
   "POST /todo",
@@ -245,7 +245,7 @@ Jest.testGivenThen<
       },
       (res) => {
         expect(res.json()).toEqual([
-          Boundary.Todo.fromDomain(TestData.Todo.buyMilk),
+          Boundary.Todo.Mapper.fromDomain(TestData.Todo.buyMilk),
         ]);
       },
     ),
@@ -284,4 +284,70 @@ test.each<
     "foo",
     (res) => expect(res.statusCode).toEqual(204),
   ],
-]);
+])("%s", async (_, givenApplication, whenId, assertResponse) => {
+  const root = Boundary.create(TestData.Application.create(givenApplication));
+
+  const res = await root.inject({
+    path: "/todo",
+    method: "DELETE",
+    query: whenId == null ? {} : { id: whenId },
+  });
+
+  assertResponse(res);
+});
+
+test.each<
+  [
+    string,
+    DeepPartial<Application>,
+    DeepPartial<Contracts.components["schemas"]["UpdateTodo"]>,
+    (res: LightMyRequestResponse) => void,
+  ]
+>([
+  [
+    "should reject with 400 if id is missing",
+    {},
+    { title: "foo", content: "bar", isDone: false },
+    (res) => expect(res.statusCode).toEqual(400),
+  ],
+  [
+    "should reject with 400 if title is missing",
+    {},
+    { id: "foo", content: "bar", isDone: false },
+    (res) => expect(res.statusCode).toEqual(400),
+  ],
+  [
+    "should reject with 400 if content is missing",
+    {},
+    { id: "foo", title: "bar", isDone: false },
+    (res) => expect(res.statusCode).toEqual(400),
+  ],
+  [
+    "should reject with 400 if isDone is missing",
+    {},
+    { id: "foo", content: "bar", title: "baz" },
+    (res) => expect(res.statusCode).toEqual(400),
+  ],
+  [
+    "should reject with 404 if todo can't be found",
+    { todo: { updateTodo: () => taskEither.left("not found") } },
+    { id: "foo", content: "bar", title: "baz", isDone: false },
+    (res) => expect(res.statusCode).toEqual(404),
+  ],
+  [
+    "should return 200 if update is successful",
+    { todo: { updateTodo: () => taskEither.right(undefined) } },
+    { id: "foo", content: "bar", title: "baz", isDone: false },
+    (res) => expect(res.statusCode).toEqual(204),
+  ],
+])("%s", async (_, givenApplication, whenRequest, assertResponse) => {
+  const root = Boundary.create(TestData.Application.create(givenApplication));
+
+  const res = await root.inject({
+    path: "/todo",
+    method: "PUT",
+    payload: whenRequest,
+  });
+
+  assertResponse(res);
+});

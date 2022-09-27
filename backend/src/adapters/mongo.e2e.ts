@@ -216,4 +216,16 @@ describe("updateOne", () => {
       ),
     ),
   );
+
+  it(
+    "should throw if the requested document can't be found",
+    withClient(
+      flow(
+        taskEither.chain(({ client }) =>
+          client.updateOne("foo", { bar: "baz" }, { bar: "qux" }),
+        ),
+        taskEither.match(ignore, () => throwException("expected a left")),
+      ),
+    ),
+  );
 });
