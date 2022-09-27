@@ -167,7 +167,7 @@ export const slice = createSlice({
 });
 
 namespace Epics {
-  const fetchTodosEpic: Store.Epic = (action$, _state$, { api }) =>
+  const fetchTodos: Store.Epic = (action$, _state$, { api }) =>
     action$.pipe(
       Rx.filter(slice.actions.fetchTodos.match),
       Rx.switchMap(() => {
@@ -183,7 +183,7 @@ namespace Epics {
       }),
     );
 
-  const addTodoEpic: Store.Epic = (action$, _state, { api }) =>
+  const addTodo: Store.Epic = (action$, _state, { api }) =>
     action$.pipe(
       Rx.filter(slice.actions.addTodo.match),
       Rx.switchMap(({ payload: addTodo }) => {
@@ -199,7 +199,7 @@ namespace Epics {
       }),
     );
 
-  const deleteTodoEpic: Store.Epic = (action$, _state$, { api }) =>
+  const deleteTodo: Store.Epic = (action$, _state$, { api }) =>
     action$.pipe(
       Rx.filter(slice.actions.deleteTodo.match),
       Rx.switchMap(({ payload: id }) => {
@@ -215,7 +215,7 @@ namespace Epics {
       }),
     );
 
-  const updateEpic: Store.Epic = (action$, _state$, { api }) =>
+  const updateTodo: Store.Epic = (action$, _state$, { api }) =>
     action$.pipe(
       Rx.filter(slice.actions.updateTodo.match),
       Rx.switchMap(({ payload: todo }) => {
@@ -231,12 +231,7 @@ namespace Epics {
       }),
     );
 
-  export const epic = combineEpics(
-    fetchTodosEpic,
-    addTodoEpic,
-    deleteTodoEpic,
-    updateEpic,
-  );
+  export const epic = combineEpics(fetchTodos, addTodo, deleteTodo, updateTodo);
 }
 export const epic = Epics.epic;
 
