@@ -246,4 +246,68 @@ describe("epic", () => {
       );
     });
   });
+
+  describe("updating todos", () => {
+    it("should call api updateTodo", async () => {
+      const updateTodo = jest.fn(() => taskEither.right(undefined));
+      const action$ = createAction$(
+        Rx.of(slice.actions.updateTodo(Test.Data.Todo.buyIcecream)),
+        {
+          todos: Async.of({
+            [Test.Data.Todo.buyIcecream.id]: Async.of(
+              Test.Data.Todo.buyIcecream,
+            ),
+          }),
+        },
+        { updateTodo },
+      );
+
+      await Rx.firstValueFrom(action$);
+
+      expect(updateTodo).toHaveBeenCalled();
+    });
+
+    it("should dispatch success if api succeeds", async () => {
+      const action$ = createAction$(
+        Rx.of(slice.actions.updateTodo(Test.Data.Todo.buyIcecream)),
+        {
+          todos: Async.of({
+            [Test.Data.Todo.buyIcecream.id]: Async.of(
+              Test.Data.Todo.buyIcecream,
+            ),
+          }),
+        },
+        { updateTodo: () => taskEither.right(undefined) },
+      );
+
+      const action = await Rx.firstValueFrom(action$);
+
+      expect(action).toEqual(
+        slice.actions.updateTodoSuccess(Test.Data.Todo.buyIcecream),
+      );
+    });
+
+    it("should dispatch failure if api fails", async () => {
+      const action$ = createAction$(
+        Rx.of(slice.actions.updateTodo(Test.Data.Todo.buyIcecream)),
+        {
+          todos: Async.of({
+            [Test.Data.Todo.buyIcecream.id]: Async.of(
+              Test.Data.Todo.buyIcecream,
+            ),
+          }),
+        },
+        { updateTodo: () => taskEither.left("some error") },
+      );
+
+      const action = await Rx.firstValueFrom(action$);
+
+      expect(action).toEqual(
+        slice.actions.updateTodoFailure({
+          id: Test.Data.Todo.buyIcecream.id,
+          error: "some error",
+        }),
+      );
+    });
+  });
 });

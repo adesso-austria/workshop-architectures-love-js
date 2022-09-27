@@ -215,7 +215,28 @@ namespace Epics {
       }),
     );
 
-  export const epic = combineEpics(fetchTodosEpic, addTodoEpic, deleteTodoEpic);
+  const updateEpic: Store.Epic = (action$, _state$, { api }) =>
+    action$.pipe(
+      Rx.filter(slice.actions.updateTodo.match),
+      Rx.switchMap(({ payload: todo }) => {
+        const updateAction = pipe(
+          api.updateTodo(todo),
+          taskEither.matchW(
+            (error) => slice.actions.updateTodoFailure({ id: todo.id, error }),
+            () => slice.actions.updateTodoSuccess(todo),
+          ),
+        );
+
+        return updateAction();
+      }),
+    );
+
+  export const epic = combineEpics(
+    fetchTodosEpic,
+    addTodoEpic,
+    deleteTodoEpic,
+    updateEpic,
+  );
 }
 export const epic = Epics.epic;
 
