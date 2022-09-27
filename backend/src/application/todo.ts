@@ -15,6 +15,7 @@ export type Application = {
     addTodo: Domain.AddTodo.AddTodo,
   ) => taskEither.TaskEither<string, Domain.Todo.Todo>;
   deleteTodo: (id: string) => taskEither.TaskEither<string, void>;
+  updateTodo: (todo: Domain.Todo.Todo) => taskEither.TaskEither<string, void>;
 };
 
 //////////////////////////////////////////////////////
@@ -29,6 +30,9 @@ const createEventHandler = (repository: Repository) =>
       )
       .with({ type: "delete todo" }, ({ payload }) =>
         repository.todo.deleteTodo(payload),
+      )
+      .with({ type: "update todo" }, ({ payload }) =>
+        repository.todo.updateTodo(payload),
       )
       .otherwise(() => taskEither.right(undefined)),
   );
@@ -85,6 +89,14 @@ const createDeleteTodo =
       payload: id,
     });
 
+const createUpdateTodo =
+  (eventHandler: EventHandler.EventHandler): Application["updateTodo"] =>
+  (todo) =>
+    eventHandler({
+      type: "update todo",
+      payload: todo,
+    });
+
 export const create = (repository: Repository): Application => {
   const eventHandler = createEventHandler(repository);
 
@@ -93,5 +105,6 @@ export const create = (repository: Repository): Application => {
     getTodos: createGetTodos(repository),
     addTodo: createAddTodo(eventHandler),
     deleteTodo: createDeleteTodo(eventHandler),
+    updateTodo: createUpdateTodo(eventHandler),
   };
 };
