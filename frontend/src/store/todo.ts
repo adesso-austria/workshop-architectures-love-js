@@ -287,29 +287,18 @@ export const useAddTodo = () => {
     : (todo: Domain.AddTodo.AddTodo) => dispatch(slice.actions.addTodo(todo));
 };
 
-export const useDeleteTodo = (todo: Pick<Domain.Todo.Todo, "id">) => {
-  const dispatch = useDispatch();
-
-  const deleteTodo = () => dispatch(slice.actions.deleteTodo(todo.id));
-
-  const isPending = useSelector(
-    flow(
-      Selectors.fromStore,
-      Selectors.selectById(todo.id),
-      option.map(Async.isPending("deleting")),
-      option.getOrElse(() => false),
-    ),
-  );
-
-  return { deleteTodo, isPending };
-};
-
-export const useContent = (todo: Pick<Domain.Todo.Todo, "id">) => {
+export const useTodoTasks = (todo: Pick<Domain.Todo.Todo, "id">) => {
   const dispatch = useDispatch();
 
   const stored = useSelector(
     flow(Selectors.fromStore, Selectors.selectById(todo.id)),
   );
+
+  const saveTodo = (todo: Domain.Todo.Todo) => {
+    dispatch(slice.actions.updateTodo(todo));
+  };
+
+  const deleteTodo = () => dispatch(slice.actions.deleteTodo(todo.id));
 
   const isFetching = pipe(
     stored,
@@ -323,12 +312,11 @@ export const useContent = (todo: Pick<Domain.Todo.Todo, "id">) => {
     option.getOrElse(() => false),
   );
 
-  const content = pipe(
+  const isDeleting = pipe(
     stored,
-    option.map(Async.value),
-    option.chain((todo) => todo.content),
-    option.getOrElse(() => ""),
+    option.map(Async.isPending("deleting")),
+    option.getOrElse(() => false),
   );
 
-  return { content, isFetching, isUpdating };
+  return { saveTodo, deleteTodo, isFetching, isUpdating, isDeleting };
 };
