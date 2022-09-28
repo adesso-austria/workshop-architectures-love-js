@@ -1,9 +1,10 @@
 import React from "react";
-import * as ReactRouter from "react-router";
-import { render } from "../test/render";
+import { act, render } from "../test/render";
 import { App } from "./app";
+import { Overview } from "./todo";
 
-it("should render a router outlet", () => {
+it("should render the todo overview", async () => {
   const result = render(<App />);
-  expect(() => result.root.findByType(ReactRouter.Outlet)).not.toThrow();
+  expect(() => result.root.findByType(Overview)).not.toThrow();
+  await act();
 });
