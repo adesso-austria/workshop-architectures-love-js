@@ -61,6 +61,7 @@ const createStreamSubscribe =
          */
         const waitForNextEmit = (lastId: string): Promise<void> => {
           if (!client.isOpen || abortController.signal.aborted) {
+            console.log("ending isolated connection");
             observer.complete();
             return isolatedClient.quit();
           }
@@ -99,7 +100,9 @@ const createStreamSubscribe =
             });
         };
 
-        return waitForNextEmit(since);
+        return waitForNextEmit(since).catch((e) => {
+          observer.error(e);
+        });
       });
 
       return () => {

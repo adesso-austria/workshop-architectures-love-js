@@ -176,7 +176,7 @@ describe("acknowledging events", () => {
 
     expect(addOne).toHaveBeenCalledWith(Event.ackEventsKey, {
       consumer: "foo",
-      eventId: "bar",
+      id: "bar",
     });
   });
 });
