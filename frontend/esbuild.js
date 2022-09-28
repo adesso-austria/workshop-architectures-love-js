@@ -110,6 +110,12 @@ const run = async () => {
     ///////////////////
     const proxy = HttpProxy.createProxy();
 
+    proxy.on("error", (err, req, res) => {
+      res.statusCode = 500;
+      res.write(err.message);
+      res.end();
+    });
+
     const bs = browserSync.init({
       port: 3000,
       server: "./www",
