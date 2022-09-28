@@ -46,7 +46,6 @@ const createStreamAdd =
   ({ client, namespace }: Instance): Adapter["streamAdd"] =>
   (key, message) =>
     taskify(() => {
-      console.log("redis adding", message);
       return client.XADD(buildKey(namespace, key), "*", message);
     });
 
