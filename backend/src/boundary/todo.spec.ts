@@ -5,9 +5,9 @@ import { option, taskEither } from "fp-ts";
 import { Jest } from "test-utils";
 import { DeepPartial } from "utils";
 import { pipe } from "fp-ts/lib/function";
-import { Application } from "../../application";
-import * as TestData from "../../test-data";
-import * as Boundary from "../index";
+import { Application } from "../application";
+import * as TestData from "../test-data";
+import * as Boundary from "./index";
 
 Jest.testGivenThen<Application, (response: LightMyRequestResponse) => void>(
   "GET /todo",

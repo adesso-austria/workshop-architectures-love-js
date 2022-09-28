@@ -1,12 +1,11 @@
-import * as UUID from "uuid";
 import * as Contracts from "contracts";
 import { FastifyPluginAsync } from "fastify";
 import { option, task, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { match } from "ts-pattern";
 import { JSONSchemaType } from "ajv";
-import { Application } from "../../application";
-import * as Domain from "../../domain";
+import { Application } from "../application";
+import * as Domain from "../domain";
 
 const schema = <T>(schema: JSONSchemaType<T>) => schema;
 

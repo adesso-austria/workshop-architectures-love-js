@@ -13,7 +13,7 @@ export const create = (application: Application) => {
 
   server.get("/_heartbeat", () => "online");
 
-  server.register(Todo.Routes.create(application));
+  server.register(Todo.create(application));
 
   return server;
 };
