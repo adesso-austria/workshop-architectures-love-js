@@ -1,6 +1,6 @@
 import * as Crypto from "crypto";
 import { describe, it, expect } from "@jest/globals";
-import { task, taskEither } from "fp-ts";
+import { option, task, taskEither } from "fp-ts";
 import { flow, pipe } from "fp-ts/lib/function";
 import { ignore, throwException } from "utils";
 import * as Rx from "rxjs";
@@ -53,20 +53,21 @@ describe("streamAdd", () => {
 
 describe("streamSubscribe", () => {
   it(
-    "should emit events since 0",
+    "should emit events",
     withClient(
       flow(
         taskEither.chain((client) =>
           pipe(
             taskEither.Do,
+            taskEither.apS("addedId", client.streamAdd("foo", { bar: "baz" })),
             taskEither.apS(
               "emitted",
               taskEither.tryCatch(
-                () => Rx.firstValueFrom(client.streamSubscribe("foo", "0")),
+                () =>
+                  Rx.firstValueFrom(client.streamSubscribe("foo", option.none)),
                 (reason) => reason as string,
               ),
             ),
-            taskEither.apS("addedId", client.streamAdd("foo", { bar: "baz" })),
           ),
         ),
         taskEither.match(throwException, ({ emitted }) => {

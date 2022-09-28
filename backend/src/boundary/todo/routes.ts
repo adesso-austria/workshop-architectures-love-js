@@ -86,11 +86,9 @@ export const create =
         },
       },
       function postTodo(req, res) {
-        const todo: Domain.Todo.Todo = {
-          id: UUID.v4(),
+        const todo: Domain.AddTodo.AddTodo = {
           title: req.body.title,
           content: option.fromNullable(req.body.content),
-          isDone: false,
         };
 
         const processRequest = pipe(

@@ -110,34 +110,57 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
   ) => {
     // type gets a bit too complicated here...
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return ((args: any = {}) =>
-      taskEither.tryCatch(
+    return ((args: any = {}) => {
+      const headers =
+        args.body == null
+          ? args.headers
+          : (() => {
+              const copy = new Headers(args.headers);
+              copy.set("Content-Type", "application/json");
+              return copy;
+            })();
+
+      const body = args.body == null ? undefined : JSON.stringify(args.body);
+
+      const init: RequestInit = {
+        ...(body == null ? {} : { body }),
+        headers,
+        method: method as string,
+      };
+
+      return taskEither.tryCatch(
         () =>
           fetch(
             `/_api${path}${
               "query" in args ? `?${buildQueryString(args.query)}` : ""
             }`,
-            {
-              body: args.body,
-              headers: args.headers,
-              method: method as string,
-            },
+            init,
           ).then((res) =>
-            res.json().then(
-              (data): Response<number, unknown> => ({
-                data,
-                headers: res.headers,
-                ok: res.ok,
-                statusText: res.statusText,
-                status: res.status,
-              }),
-            ),
+            res
+              .text()
+              .then((text) => {
+                try {
+                  return JSON.parse(text);
+                } catch {
+                  return text;
+                }
+              })
+              .then(
+                (data): Response<number, unknown> => ({
+                  data,
+                  headers: res.headers,
+                  ok: res.ok,
+                  statusText: res.statusText,
+                  status: res.status,
+                }),
+              ),
           ),
         (reason) =>
           `could not fetch ${method
             .toString()
             .toUpperCase()} ${path}: ${reason}`,
-      )) as Op<Path, Method>;
+      );
+    }) as Op<Path, Method>;
   };
 
   return {

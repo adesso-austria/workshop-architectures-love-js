@@ -1,6 +1,5 @@
 import { either, task, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
-import * as Rx from "rxjs";
 import * as TestData from "../test-data";
 import * as EventHandler from "./event-handler";
 
@@ -9,10 +8,8 @@ it("should process unknown events first", async () => {
   const handler = EventHandler.create(
     TestData.Repository.create({
       event: {
-        addEvent: () => taskEither.right(TestData.Event.createBuyMilk),
         getUnknownEvents: () =>
           taskEither.right([TestData.Event.createBuyIcecream]),
-        createEventStream: () => Rx.of(TestData.Event.createBuyMilk),
       },
     }),
     "foo",
@@ -21,6 +18,8 @@ it("should process unknown events first", async () => {
 
   const handleEvent = handler(TestData.DomainEvent.createBuyMilk);
   await handleEvent();
+
+  expect(handlerFn).toHaveBeenCalledTimes(2);
 
   expect(handlerFn).toHaveBeenNthCalledWith(
     1,
@@ -38,9 +37,7 @@ it("should not call the handlerFn if events are already known", async () => {
   const handler = EventHandler.create(
     TestData.Repository.create({
       event: {
-        addEvent: () => taskEither.right(TestData.Event.createBuyMilk),
         hasEventBeenAcknowledged: () => taskEither.right(true),
-        createEventStream: () => Rx.of(TestData.Event.createBuyMilk),
       },
     }),
     "foo",
@@ -59,9 +56,7 @@ it("should acknowledge successfully processed events", async () => {
   const handler = EventHandler.create(
     TestData.Repository.create({
       event: {
-        addEvent: () => taskEither.right(TestData.Event.createBuyMilk),
         acknowledgeEvent,
-        createEventStream: () => Rx.of(TestData.Event.createBuyMilk),
       },
     }),
     "foo",
@@ -80,9 +75,7 @@ it("should not acknowledge the event if the handler fails", async () => {
   const handler = EventHandler.create(
     TestData.Repository.create({
       event: {
-        addEvent: () => taskEither.right(TestData.Event.createBuyMilk),
         acknowledgeEvent,
-        createEventStream: () => Rx.of(TestData.Event.createBuyMilk),
       },
     }),
     "foo",
@@ -97,18 +90,13 @@ it("should not acknowledge the event if the handler fails", async () => {
 
 it("should process events strictly in order, even if handling one event is much faster", async () => {
   const handler = EventHandler.create(
-    TestData.Repository.create({
-      event: {
-        addEvent: () => taskEither.right(TestData.Event.createBuyMilk),
-        createEventStream: () => Rx.of(TestData.Event.createBuyMilk),
-      },
-    }),
+    TestData.Repository.create({}),
     "foo",
     jest
       .fn()
-      // first invocation should take 200ms
+      // first invocation should take 50ms
       .mockReturnValueOnce(pipe(taskEither.right(undefined), task.delay(50)))
-      // second invocation should be instance
+      // second invocation should be instant
       .mockReturnValueOnce(taskEither.right(undefined)),
   );
 
@@ -122,7 +110,7 @@ it("should process events strictly in order, even if handling one event is much 
   );
 
   const winner = Promise.race([first(), second()]);
-  expect(winner).resolves.toEqual(either.right("first"));
+  await expect(winner).resolves.toEqual(either.right("first"));
 });
 
 describe("transactions", () => {

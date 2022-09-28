@@ -24,18 +24,25 @@ export const create = (
 ): EventHandler => {
   const dispatchedEvents$ = repository.event.createEventStream(option.none);
 
-  const fetchUnknownEvents = pipe(
+  const fetchUnacknowledgedEvents = pipe(
     repository.event.getUnknownEvents(consumerId),
     taskEither.match(throwException, identity),
   );
 
-  /**
-   * fetch unknown events and flatten array into stream
-   */
-  const unknownEvents$ = Rx.from(fetchUnknownEvents()).pipe(Rx.mergeAll());
+  const unacknowledgedEvents$ = Rx.from(fetchUnacknowledgedEvents());
 
-  const processedEvents$ = Rx.concat(unknownEvents$, dispatchedEvents$)
-    .pipe(
+  const processedEvents$ = Rx.connectable(
+    dispatchedEvents$.pipe(
+      // buffer newly dispatched events until we know
+      // which events we haven't yet acknowledged
+      Rx.buffer(unacknowledgedEvents$),
+      Rx.take(1),
+      Rx.withLatestFrom(unacknowledgedEvents$),
+      // inline events, unacknowledged first,
+      // then the newly dispatched ones
+      Rx.concatMap(([intermediate, unacknowledged]) =>
+        Rx.concat(Rx.of(...unacknowledged, ...intermediate), dispatchedEvents$),
+      ),
       Rx.concatMap((event) => {
         const processEvent = pipe(
           repository.event.hasEventBeenAcknowledged(consumerId, event.id),
@@ -54,8 +61,9 @@ export const create = (
 
         return Rx.from(processEvent());
       }),
-    )
-    .pipe(Rx.share());
+    ),
+  );
+  processedEvents$.connect();
 
   return (domainEvent) => {
     /**
@@ -74,12 +82,12 @@ export const create = (
 
     return pipe(
       taskEither.Do,
-      taskEither.apS("addEvent", () =>
-        // lazily create the addEvent task so that waitForProcessing can subscribe in time
+      taskEither.apS(
+        "addEvent",
         pipe(
           repository.event.addEvent(domainEvent),
           taskEither.map(tap((event) => eventId$.next(event.id))),
-        )(),
+        ),
       ),
       taskEither.apS("waitForProcessing", () => {
         const processed$ = processedEvents$.pipe(
