@@ -1,33 +1,33 @@
 import { either, task, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
-import * as TestData from "../test-data";
+import * as Test from "../test";
 import * as EventHandler from "./event-handler";
 
 it("should process unknown events first", async () => {
   const handlerFn = jest.fn(() => taskEither.right(undefined));
   const handler = EventHandler.create(
-    TestData.Repository.create({
+    Test.Repository.create({
       event: {
         getUnknownEvents: () =>
-          taskEither.right([TestData.Event.createBuyIcecream]),
+          taskEither.right([Test.Data.Event.createBuyIcecream]),
       },
     }),
     "foo",
     handlerFn,
   );
 
-  const handleEvent = handler(TestData.DomainEvent.createBuyMilk);
+  const handleEvent = handler(Test.Data.DomainEvent.createBuyMilk);
   await handleEvent();
 
   expect(handlerFn).toHaveBeenCalledTimes(2);
 
   expect(handlerFn).toHaveBeenNthCalledWith(
     1,
-    TestData.Event.createBuyIcecream.domainEvent,
+    Test.Data.Event.createBuyIcecream.domainEvent,
   );
   expect(handlerFn).toHaveBeenNthCalledWith(
     2,
-    TestData.Event.createBuyMilk.domainEvent,
+    Test.Data.Event.createBuyMilk.domainEvent,
   );
 });
 
@@ -35,7 +35,7 @@ it("should not call the handlerFn if events are already known", async () => {
   const handlerFn = jest.fn(() => taskEither.right(undefined));
 
   const handler = EventHandler.create(
-    TestData.Repository.create({
+    Test.Repository.create({
       event: {
         hasEventBeenAcknowledged: () => taskEither.right(true),
       },
@@ -44,7 +44,7 @@ it("should not call the handlerFn if events are already known", async () => {
     handlerFn,
   );
 
-  const handleEvent = handler(TestData.DomainEvent.createBuyMilk);
+  const handleEvent = handler(Test.Data.DomainEvent.createBuyMilk);
   await handleEvent();
 
   expect(handlerFn).toHaveBeenCalledTimes(0);
@@ -54,7 +54,7 @@ it("should acknowledge successfully processed events", async () => {
   const acknowledgeEvent = jest.fn(() => taskEither.right(undefined));
 
   const handler = EventHandler.create(
-    TestData.Repository.create({
+    Test.Repository.create({
       event: {
         acknowledgeEvent,
       },
@@ -63,7 +63,7 @@ it("should acknowledge successfully processed events", async () => {
     () => taskEither.right(undefined),
   );
 
-  const handleEvent = handler(TestData.DomainEvent.createBuyMilk);
+  const handleEvent = handler(Test.Data.DomainEvent.createBuyMilk);
   await handleEvent();
 
   expect(acknowledgeEvent).toHaveBeenCalled();
@@ -73,7 +73,7 @@ it("should not acknowledge the event if the handler fails", async () => {
   const acknowledgeEvent = jest.fn(() => taskEither.right(undefined));
 
   const handler = EventHandler.create(
-    TestData.Repository.create({
+    Test.Repository.create({
       event: {
         acknowledgeEvent,
       },
@@ -82,7 +82,7 @@ it("should not acknowledge the event if the handler fails", async () => {
     () => taskEither.left("some error"),
   );
 
-  const handleEvent = handler(TestData.DomainEvent.createBuyMilk);
+  const handleEvent = handler(Test.Data.DomainEvent.createBuyMilk);
   await handleEvent();
 
   expect(acknowledgeEvent).not.toHaveBeenCalled();
@@ -90,7 +90,7 @@ it("should not acknowledge the event if the handler fails", async () => {
 
 it("should process events strictly in order, even if handling one event is much faster", async () => {
   const handler = EventHandler.create(
-    TestData.Repository.create({}),
+    Test.Repository.create({}),
     "foo",
     jest
       .fn()
@@ -101,11 +101,11 @@ it("should process events strictly in order, even if handling one event is much 
   );
 
   const first = pipe(
-    handler(TestData.DomainEvent.createBuyMilk),
+    handler(Test.Data.DomainEvent.createBuyMilk),
     taskEither.map(() => "first"),
   );
   const second = pipe(
-    handler(TestData.DomainEvent.createBuyMilk),
+    handler(Test.Data.DomainEvent.createBuyMilk),
     taskEither.map(() => "second"),
   );
 

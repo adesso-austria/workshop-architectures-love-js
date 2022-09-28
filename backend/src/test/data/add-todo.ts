@@ -1,5 +1,5 @@
 import { option } from "fp-ts";
-import * as Domain from "../domain";
+import * as Domain from "../../domain";
 
 export const buyIcecream: Domain.AddTodo.AddTodo = {
   title: "Buy Ice-Cream",

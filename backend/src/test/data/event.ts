@@ -1,4 +1,4 @@
-import * as Domain from "../domain";
+import * as Domain from "../../domain";
 import * as DomainEvent from "./domain-event";
 
 export const createBuyIcecream: Domain.Event.Event = {

@@ -1,15 +1,15 @@
-import * as Crypto from "crypto";
-import * as Domain from "../domain";
+import * as UUID from "uuid";
+import * as Domain from "../../domain";
 import * as AddTodo from "./add-todo";
 
 export const buyIcecream: Domain.Todo.Todo = {
-  id: Crypto.randomUUID(),
+  id: UUID.v4(),
   isDone: false,
   ...AddTodo.buyIcecream,
 };
 
 export const buyMilk: Domain.Todo.Todo = {
-  id: Crypto.randomUUID(),
+  id: UUID.v4(),
   isDone: false,
   ...AddTodo.buyMild,
 };

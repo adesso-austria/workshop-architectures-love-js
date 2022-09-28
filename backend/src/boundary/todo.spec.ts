@@ -5,13 +5,13 @@ import { Jest } from "test-utils";
 import { DeepPartial } from "utils";
 import { pipe } from "fp-ts/lib/function";
 import { Application } from "../application";
-import * as TestData from "../test-data";
+import * as Test from "../test";
 import * as Boundary from "./index";
 
 Jest.testGivenThen<Application, (response: LightMyRequestResponse) => void>(
   "GET /todo",
   async (givenApplication, checkExpectation) => {
-    const root = Boundary.create(TestData.Application.create(givenApplication));
+    const root = Boundary.create(Test.Application.create(givenApplication));
     const response = await root.inject({
       path: "/todo",
       query: {
@@ -23,7 +23,7 @@ Jest.testGivenThen<Application, (response: LightMyRequestResponse) => void>(
   [
     Jest.givenThen(
       "should return status 500 if the repository threw an error",
-      TestData.Application.create({
+      Test.Application.create({
         todo: {
           getTodo: () => taskEither.left("db error"),
         },
@@ -34,7 +34,7 @@ Jest.testGivenThen<Application, (response: LightMyRequestResponse) => void>(
     ),
     Jest.givenThen(
       "should return status 404 if the todo can't be found",
-      TestData.Application.create({
+      Test.Application.create({
         todo: {
           getTodo: () => taskEither.left("not found"),
         },
@@ -45,13 +45,13 @@ Jest.testGivenThen<Application, (response: LightMyRequestResponse) => void>(
     ),
     Jest.givenThen(
       "should return the todo with status 200 if it could be found",
-      TestData.Application.create({
+      Test.Application.create({
         todo: {
-          getTodo: () => taskEither.right(TestData.Todo.buyIcecream),
+          getTodo: () => taskEither.right(Test.Data.Todo.buyIcecream),
         },
       }),
       (response) => {
-        const todo = TestData.Todo.buyIcecream;
+        const todo = Test.Data.Todo.buyIcecream;
         const expectedBody: Contracts.components["schemas"]["Todo"] = {
           id: todo.id,
           title: todo.title,
@@ -72,7 +72,7 @@ Jest.testGivenWhenThen<
 >(
   "POST /todo",
   async (givenApplication, whenPayload, expectResponse) => {
-    const root = Boundary.create(TestData.Application.create(givenApplication));
+    const root = Boundary.create(Test.Application.create(givenApplication));
 
     const response = await root.inject({
       path: "/todo",
@@ -116,13 +116,13 @@ Jest.testGivenWhenThen<
       "should return with 200 + id of the created todo",
       {
         todo: {
-          addTodo: () => taskEither.right(TestData.Todo.buyIcecream),
+          addTodo: () => taskEither.right(Test.Data.Todo.buyIcecream),
         },
       },
       { content: "foo", title: "bar" },
       (response) => {
         expect(response.statusCode).toEqual(200);
-        expect(response.body).toEqual(TestData.Todo.buyIcecream.id);
+        expect(response.body).toEqual(Test.Data.Todo.buyIcecream.id);
       },
     ),
   ],
@@ -135,7 +135,7 @@ Jest.testGivenWhenThen<
 >(
   "GET /todoContent",
   async (givenApplication, whenRequestedQuery, assertExpectation) => {
-    const root = Boundary.create(TestData.Application.create(givenApplication));
+    const root = Boundary.create(Test.Application.create(givenApplication));
     const response = await root.inject({
       path: "/todoContent",
       query: whenRequestedQuery,
@@ -177,7 +177,7 @@ Jest.testGivenWhenThen<
       "should return 200 content if todo could be found",
       {
         todo: {
-          getTodo: () => taskEither.right(TestData.Todo.buyIcecream),
+          getTodo: () => taskEither.right(Test.Data.Todo.buyIcecream),
         },
       },
       { id: "foo" },
@@ -185,7 +185,7 @@ Jest.testGivenWhenThen<
         expect(res.statusCode).toEqual(200);
         expect(res.body).toEqual(
           pipe(
-            TestData.Todo.buyIcecream.content,
+            Test.Data.Todo.buyIcecream.content,
             option.getOrElse(() => ""),
           ),
         );
@@ -200,7 +200,7 @@ Jest.testGivenThen<
 >(
   "GET /todos",
   async (givenApplication, assertExpectation) => {
-    const root = Boundary.create(TestData.Application.create(givenApplication));
+    const root = Boundary.create(Test.Application.create(givenApplication));
 
     const response = await root.inject({
       path: "/todos",
@@ -234,11 +234,11 @@ Jest.testGivenThen<
       "should map domain to contract",
       {
         todo: {
-          getTodos: () => taskEither.right([TestData.Todo.buyMilk]),
+          getTodos: () => taskEither.right([Test.Data.Todo.buyMilk]),
         },
       },
       (res) => {
-        const todo = TestData.Todo.buyMilk;
+        const todo = Test.Data.Todo.buyMilk;
         const expectedBody: Array<Contracts.components["schemas"]["Todo"]> = [
           {
             id: todo.id,
@@ -286,7 +286,7 @@ test.each<
     (res) => expect(res.statusCode).toEqual(204),
   ],
 ])("%s", async (_, givenApplication, whenId, assertResponse) => {
-  const root = Boundary.create(TestData.Application.create(givenApplication));
+  const root = Boundary.create(Test.Application.create(givenApplication));
 
   const res = await root.inject({
     path: "/todo",
@@ -336,7 +336,7 @@ test.each<
     (res) => expect(res.statusCode).toEqual(204),
   ],
 ])("%s", async (_, givenApplication, whenRequest, assertResponse) => {
-  const root = Boundary.create(TestData.Application.create(givenApplication));
+  const root = Boundary.create(Test.Application.create(givenApplication));
 
   const res = await root.inject({
     path: "/todo",

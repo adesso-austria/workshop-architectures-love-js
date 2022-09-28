@@ -3,7 +3,7 @@ import { mergeDeepRight } from "ramda";
 import { Jest } from "test-utils";
 import { DeepPartial } from "utils";
 import * as Rx from "rxjs";
-import * as TestData from "../test-data";
+import * as Test from "../test";
 import { Adapters } from "../adapters";
 import * as Event from "./event";
 
@@ -11,8 +11,8 @@ const create = (opts: DeepPartial<Event.CreateOpts>): Event.Repository =>
   Event.create(
     mergeDeepRight(
       {
-        redis: TestData.Adapters.Redis.create({}),
-        mongo: TestData.Adapters.Mongo.create({}),
+        redis: Test.Adapters.Redis.create({}),
+        mongo: Test.Adapters.Mongo.create({}),
       },
       opts,
     ),
@@ -27,12 +27,12 @@ describe("addEvent", () => {
       },
     });
 
-    const task = repo.emit(TestData.DomainEvent.createBuyIcecream);
+    const task = repo.emit(Test.Data.DomainEvent.createBuyIcecream);
     await task();
 
     expect(streamAdd).toHaveBeenCalledWith(
       Event.eventsKey,
-      Event.stringifyDomainEvent(TestData.DomainEvent.createBuyIcecream),
+      Event.stringifyDomainEvent(Test.Data.DomainEvent.createBuyIcecream),
     );
   });
 
@@ -43,12 +43,12 @@ describe("addEvent", () => {
       },
     });
 
-    const task = repo.emit(TestData.DomainEvent.createBuyIcecream);
+    const task = repo.emit(Test.Data.DomainEvent.createBuyIcecream);
     const result = await task();
 
     expect(result).toEqual(
       either.right({
-        domainEvent: TestData.DomainEvent.createBuyIcecream,
+        domainEvent: Test.Data.DomainEvent.createBuyIcecream,
         id: "foo",
       }),
     );
@@ -88,9 +88,9 @@ describe("getEvents", () => {
     const streamRange = jest.fn(() =>
       taskEither.right([
         {
-          id: TestData.Event.createBuyIcecream.id,
+          id: Test.Data.Event.createBuyIcecream.id,
           message: Event.stringifyDomainEvent(
-            TestData.DomainEvent.createBuyIcecream,
+            Test.Data.DomainEvent.createBuyIcecream,
           ),
         },
       ]),
@@ -104,7 +104,7 @@ describe("getEvents", () => {
     const task = repo.getEvents(option.none);
     const result = await task();
 
-    expect(result).toEqual(either.right([TestData.Event.createBuyIcecream]));
+    expect(result).toEqual(either.right([Test.Data.Event.createBuyIcecream]));
   });
 });
 

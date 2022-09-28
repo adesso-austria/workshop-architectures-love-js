@@ -2,15 +2,15 @@ import { either, option, taskEither } from "fp-ts";
 import { DeepPartial } from "utils";
 import { mergeDeepRight } from "ramda";
 import type * as Mongo from "../adapters/mongo";
-import * as TestData from "../test-data";
+import * as Test from "../test";
 import * as Todo from "./todo";
 
 const create = (overrides: DeepPartial<Todo.CreateOpts>): Todo.Repository =>
   Todo.create(
     mergeDeepRight(
       {
-        redis: TestData.Adapters.Redis.create({}),
-        mongo: TestData.Adapters.Mongo.create({}),
+        redis: Test.Adapters.Redis.create({}),
+        mongo: Test.Adapters.Mongo.create({}),
       },
       overrides,
     ),
@@ -33,14 +33,14 @@ describe("getTodo", () => {
       mongo: {
         findOne: (() =>
           taskEither.right(
-            option.some(TestData.Todo.buyIcecream),
+            option.some(Test.Data.Todo.buyIcecream),
           )) as Mongo.Adapter["findOne"],
       },
     });
 
     const task = repo.getTodo("foo");
     expect(await task()).toEqual(
-      either.right(option.some(TestData.Todo.buyIcecream)),
+      either.right(option.some(Test.Data.Todo.buyIcecream)),
     );
   });
 });
@@ -54,12 +54,12 @@ describe("addTodo", () => {
       },
     });
 
-    const task = repo.addTodo(TestData.Todo.buyIcecream);
+    const task = repo.addTodo(Test.Data.Todo.buyIcecream);
     await task();
 
     expect(addOne).toHaveBeenCalledWith(
       Todo.collectionKey,
-      TestData.Todo.buyIcecream,
+      Test.Data.Todo.buyIcecream,
     );
   });
 });
@@ -70,7 +70,7 @@ describe("getTodos", () => {
       mongo: {
         findAll: (() =>
           taskEither.right([
-            TestData.Todo.buyMilk,
+            Test.Data.Todo.buyMilk,
           ])) as Mongo.Adapter["findAll"],
       },
     });
@@ -78,7 +78,7 @@ describe("getTodos", () => {
     const task = repo.getTodos();
     const result = await task();
 
-    expect(result).toEqual(either.right([TestData.Todo.buyMilk]));
+    expect(result).toEqual(either.right([Test.Data.Todo.buyMilk]));
   });
 });
 
@@ -99,13 +99,13 @@ describe("updateTodo", () => {
     const updateOne = jest.fn(() => taskEither.right(undefined));
     const repo = create({ mongo: { updateOne } });
 
-    const updateTodo = repo.updateTodo(TestData.Todo.buyIcecream);
+    const updateTodo = repo.updateTodo(Test.Data.Todo.buyIcecream);
     await updateTodo();
 
     expect(updateOne).toHaveBeenCalledWith(
       Todo.collectionKey,
-      { id: TestData.Todo.buyIcecream.id },
-      TestData.Todo.buyIcecream,
+      { id: Test.Data.Todo.buyIcecream.id },
+      Test.Data.Todo.buyIcecream,
     );
   });
 });

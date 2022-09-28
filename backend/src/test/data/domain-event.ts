@@ -1,4 +1,4 @@
-import { DomainEvent } from "../domain";
+import { DomainEvent } from "../../domain";
 import * as Todo from "./todo";
 
 export const createBuyIcecream: DomainEvent.DomainEvent = {

@@ -2,11 +2,11 @@ import { either, option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { DeepPartial, ignore, throwException } from "utils";
 import { Repository } from "../repository";
-import * as TestData from "../test-data";
+import * as Test from "../test";
 import * as Todo from "./todo";
 
 const create = (repository: DeepPartial<Repository>): Todo.Application =>
-  Todo.create(TestData.Repository.create(repository));
+  Todo.create(Test.Repository.create(repository));
 
 describe("getTodo", () => {
   it(
@@ -41,7 +41,7 @@ describe("getTodo", () => {
       create({
         todo: {
           getTodo: () =>
-            taskEither.right(option.some(TestData.Todo.buyIcecream)),
+            taskEither.right(option.some(Test.Data.Todo.buyIcecream)),
         },
       }),
       (app) => app.getTodo("foo"),
@@ -87,11 +87,11 @@ describe("addTodo", () => {
       },
     });
 
-    const task = app.addTodo(TestData.AddTodo.buyIcecream);
+    const task = app.addTodo(Test.Data.AddTodo.buyIcecream);
     await task();
 
     expect(addTodo).toHaveBeenCalledWith(
-      expect.objectContaining(TestData.AddTodo.buyIcecream),
+      expect.objectContaining(Test.Data.AddTodo.buyIcecream),
     );
   });
 });
@@ -121,9 +121,9 @@ describe("updateTodo", () => {
       },
     });
 
-    const task = app.updateTodo(TestData.Todo.buyIcecream);
+    const task = app.updateTodo(Test.Data.Todo.buyIcecream);
     await task();
 
-    expect(updateTodo).toHaveBeenCalledWith(TestData.Todo.buyIcecream);
+    expect(updateTodo).toHaveBeenCalledWith(Test.Data.Todo.buyIcecream);
   });
 });
