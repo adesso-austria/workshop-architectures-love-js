@@ -73,6 +73,7 @@ const createAddTodo =
       ...addTodo,
       isDone: false,
       id: Crypto.randomUUID(),
+      content: addTodo.content,
     };
     return pipe(
       eventHandler({

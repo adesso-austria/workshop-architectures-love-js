@@ -139,7 +139,6 @@ components:
           type: string
       required:
         - title
-        - content
     UpdateTodo:
       type: object
       properties:
@@ -154,5 +153,4 @@ components:
       required:
         - id
         - title
-        - content
         - isDone

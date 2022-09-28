@@ -1,9 +1,10 @@
 import * as Contracts from "contracts";
 import { expect } from "@jest/globals";
 import { LightMyRequestResponse } from "fastify";
-import { taskEither } from "fp-ts";
+import { option, taskEither } from "fp-ts";
 import { Jest } from "test-utils";
 import { DeepPartial } from "utils";
+import { pipe } from "fp-ts/lib/function";
 import { Application } from "../../application";
 import * as TestData from "../../test-data";
 import * as Boundary from "../index";
@@ -51,10 +52,15 @@ Jest.testGivenThen<Application, (response: LightMyRequestResponse) => void>(
         },
       }),
       (response) => {
+        const todo = TestData.Todo.buyIcecream;
+        const expectedBody: Contracts.components["schemas"]["Todo"] = {
+          id: todo.id,
+          title: todo.title,
+          isDone: todo.isDone,
+        };
+
         expect(response.statusCode).toEqual(200);
-        expect(response.json()).toEqual(
-          Boundary.Todo.Mapper.fromDomain(TestData.Todo.buyIcecream),
-        );
+        expect(response.json()).toEqual(expectedBody);
       },
     ),
   ],
@@ -94,22 +100,6 @@ Jest.testGivenWhenThen<
       (response) => {
         expect(response.statusCode).toEqual(400);
       },
-    ),
-    Jest.givenWhenThen(
-      "should reject with 400 if no content is present in the body",
-      {},
-      {
-        title: "test",
-      },
-      (response) => {
-        expect(response.statusCode).toEqual(400);
-      },
-    ),
-    Jest.givenWhenThen(
-      "should reject with 400 if the content is empty",
-      {},
-      { content: "", title: "valid" },
-      (response) => expect(response.statusCode).toEqual(400),
     ),
     Jest.givenWhenThen(
       "should reject with 500 if the application errors",
@@ -194,7 +184,12 @@ Jest.testGivenWhenThen<
       { id: "foo" },
       (res) => {
         expect(res.statusCode).toEqual(200);
-        expect(res.body).toEqual(TestData.Todo.buyIcecream.content);
+        expect(res.body).toEqual(
+          pipe(
+            TestData.Todo.buyIcecream.content,
+            option.getOrElse(() => ""),
+          ),
+        );
       },
     ),
   ],
@@ -244,9 +239,16 @@ Jest.testGivenThen<
         },
       },
       (res) => {
-        expect(res.json()).toEqual([
-          Boundary.Todo.Mapper.fromDomain(TestData.Todo.buyMilk),
-        ]);
+        const todo = TestData.Todo.buyMilk;
+        const expectedBody: Array<Contracts.components["schemas"]["Todo"]> = [
+          {
+            id: todo.id,
+            title: todo.title,
+            isDone: todo.isDone,
+          },
+        ];
+
+        expect(res.json()).toEqual(expectedBody);
       },
     ),
   ],
@@ -314,12 +316,6 @@ test.each<
     "should reject with 400 if title is missing",
     {},
     { id: "foo", content: "bar", isDone: false },
-    (res) => expect(res.statusCode).toEqual(400),
-  ],
-  [
-    "should reject with 400 if content is missing",
-    {},
-    { id: "foo", title: "bar", isDone: false },
     (res) => expect(res.statusCode).toEqual(400),
   ],
   [

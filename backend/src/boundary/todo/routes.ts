@@ -1,11 +1,12 @@
+import * as UUID from "uuid";
 import * as Contracts from "contracts";
 import { FastifyPluginAsync } from "fastify";
-import { task, taskEither } from "fp-ts";
+import { option, task, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { match } from "ts-pattern";
 import { JSONSchemaType } from "ajv";
 import { Application } from "../../application";
-import * as Mapper from "./mapper";
+import * as Domain from "../../domain";
 
 const schema = <T>(schema: JSONSchemaType<T>) => schema;
 
@@ -34,29 +35,29 @@ export const create =
           }),
         },
       },
-      async function getTodo(req) {
+      function getTodo(req, res) {
         const processRequest = pipe(
           application.todo.getTodo(req.query.id),
           taskEither.match(
-            (error) =>
-              match(error)
-                .with("db error", () =>
-                  Promise.reject({
-                    status: 500,
-                    message: "internal server error",
-                  }),
-                )
-                .with("not found", () =>
-                  Promise.reject({
-                    status: 404,
-                    message: `no todo with id ${req.query.id} exists`,
-                  }),
-                )
-                .exhaustive(),
-            (todo) => Promise.resolve(Mapper.fromDomain(todo)),
+            (error) => {
+              res.statusCode = match(error)
+                .with("db error", () => 500)
+                .with("not found", () => 404)
+                .exhaustive();
+
+              res.send();
+            },
+            (todo) => {
+              res.send({
+                id: todo.id,
+                title: todo.title,
+                isDone: todo.isDone,
+              });
+            },
           ),
         );
-        return processRequest();
+
+        processRequest();
       },
     );
 
@@ -69,7 +70,7 @@ export const create =
         schema: {
           body: schema<Contracts.components["schemas"]["AddTodo"]>({
             type: "object",
-            required: ["title", "content"],
+            required: ["title"],
             properties: {
               title: {
                 type: "string",
@@ -78,14 +79,22 @@ export const create =
               content: {
                 type: "string",
                 minLength: 1,
+                nullable: true,
               },
             },
           }),
         },
       },
       function postTodo(req, res) {
+        const todo: Domain.Todo.Todo = {
+          id: UUID.v4(),
+          title: req.body.title,
+          content: option.fromNullable(req.body.content),
+          isDone: false,
+        };
+
         const processRequest = pipe(
-          application.todo.addTodo(req.body),
+          application.todo.addTodo(todo),
           taskEither.match(
             () => {
               res.statusCode = 500;
@@ -108,7 +117,7 @@ export const create =
         schema: {
           body: schema<Contracts.components["schemas"]["UpdateTodo"]>({
             type: "object",
-            required: ["id", "title", "content", "isDone"],
+            required: ["id", "title", "isDone"],
             properties: {
               id: {
                 type: "string",
@@ -121,6 +130,7 @@ export const create =
               content: {
                 type: "string",
                 minLength: 1,
+                nullable: true,
               },
               isDone: {
                 type: "boolean",
@@ -130,8 +140,15 @@ export const create =
         },
       },
       function putTodo(req, res) {
+        const todo: Domain.Todo.Todo = {
+          id: req.body.id,
+          title: req.body.title,
+          content: option.fromNullable(req.body.content),
+          isDone: req.body.isDone,
+        };
+
         const processRequest = pipe(
-          application.todo.updateTodo(req.body),
+          application.todo.updateTodo(todo),
           taskEither.match(
             (error) =>
               match(error)
@@ -182,10 +199,16 @@ export const create =
                 .with("db error", () => 500)
                 .with("not found", () => 404)
                 .exhaustive();
+
               res.send();
             },
             (todo) => {
-              res.send(todo.content);
+              res.send(
+                pipe(
+                  todo.content,
+                  option.getOrElse(() => ""),
+                ),
+              );
             },
           ),
         );
@@ -205,7 +228,14 @@ export const create =
             res.statusCode = 500;
             res.send();
           },
-          (todos) => res.send(todos.map(Mapper.fromDomain)),
+          (todos) =>
+            res.send(
+              todos.map((todo): Contracts.components["schemas"]["Todo"] => ({
+                id: todo.id,
+                title: todo.title,
+                isDone: todo.isDone,
+              })),
+            ),
         ),
       );
 
@@ -235,15 +265,13 @@ export const create =
         const processRequest = pipe(
           application.todo.deleteTodo(req.query.id),
           taskEither.match(
-            () => {
-              res.statusCode = 500;
-              res.send();
-            },
-            () => {
-              res.statusCode = 204;
-              res.send();
-            },
+            () => 500,
+            () => 204,
           ),
+          task.map((statusCode) => {
+            res.statusCode = statusCode;
+            res.send();
+          }),
         );
 
         processRequest();
