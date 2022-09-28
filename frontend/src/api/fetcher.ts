@@ -136,15 +136,24 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
             }`,
             init,
           ).then((res) =>
-            res.json().then(
-              (data): Response<number, unknown> => ({
-                data,
-                headers: res.headers,
-                ok: res.ok,
-                statusText: res.statusText,
-                status: res.status,
-              }),
-            ),
+            res
+              .text()
+              .then((text) => {
+                try {
+                  return JSON.parse(text);
+                } catch {
+                  return text;
+                }
+              })
+              .then(
+                (data): Response<number, unknown> => ({
+                  data,
+                  headers: res.headers,
+                  ok: res.ok,
+                  statusText: res.statusText,
+                  status: res.status,
+                }),
+              ),
           ),
         (reason) =>
           `could not fetch ${method
