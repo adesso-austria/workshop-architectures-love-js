@@ -24,7 +24,7 @@ export const create = (fetcher: Fetcher): Api => ({
         (res): Domain.Todo.Todo => ({
           id: res.data,
           title: addTodo.title,
-          content: option.some(addTodo.content),
+          content: option.none,
           isDone: false,
         }),
       ),
