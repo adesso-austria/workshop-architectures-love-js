@@ -20,7 +20,6 @@ export const create = (
           id: Crypto.randomUUID(),
           domainEvent,
         };
-        console.log("emitting");
         events$.next(event);
         return either.right(event);
       },

@@ -112,15 +112,7 @@ const getLastKnownEventId = (
 const createEventStream =
   (opts: CreateOpts): Repository["createEventStream"] =>
   (since) =>
-    opts.redis
-      .streamSubscribe(
-        eventsKey,
-        pipe(
-          since,
-          option.getOrElse(() => "$"),
-        ),
-      )
-      .pipe(Rx.map(parseMessage));
+    opts.redis.streamSubscribe(eventsKey, since).pipe(Rx.map(parseMessage));
 
 const getUnknownEvents =
   (opts: CreateOpts): Repository["getUnknownEvents"] =>

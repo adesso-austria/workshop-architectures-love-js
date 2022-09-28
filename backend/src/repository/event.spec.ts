@@ -182,12 +182,14 @@ describe("acknowledging events", () => {
 });
 
 describe("createEventStream", () => {
-  it("should emit subscribe since $ if no eventId is given", () => {
+  it("should emit since last known if no eventId is given", () => {
     const streamSubscribe = jest.fn(() => Rx.of());
-    const repo = create({ redis: { streamSubscribe } });
+    const repo = create({
+      redis: { streamSubscribe },
+    });
 
     repo.createEventStream(option.none);
 
-    expect(streamSubscribe).toHaveBeenCalledWith("events", "$");
+    expect(streamSubscribe).toHaveBeenCalledWith("events", option.none);
   });
 });
