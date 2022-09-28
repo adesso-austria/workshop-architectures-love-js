@@ -1,5 +1,4 @@
 import * as Contracts from "contracts";
-import { expect } from "@jest/globals";
 import { LightMyRequestResponse } from "fastify";
 import { option, taskEither } from "fp-ts";
 import { Jest } from "test-utils";

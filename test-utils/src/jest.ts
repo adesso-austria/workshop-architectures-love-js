@@ -1,5 +1,3 @@
-import { describe, it } from "@jest/globals";
-
 export type GivenWhenThen<Given, When, Then> = {
   description: string;
   details: undefined | { given: Given; when: When; then: Then };
