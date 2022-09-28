@@ -122,6 +122,8 @@ const run = async () => {
           target.pathname = src.pathname.replace("/_api", "");
           target.port = "8080";
           const proxyReq = Http.request(target, (proxyRes) => {
+            res.statusCode = proxyRes.statusCode;
+            res.statusMessage = proxyRes.statusMessage;
             proxyRes.pipe(res, { end: true });
           });
           proxyReq.on("error", (error) => {
