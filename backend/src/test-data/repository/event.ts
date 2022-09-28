@@ -15,7 +15,7 @@ export const create = (
 
   return mergeDeepRight(
     createMock<Repository.Event.Repository>({
-      addEvent: (domainEvent) => async () => {
+      emit: (domainEvent) => async () => {
         const event: Domain.Event.Event = {
           id: Crypto.randomUUID(),
           domainEvent,

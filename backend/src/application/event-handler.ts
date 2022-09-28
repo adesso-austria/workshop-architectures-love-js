@@ -85,7 +85,7 @@ export const create = (
       taskEither.apS(
         "addEvent",
         pipe(
-          repository.event.addEvent(domainEvent),
+          repository.event.emit(domainEvent),
           taskEither.map(tap((event) => eventId$.next(event.id))),
         ),
       ),

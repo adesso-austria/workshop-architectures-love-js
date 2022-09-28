@@ -8,7 +8,7 @@ import * as Domain from "../domain";
  * public api
  */
 export type Repository = {
-  addEvent: <T extends Domain.DomainEvent.DomainEvent>(
+  emit: <T extends Domain.DomainEvent.DomainEvent>(
     event: T,
   ) => taskEither.TaskEither<string, Domain.Event.Event>;
   getEvents: (
@@ -73,7 +73,7 @@ export const parseMessage = ({
  * add a new DomainEvent to the stream
  */
 const createAddEvent =
-  ({ redis }: CreateOpts): Repository["addEvent"] =>
+  ({ redis }: CreateOpts): Repository["emit"] =>
   (event) => {
     return pipe(
       redis.streamAdd(eventsKey, stringifyDomainEvent(event)),
@@ -137,7 +137,7 @@ const hasEventBeenAcknowledged =
 
 export const create = (opts: CreateOpts): Repository => {
   return {
-    addEvent: createAddEvent(opts),
+    emit: createAddEvent(opts),
     getEvents: getEvents(opts),
     getUnknownEvents: getUnknownEvents(opts),
     acknowledgeEvent: acknowledgeEvent(opts),

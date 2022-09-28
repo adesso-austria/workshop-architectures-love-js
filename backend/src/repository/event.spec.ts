@@ -1,13 +1,11 @@
 import { describe, it, expect, jest } from "@jest/globals";
 import { either, option, taskEither } from "fp-ts";
-import { pipe } from "fp-ts/lib/function";
 import { mergeDeepRight } from "ramda";
 import { Jest } from "test-utils";
 import { DeepPartial } from "utils";
 import * as Rx from "rxjs";
 import * as TestData from "../test-data";
 import { Adapters } from "../adapters";
-import { Message } from "../adapters/redis";
 import * as Event from "./event";
 
 const create = (opts: DeepPartial<Event.CreateOpts>): Event.Repository =>
@@ -30,7 +28,7 @@ describe("addEvent", () => {
       },
     });
 
-    const task = repo.addEvent(TestData.DomainEvent.createBuyIcecream);
+    const task = repo.emit(TestData.DomainEvent.createBuyIcecream);
     await task();
 
     expect(streamAdd).toHaveBeenCalledWith(
@@ -46,7 +44,7 @@ describe("addEvent", () => {
       },
     });
 
-    const task = repo.addEvent(TestData.DomainEvent.createBuyIcecream);
+    const task = repo.emit(TestData.DomainEvent.createBuyIcecream);
     const result = await task();
 
     expect(result).toEqual(
