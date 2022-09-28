@@ -44,17 +44,46 @@ describe("deleteTodo", () => {
 });
 
 describe("fetchContent", () => {
-  it("should return right content for a 200 response", async () => {
+  it.each<
+    [
+      string,
+      taskEither.TaskEither<
+        string,
+        Fetcher.Response<200 | 400 | 404 | 500, string>
+      >,
+      either.Either<string, string>,
+    ]
+  >([
+    [
+      "should return right content for a 200 response",
+      taskEither.right(Test.Api.Fetcher.Response.status(200, "bar")),
+      either.right("bar"),
+    ],
+    [
+      "should return left error for a 400 response",
+      taskEither.right(Test.Api.Fetcher.Response.status(400, "bar")),
+      either.left("bar"),
+    ],
+    [
+      "should return left error for a 404 response",
+      taskEither.right(Test.Api.Fetcher.Response.status(404, "bar")),
+      either.left("bar"),
+    ],
+    [
+      "should return left error for a 500 response",
+      taskEither.right(Test.Api.Fetcher.Response.status(500, "bar")),
+      either.left("bar"),
+    ],
+  ])("%s", async (_, givenResponse, expectedResult) => {
     const api = Api.create(
       Test.Api.Fetcher.create({
-        getTodoContent: () =>
-          taskEither.right(Test.Api.Fetcher.Response.ok("bar")),
+        getTodoContent: () => givenResponse,
       }),
     );
 
     const task = api.fetchContent("foo");
 
-    expect(await task()).toEqual(either.right("bar"));
+    expect(await task()).toEqual(expectedResult);
   });
 });
 

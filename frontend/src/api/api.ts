@@ -1,6 +1,6 @@
 import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
-import { match } from "ts-pattern";
+import { match, P } from "ts-pattern";
 import { ignore } from "utils";
 import * as Domain from "../domain";
 import { Fetcher } from "./fetcher";
@@ -39,7 +39,14 @@ export const create = (fetcher: Fetcher): Api => ({
   fetchContent: (id) =>
     pipe(
       fetcher.getTodoContent({ query: { id } }),
-      taskEither.map((res) => res.data),
+      taskEither.chain((res) =>
+        match(res)
+          .with({ status: 200 }, ({ data }) => taskEither.right(data))
+          .with({ status: P.union(400, 404, 500) }, ({ data }) =>
+            taskEither.left(data),
+          )
+          .exhaustive(),
+      ),
     ),
   updateTodo: (todo) =>
     pipe(
@@ -55,11 +62,13 @@ export const create = (fetcher: Fetcher): Api => ({
         },
       }),
       taskEither.chain((res) =>
-        match(res.status)
-          .with(204, () => taskEither.right(undefined))
-          .with(400, () => taskEither.left("validation error"))
-          .with(404, () => taskEither.left("can't update non-existent todo"))
-          .with(500, () => taskEither.left("server error"))
+        match(res)
+          .with({ status: 204 }, () => taskEither.right(undefined))
+          .with({ status: 400 }, () => taskEither.left("validation error"))
+          .with({ status: 404 }, () =>
+            taskEither.left("can't update non-existent todo"),
+          )
+          .with({ status: 500 }, () => taskEither.left("server error"))
           .exhaustive(),
       ),
     ),
