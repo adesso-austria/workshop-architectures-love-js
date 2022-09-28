@@ -39,15 +39,14 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
   }, [showContent]);
 
   return (
-    <div className="flex gap-2 items-start">
+    <div className="flex gap-2 items-start pt-4">
       <Checkbox
         checked={propTodo.isDone}
         onChange={(e) => saveTodo({ ...todo, isDone: e.target.checked })}
       />
-      <div className="flex flex-col grow relative pt-2">
+      <div className="flex flex-col grow relative">
         <Input
           aria-label="title"
-          label="Title"
           color={todo.title === propTodo.title ? "blue" : "orange"}
           icon={
             todo.title === propTodo.title ? undefined : (
@@ -119,6 +118,7 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
         )}
       </div>
       <IconButton
+        className="mt-1"
         aria-label="delete todo"
         size="sm"
         disabled={isDeleting}
@@ -126,61 +126,50 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
       >
         <Icons.MdDelete />
       </IconButton>
-      <div>
-        <div className="flex justify-end"></div>
-      </div>
     </div>
   );
 };
 
-export const Overview = function TodoOverview() {
-  const { todos, pending } = Store.Todo.useTodos();
-
-  const addTodo = Store.Todo.useAddTodo();
+export const NewTodo = function NewTodo() {
+  const { pending } = Store.Todo.useTodos();
 
   const [newTodo, setNewTodo] = Store.Todo.useNewTodo();
+  const addTodo = Store.Todo.useAddTodo();
+
+  return (
+    <form aria-label="new todo">
+      <div className="flex gap-4 pl-[3.2rem] py-4 justify-between items-center">
+        <Input
+          variant="standard"
+          aria-label="title"
+          label="What to do..."
+          value={newTodo.title}
+          onChange={(e) =>
+            setNewTodo((current) => ({
+              ...current,
+              title: e.target.value,
+            }))
+          }
+        />
+        <IconButton
+          aria-label="save todo"
+          size="sm"
+          disabled={pending || newTodo.title === ""}
+          onClick={() => addTodo(newTodo)}
+          className="w-full"
+        >
+          <Icons.MdAdd />
+        </IconButton>
+      </div>
+    </form>
+  );
+};
+
+export const Overview = function TodoOverview() {
+  const { todos } = Store.Todo.useTodos();
 
   return (
     <>
-      <form aria-label="new todo">
-        <div className="flex flex-col gap-6">
-          <Input
-            variant="static"
-            aria-label="title"
-            label="Title"
-            placeholder="What to do..."
-            value={newTodo.title}
-            onChange={(e) =>
-              setNewTodo((current) => ({
-                ...current,
-                title: e.target.value,
-              }))
-            }
-          />
-          <Textarea
-            variant="static"
-            aria-label="content"
-            label="Description"
-            placeholder="Could you elaborate?"
-            value={newTodo.content}
-            onChange={(e) =>
-              setNewTodo((current) => ({
-                ...current,
-                content: e.target.value,
-              }))
-            }
-          />
-        </div>
-        <div className="flex justify-end">
-          <Button
-            aria-label="save todo"
-            disabled={pending || newTodo.title === "" || newTodo.content === ""}
-            onClick={() => addTodo(newTodo)}
-          >
-            Save
-          </Button>
-        </div>
-      </form>
       {todos.map((todo) => (
         <div key={todo.id} role="listitem" aria-label="todo">
           <Todo todo={todo} />

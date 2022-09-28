@@ -13,7 +13,7 @@ describe("addTodo", () => {
       }),
     );
 
-    const response = await api.addTodo({ title: "test", content: "test" })();
+    const response = await api.addTodo({ title: "test" })();
 
     pipe(
       response,
@@ -21,7 +21,7 @@ describe("addTodo", () => {
         expect(todo).toEqual({
           id: "foo",
           title: "test",
-          content: option.some("test"),
+          content: option.none,
           isDone: false,
         });
       }),

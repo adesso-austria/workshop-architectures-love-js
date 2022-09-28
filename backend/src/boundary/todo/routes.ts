@@ -78,7 +78,6 @@ export const create =
               },
               content: {
                 type: "string",
-                minLength: 1,
                 nullable: true,
               },
             },

@@ -26,7 +26,7 @@ describe("reducer", () => {
     [
       "addTodo should not change state if todos are being added already",
       { todos: pipe(Async.of({}), Async.setPending("adding todo")) },
-      slice.actions.addTodo({ content: "foo", title: "bar" }),
+      slice.actions.addTodo({ title: "bar" }),
       (state, initial) => expect(state).toEqual(initial),
     ],
     [
@@ -208,7 +208,7 @@ describe("epic", () => {
 
     const store = Store.create({ api: Test.Api.create({ addTodo }) });
 
-    store.dispatch(slice.actions.addTodo({ title: "foo", content: "bar" }));
+    store.dispatch(slice.actions.addTodo({ title: "foo" }));
 
     expect(addTodo).toHaveBeenCalled();
     await waitFor(() =>

@@ -24,7 +24,6 @@ export const initialState: State = {
   todos: Async.of({}),
   newTodo: {
     title: "",
-    content: "",
   },
 };
 
@@ -69,7 +68,7 @@ export const slice = createSlice({
         Async.setResolved("adding todo"),
         Async.map(record.upsertAt(action.payload.id, Async.of(action.payload))),
       );
-      state.newTodo = { title: "", content: "" };
+      state.newTodo = { title: "" };
     },
     addTodoFailure: (state, action: PayloadAction<string>) => {
       state.todos = pipe(
