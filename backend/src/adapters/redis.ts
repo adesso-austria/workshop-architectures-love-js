@@ -83,7 +83,6 @@ const createStreamSubscribe =
 
             let nextLastId = lastId;
             for (const message of messagesForKey.messages) {
-              console.log("emitted redis message", message);
               observer.next(message);
               nextLastId = message.id;
             }
