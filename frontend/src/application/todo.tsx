@@ -1,6 +1,4 @@
 import {
-  Alert,
-  Button,
   Checkbox,
   IconButton,
   Input,
@@ -14,6 +12,26 @@ import React from "react";
 import * as Icons from "react-icons/md";
 import * as Domain from "../domain";
 import * as Store from "../store";
+
+const UnsavedChangesWarning = () => (
+  <Tooltip content="Unsaved Changes">
+    <div>
+      <Icons.MdWarning
+        role="status"
+        aria-label="unsaved changes"
+        fill="orange"
+      />
+    </div>
+  </Tooltip>
+);
+
+const FetchingContentError = () => (
+  <Tooltip content="Fetching content failed">
+    <div>
+      <Icons.MdError role="alert" aria-label="fetching failed" fill="red" />
+    </div>
+  </Tooltip>
+);
 
 export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
   const [todo, setTodo] = React.useState(propTodo);
@@ -53,11 +71,7 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
           color={todo.title === propTodo.title ? "blue" : "orange"}
           icon={
             todo.title === propTodo.title ? undefined : (
-              <Icons.MdWarning
-                role="status"
-                aria-label="unsaved changes"
-                fill="orange"
-              />
+              <UnsavedChangesWarning />
             )
           }
           placeholder="What to do..."
@@ -90,39 +104,23 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
             aria-label="content"
             className="relative top-4"
           >
-            <div aria-label="icons" className="absolute top-0 right-0 z-10">
+            <div aria-label="icons" className="absolute top-0 right-0 z-10 p-2">
               {pipe(
                 fetchingContentError,
                 option.match(
                   () => <></>,
-                  () => (
-                    <Tooltip content="Fetching content failed">
-                      <div>
-                        <Icons.MdError
-                          role="alert"
-                          aria-label="fetching failed"
-                          fill="red"
-                        />
-                      </div>
-                    </Tooltip>
-                  ),
+                  () => <FetchingContentError />,
                 ),
               )}
               {!equals(todo.content, propTodo.content) && (
-                <Icons.MdWarning
-                  role="status"
-                  aria-label="unsaved changes"
-                  fill="orange"
-                />
+                <UnsavedChangesWarning />
               )}
             </div>
             <Textarea
               color={equals(todo.content, propTodo.content) ? "blue" : "orange"}
               aria-label="content"
               label="Description"
-              disabled={
-                isFetching || isUpdating || option.isSome(fetchingContentError)
-              }
+              disabled={option.isSome(fetchingContentError)}
               value={pipe(
                 todo.content,
                 option.getOrElse(() => ""),
