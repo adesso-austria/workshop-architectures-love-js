@@ -67,13 +67,36 @@ describe("todo", () => {
     });
 
     it("should be disabled if todo is updating", async () => {
-      const result = render(<Todo todo={Test.Data.Todo.buyIcecream} />, {
+      const todo = Test.Data.Todo.buyIcecream;
+      const result = render(<Todo todo={todo} />, {
         preloadedState: {
           todo: {
             todos: Async.of({
-              [Test.Data.Todo.buyIcecream.id]: pipe(
-                Async.of(Test.Data.Todo.buyIcecream),
-                Async.setPending("updating"),
+              [todo.id]: pipe(Async.of(todo), Async.setPending("updating")),
+            }),
+          },
+        },
+      });
+
+      const showContent = result.getByRole("button", { name: "show content" });
+
+      await result.user.click(showContent);
+
+      const content = result.getByRole("presentation", { name: "content" });
+      const textArea = within(content).getByRole("textbox");
+
+      expect(textArea).toBeDisabled();
+    });
+
+    it("should be show an error and be disabled if fetching content failed", async () => {
+      const todo = Test.Data.Todo.buyIcecream;
+      const result = render(<Todo todo={todo} />, {
+        preloadedState: {
+          todo: {
+            todos: Async.of({
+              [todo.id]: pipe(
+                Async.of(todo),
+                Async.setError("fetching content", "bar"),
               ),
             }),
           },
@@ -86,6 +109,10 @@ describe("todo", () => {
 
       const content = result.getByRole("presentation", { name: "content" });
       const textArea = within(content).getByRole("textbox");
+
+      expect(
+        within(content).queryByRole("alert", { name: "fetching failed" }),
+      ).not.toBeNull();
 
       expect(textArea).toBeDisabled();
     });

@@ -377,10 +377,16 @@ export const useTodoTasks = (todo: Pick<Domain.Todo.Todo, "id">) => {
 
   const fetchContent = () => dispatch(slice.actions.fetchContent(todo.id));
 
+  const fetchingContentError = pipe(
+    stored,
+    option.chain(Async.getError("fetching content")),
+  );
+
   return {
     saveTodo,
     deleteTodo,
     fetchContent,
+    fetchingContentError,
     isFetching,
     isUpdating,
     isDeleting,

@@ -1,9 +1,11 @@
 import {
+  Alert,
   Button,
   Checkbox,
   IconButton,
   Input,
   Textarea,
+  Tooltip,
 } from "@material-tailwind/react";
 import { option } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
@@ -25,6 +27,7 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
     saveTodo,
     deleteTodo,
     fetchContent,
+    fetchingContentError,
     isDeleting,
     isFetching,
     isUpdating,
@@ -87,21 +90,39 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
             aria-label="content"
             className="relative top-4"
           >
-            {!equals(todo.content, propTodo.content) && (
-              <Icons.MdWarning
-                role="status"
-                aria-label="unsaved changes"
-                className="absolute top-0 right-0"
-                fill="orange"
-              />
-            )}
+            <div aria-label="icons" className="absolute top-0 right-0 z-10">
+              {pipe(
+                fetchingContentError,
+                option.match(
+                  () => <></>,
+                  () => (
+                    <Tooltip content="Fetching content failed">
+                      <div>
+                        <Icons.MdError
+                          role="alert"
+                          aria-label="fetching failed"
+                          fill="red"
+                        />
+                      </div>
+                    </Tooltip>
+                  ),
+                ),
+              )}
+              {!equals(todo.content, propTodo.content) && (
+                <Icons.MdWarning
+                  role="status"
+                  aria-label="unsaved changes"
+                  fill="orange"
+                />
+              )}
+            </div>
             <Textarea
-              variant="static"
               color={equals(todo.content, propTodo.content) ? "blue" : "orange"}
               aria-label="content"
               label="Description"
-              placeholder="Could you elaborate?"
-              disabled={isFetching || isUpdating}
+              disabled={
+                isFetching || isUpdating || option.isSome(fetchingContentError)
+              }
               value={pipe(
                 todo.content,
                 option.getOrElse(() => ""),
