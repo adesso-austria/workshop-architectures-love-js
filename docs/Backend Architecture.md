@@ -4,34 +4,40 @@ Application-->Domain & Repository
 Boundary-->Domain & Contracts & Application
 Repository-->Domain & Adapter
 ```
+# Domain
+- models of objects that are unique to the backend domain
+- pure functions around those models
 # Boundary
 - mapping from contracts to domain models
 - http endpoints
 # Application
-- glue code/orchestration of repositories
-# Adapters
-- low level handling of external systems
-# Fetching a todo
+- glue code/orchestration of repositories, consumers
+# Repository
+- handling of persistence with concrete purpose in regard to domain
+# Adapter
+- low level handling of external systems, suchs as dbs
+# CQRS
 ```mermaid
-sequenceDiagram
-Actor user
-user->>server: request todo with id X
+flowchart LR
+subgraph client
+	command["Command"]
+	query["Query"]
+end
+subgraph server
+	subgraph write model
+		broker[("Broker")]
+	end
+	consumer["Consumer"]
+	knows{"Knows event?"}
+	yes-->doNothing(("do nothing"))
+	no
+	subgraph read model
+		state[("State")]
+	end
+end
 
-activate server
-
-server->>repository: retrieve todo with id X
-
-activate repository
-	repository->>redis: retrieve events since last known
-	redis->>repository: send events since last known
-	repository->>mongo: apply missing events
-	repository->>mongo: retrieve todo with id X
-	mongo->>repository: return todo | undefined
-	repository->>server: return retrieved todo
-deactivate repository
-
-server->>user: send retrieved todo
-
-deactivate server
+command--is sent to-->broker--publishes event-->consumer
+consumer-->knows-->yes & no
+no--updates-->state
+state--answers-->query
 ```
-
