@@ -1,5 +1,5 @@
 import * as Crypto from "crypto";
-import { taskEither } from "fp-ts";
+import { either, taskEither } from "fp-ts";
 import { mergeDeepRight } from "ramda";
 import { DeepPartial } from "utils";
 import * as Rx from "rxjs";
@@ -15,13 +15,14 @@ export const create = (
 
   return mergeDeepRight(
     createMock<Repository.Event.Repository>({
-      addEvent: (domainEvent) => {
+      addEvent: (domainEvent) => async () => {
         const event: Domain.Event.Event = {
           id: Crypto.randomUUID(),
           domainEvent,
         };
+        console.log("emitting");
         events$.next(event);
-        return taskEither.right(event);
+        return either.right(event);
       },
       createEventStream: () => events$,
       getUnknownEvents: () => taskEither.right([]),
