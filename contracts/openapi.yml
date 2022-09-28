@@ -105,14 +105,24 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        200:
           description: Ok
           content:
             text/plain:
               schema:
                 type: string
-        "404":
+        400:
+          description: request validation error
+          content:
+            text/plain:
+              schema:
+                type: string
+        404:
           description: Not found
+          content:
+            text/plain: {}
+        500:
+          description: server error
           content:
             text/plain: {}
 components:
