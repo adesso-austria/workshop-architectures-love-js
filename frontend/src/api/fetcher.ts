@@ -122,7 +122,17 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
               headers: args.headers,
               method: method as string,
             },
-          ).then((res) => res.json()),
+          ).then((res) =>
+            res.json().then(
+              (data): Response<number, unknown> => ({
+                data,
+                headers: res.headers,
+                ok: res.ok,
+                statusText: res.statusText,
+                status: res.status,
+              }),
+            ),
+          ),
         (reason) =>
           `could not fetch ${method
             .toString()
