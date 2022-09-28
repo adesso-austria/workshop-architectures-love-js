@@ -1,4 +1,4 @@
-import { taskEither } from "fp-ts";
+import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Redis from "redis";
 import * as Rx from "rxjs";
@@ -16,7 +16,10 @@ export type Adapter = {
     key: string,
     message: MessageContent,
   ) => taskEither.TaskEither<string, string>;
-  streamSubscribe: (key: string, since: string) => Rx.Observable<Message>;
+  streamSubscribe: (
+    key: string,
+    since: option.Option<string>,
+  ) => Rx.Observable<Message>;
   streamRange: (
     key: string,
     from: string,
@@ -43,6 +46,7 @@ const createStreamAdd =
   ({ client, namespace }: Instance): Adapter["streamAdd"] =>
   (key, message) =>
     taskify(() => {
+      console.log("redis adding", message);
       return client.XADD(buildKey(namespace, key), "*", message);
     });
 
@@ -50,32 +54,28 @@ const createStreamSubscribe =
   ({ client, namespace }: Instance): Adapter["streamSubscribe"] =>
   (key, since) =>
     new Rx.Observable<Message>((observer) => {
-      const abortController = new AbortController();
-
       client.on("end", () => {
         observer.complete();
-        abortController.abort();
       });
 
       /**
        * recursively calls itself after each event, emitting the read events on the observer
        */
-      const waitForNextEmit = (lastId: string): Promise<void> =>
-        client
+      const waitForNextEmit = (lastId: string): Promise<void> => {
+        if (!client.isOpen) {
+          return Promise.resolve();
+        }
+        return client
           .XREAD(
-            Redis.commandOptions({
-              isolated: true,
-              signal: abortController.signal,
-            }),
             {
               key: buildKey(namespace, key),
               id: lastId,
             },
-            { BLOCK: 0 },
+            { BLOCK: 50 },
           )
           .then((messages) => {
             if (messages == null) {
-              return observer.error("unexpected socket close");
+              return waitForNextEmit(lastId);
             }
             const [messagesForKey] = messages;
             if (messagesForKey == null) {
@@ -84,6 +84,7 @@ const createStreamSubscribe =
 
             let nextLastId = lastId;
             for (const message of messagesForKey.messages) {
+              console.log("emitted redis message", message);
               observer.next(message);
               nextLastId = message.id;
             }
@@ -97,14 +98,22 @@ const createStreamSubscribe =
             observer.error(reason);
             return Promise.reject(reason);
           });
-
-      waitForNextEmit(since).catch((e) => {
-        observer.error(e);
-      });
-
-      return () => {
-        abortController.abort("unsubscribe");
       };
+
+      pipe(
+        since,
+        option.match(
+          () =>
+            client
+              .XREVRANGE(buildKey(namespace, key), "+", "-", { COUNT: 1 })
+              .then(([lastEvent]) => lastEvent?.id ?? "0"),
+          (id) => Promise.resolve(id),
+        ),
+      ).then((lastId) =>
+        waitForNextEmit(lastId).catch((e) => {
+          observer.error(e);
+        }),
+      );
     });
 
 const createStreamRange =
