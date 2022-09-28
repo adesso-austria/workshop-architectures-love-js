@@ -42,7 +42,9 @@ const taskify = <T>(fn: () => Promise<T>): taskEither.TaskEither<string, T> =>
 const createStreamAdd =
   ({ client, namespace }: Instance): Adapter["streamAdd"] =>
   (key, message) =>
-    taskify(() => client.XADD(buildKey(namespace, key), "*", message));
+    taskify(() => {
+      return client.XADD(buildKey(namespace, key), "*", message);
+    });
 
 const createStreamSubscribe =
   ({ client, namespace }: Instance): Adapter["streamSubscribe"] =>
@@ -55,54 +57,49 @@ const createStreamSubscribe =
         abortController.abort();
       });
 
-      client.executeIsolated(async (isolatedClient) => {
-        /**
-         * recursively calls itself after each event, emitting the read events on the observer
-         */
-        const waitForNextEmit = (lastId: string): Promise<void> => {
-          if (!client.isOpen || abortController.signal.aborted) {
-            console.log("ending isolated connection");
-            observer.complete();
-            return isolatedClient.quit();
-          }
-          return isolatedClient
-            .XREAD(
-              Redis.commandOptions({ signal: abortController.signal }),
-              {
-                key: buildKey(namespace, key),
-                id: lastId,
-              },
-              { BLOCK: 0 },
-            )
-            .then((messages) => {
-              if (messages == null) {
-                return observer.error("unexpected socket close");
-              }
-              const [messagesForKey] = messages;
-              if (messagesForKey == null) {
-                return observer.error("read no messages for key");
-              }
+      /**
+       * recursively calls itself after each event, emitting the read events on the observer
+       */
+      const waitForNextEmit = (lastId: string): Promise<void> =>
+        client
+          .XREAD(
+            Redis.commandOptions({
+              isolated: true,
+              signal: abortController.signal,
+            }),
+            {
+              key: buildKey(namespace, key),
+              id: lastId,
+            },
+            { BLOCK: 0 },
+          )
+          .then((messages) => {
+            if (messages == null) {
+              return observer.error("unexpected socket close");
+            }
+            const [messagesForKey] = messages;
+            if (messagesForKey == null) {
+              return observer.error("read no messages for key");
+            }
 
-              let nextLastId = lastId;
-              for (const message of messagesForKey.messages) {
-                observer.next(message);
-                nextLastId = message.id;
-              }
-              return waitForNextEmit(nextLastId);
-            })
-            .catch((reason) => {
-              if (reason instanceof Redis.AbortError) {
-                observer.complete();
-                return Promise.resolve();
-              }
-              observer.error(reason);
-              return Promise.reject(reason);
-            });
-        };
+            let nextLastId = lastId;
+            for (const message of messagesForKey.messages) {
+              observer.next(message);
+              nextLastId = message.id;
+            }
+            return waitForNextEmit(nextLastId);
+          })
+          .catch((reason) => {
+            if (reason instanceof Redis.AbortError) {
+              observer.complete();
+              return Promise.resolve();
+            }
+            observer.error(reason);
+            return Promise.reject(reason);
+          });
 
-        return waitForNextEmit(since).catch((e) => {
-          observer.error(e);
-        });
+      waitForNextEmit(since).catch((e) => {
+        observer.error(e);
       });
 
       return () => {
@@ -118,7 +115,9 @@ const createStreamRange =
 const createClientClose =
   ({ client }: Instance): Adapter["close"] =>
   () =>
-    taskify(() => client.disconnect());
+    taskify(() => {
+      return client.disconnect();
+    });
 
 /**
  * connect and create a redis client

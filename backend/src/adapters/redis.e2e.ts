@@ -59,6 +59,7 @@ describe("streamSubscribe", () => {
         taskEither.chain((client) =>
           pipe(
             taskEither.Do,
+            taskEither.apS("addedId", client.streamAdd("foo", { bar: "baz" })),
             taskEither.apS(
               "emitted",
               taskEither.tryCatch(
@@ -66,7 +67,6 @@ describe("streamSubscribe", () => {
                 (reason) => reason as string,
               ),
             ),
-            taskEither.apS("addedId", client.streamAdd("foo", { bar: "baz" })),
           ),
         ),
         taskEither.match(throwException, ({ emitted }) => {
