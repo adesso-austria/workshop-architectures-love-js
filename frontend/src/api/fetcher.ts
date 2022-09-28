@@ -94,7 +94,7 @@ export const buildQueryString = (
     args.push(`${key}=${Array.isArray(value) ? value.join(",") : value}`);
     return args;
   }, [] as string[]);
-  return args.length === 0 ? "" : `?${args.join("&")}`;
+  return args.length === 0 ? "" : `${args.join("&")}`;
 };
 
 export const create = (fetch = globalThis.fetch): Fetcher => {
