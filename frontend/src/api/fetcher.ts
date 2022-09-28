@@ -114,7 +114,7 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
       taskEither.tryCatch(
         () =>
           fetch(
-            `${path}${
+            `/_api${path}${
               "query" in args ? `?${buildQueryString(args.query)}` : ""
             }`,
             {
@@ -122,7 +122,7 @@ export const create = (fetch = globalThis.fetch): Fetcher => {
               headers: args.headers,
               method: method as string,
             },
-          ).then((res) => res.json().catch(() => res.text())),
+          ).then((res) => res.json()),
         (reason) =>
           `could not fetch ${method
             .toString()
