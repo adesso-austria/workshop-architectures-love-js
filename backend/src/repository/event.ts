@@ -1,5 +1,5 @@
 import { option, taskEither } from "fp-ts";
-import { flow, pipe } from "fp-ts/lib/function";
+import { pipe } from "fp-ts/lib/function";
 import * as Rx from "rxjs";
 import { Mongo, Redis } from "../adapters";
 import * as Domain from "../domain";
@@ -102,19 +102,11 @@ const getEvents =
 
 const getLastKnownEventId = (
   { mongo }: CreateOpts,
-  forConsumer?: string,
-): taskEither.TaskEither<string, string> =>
+  forConsumer: string,
+): taskEither.TaskEither<string, option.Option<string>> =>
   pipe(
-    mongo.findLast<ConsumedEvent>(
-      ackEventsKey,
-      forConsumer == null ? {} : { consumer: forConsumer },
-    ),
-    taskEither.map(
-      flow(
-        option.map(({ id }) => id),
-        option.getOrElse(() => "0"),
-      ),
-    ),
+    mongo.findLast<ConsumedEvent>(ackEventsKey, { consumer: forConsumer }),
+    taskEither.map(option.map(({ id }) => id)),
   );
 
 const createEventStream =
@@ -135,13 +127,13 @@ const getUnknownEvents =
   (consumer) =>
     pipe(
       getLastKnownEventId(opts, consumer),
-      taskEither.chain(flow(option.some, getEvents(opts))),
+      taskEither.chain(getEvents(opts)),
     );
 
 const acknowledgeEvent =
   ({ mongo }: CreateOpts): Repository["acknowledgeEvent"] =>
-  (consumer, eventId) =>
-    mongo.addOne(ackEventsKey, { consumer, eventId });
+  (consumer, id) =>
+    mongo.addOne<ConsumedEvent>(ackEventsKey, { consumer, id });
 
 const hasEventBeenAcknowledged =
   ({ mongo }: CreateOpts): Repository["hasEventBeenAcknowledged"] =>
