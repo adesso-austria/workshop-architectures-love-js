@@ -8,7 +8,7 @@
     "clean": "rm -rf build",
     "up": "docker-compose up -d",
     "prestart": "npm run up",
-    "start": "NODE_OPTIONS='--experimental-specifier-resolution=node' nodemon -w build -d 10ms -x 'node build/main.js'",
+    "start": "nodemon -w build -d 10ms -x 'NODE_OPTIONS=\"--experimental-specifier-resolution=node --inspect\" node build/main.js'",
     "poststart": "npm run down",
     "down": "docker-compose down -v",
     "prepare": "git update-index --assume-unchanged .env"
