@@ -1,9 +1,9 @@
 import console from "console";
 import * as Fs from "fs/promises";
 import * as Path from "path";
-import * as Http from "http";
 import process from "process";
 import { URL } from "url";
+import HttpProxy from "http-proxy";
 import * as Esbuild from "esbuild";
 import autoprefixer from "autoprefixer";
 import postcss from "postcss";
@@ -108,6 +108,8 @@ const run = async () => {
     ///////////////////
     //  BrowserSync  //
     ///////////////////
+    const proxy = HttpProxy.createProxy();
+
     const bs = browserSync.init({
       port: 3000,
       server: "./www",
@@ -121,24 +123,8 @@ const run = async () => {
           const target = new URL(src);
           target.pathname = src.pathname.replace("/_api", "");
           target.port = "8080";
-          const proxyReq = Http.request(target, (proxyRes) => {
-            res.statusCode = proxyRes.statusCode;
-            res.statusMessage = proxyRes.statusMessage;
-            proxyRes.pipe(res, { end: true });
-          });
-          proxyReq.on("error", (error) => {
-            // eslint-disable-next-line no-console
-            console.error(
-              `error forwarding ${src.href} to ${target.href}:`,
-              error,
-            );
-            res.statusCode = 500;
-            res.write(
-              `problem forwarding ${src.pathname} to ${target.href}: ${error.message}`,
-            );
-            res.end();
-          });
-          req.pipe(proxyReq, { end: true });
+          req.url = target.toString();
+          proxy.web(req, res, { target });
         },
         (req, res) => {
           const url = new URL(req.url, `http://${req.headers.host}`);
