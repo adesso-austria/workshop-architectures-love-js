@@ -1,0 +1,35 @@
+{
+  "name": "dev-talks-reveal-template",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node esbuild.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/mermaid": "^8.2.9",
+    "@types/ramda": "^0.28.14",
+    "esbuild": "^0.14.43",
+    "esbuild-plugin-less": "^1.1.7",
+    "hastscript": "^7.0.2",
+    "highlight.js": "^11.5.1",
+    "mdast-util-to-hast": "^12.1.1",
+    "mermaid": "^9.1.1",
+    "ramda": "^0.28.0",
+    "rehype-stringify": "^9.0.3",
+    "remark": "^14.0.2",
+    "remark-directive": "^2.0.1",
+    "remark-parse": "^10.0.1",
+    "remark-rehype": "^10.1.0",
+    "reveal.js": "^4.3.1",
+    "ts-pattern": "^4.0.3",
+    "typescript": "^4.7.3",
+    "unified": "^10.1.2",
+    "unist-util-map": "^3.1.1",
+    "unist-util-visit": "^4.1.0"
+  },
+  "type": "module"
+}

@@ -1,0 +1,84 @@
+@import url(./shell.less);
+@import url(./greeting.less);
+@import url(./slide.less);
+@import url(./qna.less);
+@import url(./elements.less);
+@import url(./layout.less);
+@import url(./mermaid.less);
+
+body {
+  font-family: "Open Sans";
+  --adesso-blue: #006bc1;
+  --adesso-gray: #887d75;
+  --background: white;
+  --background-code: #efefef;
+}
+
+.reveal:not(.overview) {
+  background: lightgray;
+}
+
+.reveal:not(.overview) .slides {
+  background: var(--background);
+  box-shadow: 0 0 12px 6px gray;
+  overflow: hidden;
+}
+
+.reveal .progress span {
+  background-color: var(--adesso-blue);
+}
+
+pre.code-wrapper {
+  height: fit-content;
+  position: relative;
+}
+
+p,
+ul {
+  margin-block: 0.5rem;
+}
+
+pre {
+  margin-block: 0.25rem;
+}
+
+ul li {
+  line-height: 1.5;
+}
+
+ul p {
+  margin-block-start: 0;
+  margin-block-end: 0;
+}
+
+header,
+footer {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 15px 2rem;
+}
+
+header {
+  position: absolute;
+  top: 0;
+  color: lightgray;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+header span {
+  font-size: 0.8rem;
+}
+
+footer img {
+  height: 1.6em;
+  width: auto;
+}
+
+footer {
+  bottom: 0;
+  text-align: left;
+}

@@ -1,0 +1,67 @@
+section {
+  padding: 2rem;
+  box-sizing: border-box;
+  text-align: left;
+  font-size: 1.5rem;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  &.stack > .__shell {
+    display: none;
+  }
+
+  section {
+    top: 0;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-weight: 500;
+  }
+
+  h4 {
+    margin-block: 1rem;
+  }
+
+  h1 {
+    border-right: 2px solid var(--adesso-gray);
+    position: relative;
+    color: var(--adesso-blue);
+    text-align: left;
+    font-size: 4rem;
+    margin-block: 2rem;
+  }
+  h1::after {
+    content: "";
+    border-left: 2px solid var(--adesso-gray);
+    position: absolute;
+    left: calc(100% - 10px);
+    bottom: -10px;
+    transform: rotate(45deg);
+    height: 25px;
+    width: 15px;
+    background: var(--background);
+  }
+
+  code {
+    border-radius: 3px;
+    line-height: 1.2;
+    font-size: 1.3rem;
+    background: #efefef;
+
+    .dim {
+      opacity: 0.4;
+    }
+  }
+
+  pre > code {
+    background: #272822;
+
+    &.hljs {
+      padding: 0.5rem;
+    }
+  }
+}

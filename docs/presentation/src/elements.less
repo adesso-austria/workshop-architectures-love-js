@@ -1,0 +1,50 @@
+.speaker-note {
+  display: none;
+  color: gray;
+}
+body.speaker .speaker-note {
+  visibility: visible !important;
+  display: initial;
+}
+
+.keyword {
+  color: green;
+  font-weight: bold;
+}
+
+.quote {
+  border-left: 3px solid var(--adesso-gray);
+  background: #efefef;
+  padding: 0.5rem;
+  border-radius: 3px;
+
+  .quote-source {
+    &::before {
+      content: '- ';
+    }
+    margin: 0.5rem;
+    text-align: right;
+    font-size: 0.8em;
+    color: var(--adesso-gray);
+  }
+}
+
+.note {
+  border-left: 3px solid black;
+  border-radius: 3px;
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+.red {
+  color: red;
+}
+
+.green {
+  color: green;
+}
+
+.answer {
+  text-align: right;
+  font-style: italic;
+}

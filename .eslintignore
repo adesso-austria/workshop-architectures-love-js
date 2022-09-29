@@ -2,3 +2,4 @@ node_modules
 build
 scripts
 contracts/src/openapi.ts
+docs/presentation
