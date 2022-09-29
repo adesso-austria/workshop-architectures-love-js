@@ -1,7 +1,7 @@
 import { option, taskEither } from "fp-ts";
 import { mergeDeepRight } from "ramda";
 import { DeepPartial } from "utils";
-import * as Adapters from "../../adapters";
+import * as Adapters from "../../adapter";
 import { createMock } from "../utils";
 
 const adapter = createMock<Adapters.Mongo.Adapter>({

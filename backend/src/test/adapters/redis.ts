@@ -1,6 +1,6 @@
 import { mergeDeepRight } from "ramda";
 import { DeepPartial } from "utils";
-import { Redis } from "../../adapters";
+import { Redis } from "../../adapter";
 import { createMock } from "../utils";
 
 const adapter = createMock<Redis.Adapter>({});

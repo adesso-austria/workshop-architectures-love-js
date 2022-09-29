@@ -1,7 +1,7 @@
 import { either, option, taskEither } from "fp-ts";
 import { DeepPartial } from "utils";
 import { mergeDeepRight } from "ramda";
-import type * as Mongo from "../adapters/mongo";
+import type * as Mongo from "../adapter/mongo";
 import * as Test from "../test";
 import * as Todo from "./todo";
 

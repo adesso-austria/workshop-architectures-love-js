@@ -1,7 +1,7 @@
 import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import * as Rx from "rxjs";
-import { Mongo, Redis } from "../adapters";
+import { Mongo, Redis } from "../adapter";
 import * as Domain from "../domain";
 
 /**

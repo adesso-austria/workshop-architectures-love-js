@@ -4,7 +4,7 @@ import { Jest } from "test-utils";
 import { DeepPartial } from "utils";
 import * as Rx from "rxjs";
 import * as Test from "../test";
-import { Adapters } from "../adapters";
+import { Adapters } from "../adapter";
 import * as Event from "./event";
 
 const create = (opts: DeepPartial<Event.CreateOpts>): Event.Repository =>

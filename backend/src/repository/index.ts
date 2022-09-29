@@ -1,4 +1,4 @@
-import { Adapters } from "../adapters";
+import { Adapters } from "../adapter";
 import * as Event from "./event";
 import * as Todo from "./todo";
 

@@ -1,6 +1,6 @@
 import { option, taskEither } from "fp-ts";
 import * as Domain from "../domain";
-import { Adapters } from "../adapters";
+import { Adapters } from "../adapter";
 
 export type Repository = {
   addTodo: (todo: Domain.Todo.Todo) => taskEither.TaskEither<string, void>;

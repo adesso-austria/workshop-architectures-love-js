@@ -4,7 +4,7 @@ import { flow, pipe } from "fp-ts/lib/function";
 import * as Boundary from "./boundary";
 import * as Application from "./application";
 import * as Repository from "./repository";
-import * as Adapters from "./adapters";
+import * as Adapters from "./adapter";
 
 dotenv.config();
 
