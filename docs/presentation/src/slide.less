@@ -8,8 +8,10 @@ section {
   left: 0;
   right: 0;
 
-  &.stack > .__shell {
-    display: none;
+  &.stack, &.no-shell {
+    > .__shell {
+      display: none;
+    }
   }
 
   section {

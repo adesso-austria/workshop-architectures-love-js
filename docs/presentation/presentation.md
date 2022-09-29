@@ -22,7 +22,7 @@
 
 ::::::::::::::::::::::::
 
-:::slide{id = greeting}
+:::slide{#greeting.no-shell}
 
 # :var{#title}
 ### :var{#subtitle}
@@ -38,7 +38,7 @@
 
 :::
 
-:::slide{id = qna}
+:::slide{#qna.no-shell}
 
 <img src="./images/qna-background.png" />
 <h1>Questions & possible Answers</h1>

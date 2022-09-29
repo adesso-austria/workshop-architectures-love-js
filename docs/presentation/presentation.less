@@ -1,4 +1,4 @@
-section#greeting {
+#greeting {
   padding: 0;
   top: 0;
   overflow: hidden;
@@ -9,11 +9,13 @@ section#greeting {
 
   h1 {
     text-align: left;
-    font-size: 5rem;
+    font-size: 4rem;
     margin: 0;
     color: var(--adesso-blue);
     border: none;
     padding-left: 0.5rem;
+    line-height: 6rem;
+    vertical-align: top;
   }
   h1::after {
     content: none;
@@ -49,5 +51,32 @@ section#greeting {
     img.enterjs {
       width: 80px;
     }
+  }
+}
+
+#qna {
+  height: 100%;
+  top: 0;
+  padding: 0;
+
+  h1 {
+    color: var(--adesso-blue);
+    font-size: 5rem;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    text-shadow: 0 0 3px black;
+    border: none;
+    text-align: center;
+  }
+  h1::after {
+    content: none;
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(5px) saturate(10%);
   }
 }
