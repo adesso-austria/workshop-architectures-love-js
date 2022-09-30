@@ -1,5 +1,4 @@
 import * as RTK from "@reduxjs/toolkit";
-import * as Rx from "rxjs";
 import * as ReduxObservable from "redux-observable";
 import * as Api from "../api";
 import * as Todo from "./todo";
