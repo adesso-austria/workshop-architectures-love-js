@@ -4,19 +4,7 @@ import { demoize } from "../test/demoize";
 import * as Test from "../test";
 import * as Store from "../store";
 import * as Async from "../store/async";
-import { Overview, Todo } from "./todo";
-
-demoize(
-  "todo overview",
-  () => {
-    return <Overview />;
-  },
-  {
-    api: {
-      fetchTodos: () => taskEither.right([]),
-    },
-  },
-);
+import { Todo } from "./todo";
 
 demoize(
   "todo",

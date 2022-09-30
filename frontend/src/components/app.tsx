@@ -1,5 +1,6 @@
 import React from "react";
-import { NewTodo, Overview } from "./todo";
+import { NewTodo } from "./new-todo";
+import { Overview } from "./overview";
 
 export const App = function App() {
   return (

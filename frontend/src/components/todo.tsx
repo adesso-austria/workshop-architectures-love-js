@@ -47,8 +47,6 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
     fetchContent,
     fetchingContentError,
     isDeleting,
-    isFetching,
-    isUpdating,
   } = Store.Todo.useTodoTasks(todo);
 
   const [showContent, setShowContent] = React.useState(false);
@@ -146,54 +144,5 @@ export const Todo = ({ todo: propTodo }: { todo: Domain.Todo.Todo }) => {
         <Icons.MdDelete />
       </IconButton>
     </div>
-  );
-};
-
-export const NewTodo = function NewTodo() {
-  const { pending } = Store.Todo.useTodos();
-
-  const [newTodo, setNewTodo] = Store.Todo.useNewTodo();
-  const addTodo = Store.Todo.useAddTodo();
-
-  return (
-    <form aria-label="new todo">
-      <div className="flex gap-4 pl-[3.2rem] py-4 justify-between items-center">
-        <Input
-          variant="standard"
-          aria-label="title"
-          label="What to do..."
-          value={newTodo.title}
-          onChange={(e) =>
-            setNewTodo((current) => ({
-              ...current,
-              title: e.target.value,
-            }))
-          }
-        />
-        <IconButton
-          aria-label="save todo"
-          size="sm"
-          disabled={pending || newTodo.title === ""}
-          onClick={() => addTodo(newTodo)}
-          className="w-full"
-        >
-          <Icons.MdAdd />
-        </IconButton>
-      </div>
-    </form>
-  );
-};
-
-export const Overview = function TodoOverview() {
-  const { todos } = Store.Todo.useTodos();
-
-  return (
-    <>
-      {todos.map((todo) => (
-        <div key={todo.id} role="listitem" aria-label="todo">
-          <Todo todo={todo} />
-        </div>
-      ))}
-    </>
   );
 };

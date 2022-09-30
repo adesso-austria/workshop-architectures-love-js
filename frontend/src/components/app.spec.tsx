@@ -1,7 +1,7 @@
 import React from "react";
 import { act, render } from "../test/render";
 import { App } from "./app";
-import { Overview } from "./todo";
+import { Overview } from "./overview";
 
 it("should render the todo overview", async () => {
   const result = render(<App />);

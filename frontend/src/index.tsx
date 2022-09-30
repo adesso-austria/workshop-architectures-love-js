@@ -5,7 +5,7 @@ import { createRoot } from "react-dom/client";
 import { ThemeProvider } from "@material-tailwind/react";
 import * as Api from "./api";
 import * as Store from "./store";
-import { App } from "./application";
+import { App } from "./components";
 
 const container = document.getElementById("root");
 
