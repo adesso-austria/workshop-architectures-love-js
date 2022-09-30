@@ -4,8 +4,8 @@ API-->Contracts
 API-->Domain
 Store-->API
 Store-->Domain
-Application-->Store
-Application-->Domain
+Components-->Store
+Components-->Domain
 ```
 
 # Application

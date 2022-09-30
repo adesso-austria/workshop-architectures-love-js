@@ -42,18 +42,18 @@
       {
         "zones": [
           {
-            "target": "src/application/**/*",
+            "target": "src/components/**/*",
             "from": "../node_modules/contracts",
             "message": "application must not use contracts directly"
           },
           {
-            "target": "src/application/**/*",
+            "target": "src/components/**/*",
             "from": "src/api/**/*",
             "message": "application should be store driven"
           },
           {
             "target": "src/store/**/*",
-            "from": "src/application/**/*",
+            "from": "src/components/**/*",
             "message": "store is driving application, not the other way around"
           },
           {
@@ -68,7 +68,7 @@
           },
           {
             "target": "src/api/**/*",
-            "from": "src/application/**/*",
+            "from": "src/components/**/*",
             "message": "api should never get in direct contact with application layer"
           },
           {
@@ -78,7 +78,7 @@
           },
           {
             "target": "src/domain/**/*",
-            "from": "src/application/**/*",
+            "from": "src/components/**/*",
             "message": "domain layer must be pure"
           },
           {
