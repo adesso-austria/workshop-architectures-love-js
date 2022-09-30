@@ -315,10 +315,39 @@ const shoutNext = flow(
 
 <div class="center">
 
+# Getting started
+
+1. `npm ci`
+1. `npm start`
+1. open `localhost:3000`
+1. add a few todos
+
+</div>
+
+::::
+
+::::slide{.bg-black}
+
+<div class="center">
+
 # Defining Dependencies
 
-1. open `task-01` in your IDE
+1. `cd task-01`
 1. define dependencies via `eslint-plugin-import`
+1. try to commit your changes
+
+</div>
+
+::::
+
+::::slide{.bg-black}
+
+<div class="center">
+
+# Fixing the error
+
+1. open `task-02` in your IDE
+1. 
 1. try to commit your changes
 
 </div>

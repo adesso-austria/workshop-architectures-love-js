@@ -2,7 +2,8 @@ node_modules
 build
 scripts
 contracts/src/openapi.ts
-docs/presentation
+docs
+presentation
 esbuild.js
 tailwind.config.cjs
 task-01
