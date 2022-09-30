@@ -57,6 +57,7 @@
 - prelude
   - naming conventions
   - fp intro
+  - setup
 - intro
 - ports and adapters
 - cqrs 
@@ -66,7 +67,7 @@
 
 :::
 
-[//]: <> (START: Code Conventions)
+[//]: <> (START: Prelude)
 
 ::::::::::::::::::::::::slide
 
@@ -259,9 +260,29 @@ const shoutNext = flow(
 
 ::::
 
+::::slide{.bg-black}
+
+<div class="center">
+
+# Setup
+
+1. `git submodule update --init`
+1. `npm ci`
+1. `npm start`
+1. open `localhost:3000`
+1. add a few todos
+
+## About Tasks
+
+run `npm ci` when starting a new task
+
+</div>
+
+::::
+
 :::::::::::::::::::::::::::::
 
-[//]: <> (END: Code Conventions)
+[//]: <> (END: Prelude)
 
 [//]: <> (START: Actual Content)
 
@@ -283,7 +304,7 @@ const shoutNext = flow(
 
 ::::
 
-:::::::::::::::::::slide{#ports-and-adapters}
+:::::::::::::::::::slide{section = "Ports and Adapters"}
 
 ::::slide{.no-shell.bg-black}
 
@@ -305,28 +326,39 @@ const shoutNext = flow(
 
 ::::slide
 
-# Frontend
+# Example - Frontend
 
 <img style="height: 75%; width: 100%;" class="relative" src="./images/hexagonal-frontend.svg" />
 
 ::::
 
-::::slide{.bg-black}
+::::slide
+
+# Example - Backend
+
+<img style="height: 75%; width: 100%;" class="relative" src="./images/hexagonal-backend.svg" />
+
+::::
+
+::::slide{.no-shell}
 
 <div class="center">
 
-# Getting started
-
-1. `npm ci`
-1. `npm start`
-1. open `localhost:3000`
-1. add a few todos
+# Wrap Up
+- adapter connects to outside
+- boundary translates outside to domain
+- application orchestrates all the things
+- domain models business and is _pure_
 
 </div>
 
 ::::
 
-::::slide{.bg-black}
+:::::::::::::::::::
+
+:::::::::::::::::::slide
+
+::::slide{#task-01.bg-black}
 
 <div class="center">
 
@@ -340,15 +372,18 @@ const shoutNext = flow(
 
 ::::
 
-::::slide{.bg-black}
+::::slide{#task-02.bg-black}
 
 <div class="center">
 
-# Fixing the error
+# A wild error occurs
 
-1. open `task-02` in your IDE
-1. 
-1. try to commit your changes
+1. open `overview.tsx` (where the lint error occurs)
+1. instead of using the api, use the store
+1. use todos with 
+  ```typescript
+  const { todos } = Store.Todo.useTodos();
+  ```
 
 </div>
 
