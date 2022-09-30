@@ -2,11 +2,18 @@ version: "3.0"
 services:
   redis:
     image: redis
-    command: --logfile /data/redis.log
+    command: --logfile /data/redis.log --appendonly yes
+    volumes:
+      - redis-data:/data
     ports: 
       - 6379:6379
   mongo:
     image: mongo
     command: --logpath /var/log/mongodb/log
+    volumes:
+      - mongo-data:/data/db
     ports:
       - 27017:27017
+volumes:
+  redis-data:
+  mongo-data:

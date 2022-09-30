@@ -10,7 +10,7 @@
     "prestart": "npm run up",
     "start": "nodemon -w build -d 10ms -x 'NODE_OPTIONS=\"--experimental-specifier-resolution=node --inspect\" node build/index.js'",
     "poststart": "npm run down",
-    "down": "docker-compose down -v",
+    "down": "docker-compose down",
     "prepare": "git update-index --assume-unchanged .env"
   },
   "author": "",
