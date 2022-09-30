@@ -4,7 +4,7 @@ import { lessLoader } from "esbuild-plugin-less";
 Esbuild.serve(
   {
     servedir: ".",
-    port: 8080,
+    port: 8000,
   },
   {
     entryPoints: ["src/index.ts"],
