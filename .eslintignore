@@ -3,3 +3,6 @@ build
 scripts
 contracts/src/openapi.ts
 docs/presentation
+esbuild.js
+tailwind.config.cjs
+task-01
