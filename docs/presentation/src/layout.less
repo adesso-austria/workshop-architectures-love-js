@@ -1,32 +1,37 @@
-.left {
-  text-align: left;
+.relative {
+  position: relative;
+}
+
+.shrink {
+  flex-shrink: 1;
+}
+
+.grow {
+  flex-grow: 1;
 }
 
 .center {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
 }
 
-.right {
-  text-align: right;
+.text-center {
+  text-align: center;
 }
 
 .columns {
   display: flex;
   grid-gap: 0.5rem;
-
-  > * {
-    flex: 1 1;
-  }
 }
 
-.m-4 {
-  margin: 1rem;
+.flex {
+  display: flex;
 }
 
-.mt-4 {
-  margin-top: 1rem;
-}
-
-.mb-4 {
-  margin-bottom: 1rem;
+.flex-col {
+  flex-direction: column;
 }

@@ -11,13 +11,42 @@ div.__shell {
   bottom: 0;
   right: 0;
   pointer-events: none;
+  padding: 1rem;
+  box-sizing: border-box;
 
   header {
     font-size: 0.8rem;
+    color: lightgray;
   }
 
   footer {
+    width: calc(100% - 2rem);
     position: absolute;
-    bottom: 0;
+    bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 30px;
+    filter: grayscale(1) brightness(140%);
+
+    img.adesso {
+      height: 100%;
+      opacity: 0.5;
+    }
+
+    div.speaker {
+      height: 100%;
+      color: gray;
+      font-size: 0.8rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+
+      img.twitter {
+        fill: lightgray;
+        height: 50%;
+      }
+    }
   }
 }
