@@ -14,6 +14,7 @@ export type Api = {
   deleteTodo: (id: string) => taskEither.TaskEither<string, void>;
   fetchContent: (id: string) => taskEither.TaskEither<string, string>;
   updateTodo: (todo: Domain.Todo.Todo) => taskEither.TaskEither<string, void>;
+  fetchTodoCount: () => taskEither.TaskEither<string, number>;
 };
 
 export const create = (fetcher: Fetcher): Api => ({
@@ -70,6 +71,17 @@ export const create = (fetcher: Fetcher): Api => ({
           )
           .with({ status: 500 }, () => taskEither.left("server error"))
           .exhaustive(),
+      ),
+    ),
+  fetchTodoCount: () =>
+    pipe(
+      fetcher.getTodoCount(undefined),
+      taskEither.chain((res) =>
+        match(res)
+          .with({ status: 200 }, ({ data }) => taskEither.right(parseInt(data)))
+          .otherwise((res) =>
+            taskEither.left(`unhandled status code ${res.status}`),
+          ),
       ),
     ),
 });

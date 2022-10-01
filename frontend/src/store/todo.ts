@@ -18,10 +18,12 @@ type Todos = Async.Async<Record<string, Todo>, "fetching" | "adding todo">;
 
 export type State = {
   todos: Todos;
+  count: Async.Async<number, "fetching count">;
   newTodo: Domain.AddTodo.AddTodo;
 };
 export const initialState: State = {
   todos: Async.of({}),
+  count: Async.of(0),
   newTodo: {
     title: "",
   },
@@ -198,6 +200,25 @@ export const slice = createSlice({
     setNewTodo: (state, action: PayloadAction<Domain.AddTodo.AddTodo>) => {
       state.newTodo = action.payload;
     },
+    fetchTodoCount: (state) => {
+      state.count = pipe(state.count, Async.setPending("fetching count"));
+    },
+    fetchTodoCountSuccess: (
+      state,
+      { payload: count }: PayloadAction<number>,
+    ) => {
+      state.count = pipe(
+        state.count,
+        Async.setResolved("fetching count"),
+        Async.map(() => count),
+      );
+    },
+    fetchTodoCountFailure: (
+      state,
+      { payload: error }: PayloadAction<string>,
+    ) => {
+      state.count = pipe(state.count, Async.setError("fetching count", error));
+    },
   },
 });
 
@@ -282,12 +303,29 @@ namespace Epics {
       }),
     );
 
+  const fetchTodoCount: Store.Epic = (action$, _state$, { api }) =>
+    action$.pipe(
+      Rx.filter(slice.actions.fetchTodoCount.match),
+      Rx.switchMap(() => {
+        const fetchCountAction = pipe(
+          api.fetchTodoCount(),
+          taskEither.matchW(
+            (error) => slice.actions.fetchTodoCountFailure(error),
+            (count) => slice.actions.fetchTodoCountSuccess(count),
+          ),
+        );
+
+        return fetchCountAction();
+      }),
+    );
+
   export const epic = combineEpics(
     fetchTodos,
     addTodo,
     deleteTodo,
     updateTodo,
     fetchContent,
+    fetchTodoCount,
   );
 }
 export const epic = Epics.epic;
@@ -391,4 +429,20 @@ export const useTodoTasks = (todo: Pick<Domain.Todo.Todo, "id">) => {
     isUpdating,
     isDeleting,
   };
+};
+
+export const useTodoCount = () => {
+  const dispatch = useDispatch();
+
+  const count = useSelector(
+    flow(Selectors.fromStore, ({ count }) => Async.value(count)),
+  );
+
+  const refresh = () => dispatch(slice.actions.fetchTodoCount());
+
+  React.useEffect(() => {
+    refresh();
+  }, []);
+
+  return { count, refresh };
 };

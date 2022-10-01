@@ -18,6 +18,7 @@ export type Application = {
   updateTodo: (
     todo: Domain.Todo.Todo,
   ) => taskEither.TaskEither<"not found" | "db error", void>;
+  getTodoCount: () => taskEither.TaskEither<string, number>;
 };
 
 /**
@@ -122,6 +123,10 @@ const createUpdateTodo =
       ),
     );
 
+const createGetTodoCount = ({
+  repository,
+}: CreateOpts): Application["getTodoCount"] => repository.todo.getTodoCount;
+
 export const create = (repository: Repository): Application => {
   const eventHandler = createEventHandler(repository);
 
@@ -133,5 +138,6 @@ export const create = (repository: Repository): Application => {
     addTodo: createAddTodo(opts),
     deleteTodo: createDeleteTodo(opts),
     updateTodo: createUpdateTodo(opts),
+    getTodoCount: createGetTodoCount(opts),
   };
 };

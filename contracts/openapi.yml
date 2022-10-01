@@ -125,6 +125,14 @@ paths:
           description: server error
           content:
             text/plain: {}
+  /todoCount:
+    get:
+      summary: get the total count of saved todos
+      responses:
+        200:
+          description: Ok
+          content:
+            text/plain: {}
 components:
   schemas:
     Todo:

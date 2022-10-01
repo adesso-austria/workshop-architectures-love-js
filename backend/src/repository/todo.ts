@@ -1,4 +1,5 @@
 import { option, taskEither } from "fp-ts";
+import { pipe } from "fp-ts/lib/function";
 import * as Domain from "../domain";
 import { Adapters } from "../adapter";
 
@@ -10,6 +11,7 @@ export type Repository = {
   ) => taskEither.TaskEither<string, option.Option<Domain.Todo.Todo>>;
   deleteTodo: (id: string) => taskEither.TaskEither<string, void>;
   updateTodo: (todo: Domain.Todo.Todo) => taskEither.TaskEither<string, void>;
+  getTodoCount: () => taskEither.TaskEither<string, number>;
 };
 
 export type CreateOpts = Adapters;
@@ -44,6 +46,14 @@ const createUpdateTodo =
   (todo) =>
     mongo.updateOne(collectionKey, { id: todo.id }, todo);
 
+const createGetTodoCount =
+  ({ mongo }: CreateOpts): Repository["getTodoCount"] =>
+  () =>
+    pipe(
+      mongo.findAll(collectionKey, {}),
+      taskEither.map((results) => results.length),
+    );
+
 export const create = (opts: CreateOpts): Repository => {
   return {
     addTodo: addTodo(opts),
@@ -51,5 +61,6 @@ export const create = (opts: CreateOpts): Repository => {
     getTodo: getTodo(opts),
     deleteTodo: createDeleteTodo(opts),
     updateTodo: createUpdateTodo(opts),
+    getTodoCount: createGetTodoCount(opts),
   };
 };

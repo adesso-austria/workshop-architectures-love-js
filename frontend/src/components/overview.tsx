@@ -8,8 +8,11 @@ import { Todo } from "./todo";
 export const Overview = function TodoOverview() {
   const { todos } = Store.Todo.useTodos();
 
+  const { count } = Store.Todo.useTodoCount();
+
   return (
     <>
+      {count}
       {todos.map((todo) => (
         <div key={todo.id} role="listitem" aria-label="todo">
           <Todo todo={todo} />

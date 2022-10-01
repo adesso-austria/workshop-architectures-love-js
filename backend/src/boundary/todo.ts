@@ -273,4 +273,21 @@ export const create =
         processRequest();
       },
     );
+
+    app.get("/todoCount", function getTodoCount(_req, res) {
+      const getTodoCount = pipe(
+        application.todo.getTodoCount(),
+        taskEither.match(
+          (error) => {
+            res.statusCode = 500;
+            res.send(error);
+          },
+          (count) => {
+            res.send(count);
+          },
+        ),
+      );
+
+      getTodoCount();
+    });
   };

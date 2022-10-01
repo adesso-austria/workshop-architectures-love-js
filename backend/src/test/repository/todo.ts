@@ -13,6 +13,7 @@ export const repository: Repository.Todo.Repository = {
   getTodos: () => taskEither.right(Data.Todo.all),
   deleteTodo: () => taskEither.right(undefined),
   updateTodo: () => taskEither.right(undefined),
+  getTodoCount: () => taskEither.right(Data.Todo.all.length),
 };
 
 export const create = (

@@ -141,6 +141,18 @@ export interface paths {
       };
     };
   };
+  "/todoCount": {
+    get: {
+      responses: {
+        /** Ok */
+        200: {
+          content: {
+            "text/plain": unknown;
+          };
+        };
+      };
+    };
+  };
 }
 
 export interface components {
