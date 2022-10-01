@@ -376,7 +376,7 @@ run `npm ci` when starting a new task
 
 <div class="center">
 
-# A wild error occurs
+# A wild error appears
 
 1. open `overview.tsx` (where the lint error occurs)
 1. instead of using the api, use the store
