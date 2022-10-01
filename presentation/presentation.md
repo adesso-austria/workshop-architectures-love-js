@@ -378,6 +378,7 @@ run `npm ci` when starting a new task
 
 # A wild error appears
 
+1. try to add a new todo
 1. open `overview.tsx` (where the lint error occurs)
 1. instead of using the api, use the store
 1. use todos with 
