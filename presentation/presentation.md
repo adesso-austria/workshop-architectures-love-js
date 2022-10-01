@@ -285,8 +285,11 @@ run `npm ci` when starting a new task
 [//]: <> (END: Prelude)
 
 [//]: <> (START: Actual Content)
+[//]: <> (START: INTRO)
 
-::::slide{#intro.bg-black.no-shell}
+:::::::::::::::::::slide{section = "Intro"}
+
+::::slide{.bg-black.no-shell}
 
 <div class="center">
 
@@ -296,13 +299,47 @@ run `npm ci` when starting a new task
 
 :::speaker
 
-- decisions that are hard to change
-- programming with a plan
 - defines structure
+- adds rules
+- decisions that are hard to change
+
+### programming with a plan
 
 :::
 
 ::::
+
+::::slide
+
+<div class="center">
+<img src="./images/slavery-with-extra-steps" />
+</div>
+
+::::
+
+::::slide
+
+# And why?
+
+<div class="center" style="height: initial;">
+<img src="./images/order-vs-chaos" style="width: 700px;" />
+</div>
+
+:::speaker
+
+- reduce degrees of freedom
+- structure increases order
+- make it easier for new participants
+- guide questions around structure
+
+:::
+
+::::
+
+:::::::::::::::::::
+
+[//]: <> (END: INTRO)
+[//]: <> (START: Ports and Adapters)
 
 :::::::::::::::::::slide{section = "Ports and Adapters"}
 
@@ -320,7 +357,7 @@ run `npm ci` when starting a new task
 
 # Theory
 
-<img style="height: 75%; width: 100%; left: -25px;" class="relative" src="./images/hexagonal-theory.svg" />
+<img style="height: 75%; width: 100%;" class="relative" src="./images/hexagonal-theory.svg" />
 
 ::::
 
@@ -344,12 +381,20 @@ run `npm ci` when starting a new task
 
 <div class="center">
 
-# Wrap Up
+# Wrap-Up
 - adapter connects to outside
 - boundary translates outside to domain
 - application orchestrates all the things
 - domain models business and is _pure_
 
+</div>
+
+::::
+
+::::slide
+
+<div class="center">
+<img src="./images/but-why" alt="">
 </div>
 
 ::::
@@ -391,6 +436,126 @@ run `npm ci` when starting a new task
 ::::
 
 :::::::::::::::::::
+
+[//]: <> (END: Ports and Adapters)
+[//]: <> (START: CQRS)
+
+:::::::::::::::::::slide
+
+::::slide{.no-shell.bg-black}
+
+<div class="center">
+
+# CQRS
+## Command Query Responsibility Segregation
+
+</div>
+
+::::
+
+::::slide
+
+# Theory
+
+<img src="./images/cqrs.svg" style="height: 500px;">
+
+::::
+
+::::slide
+
+# Write Model
+
+<div class="flex justify-center">
+<img src="./images/paying-for-clothes" style="width: 700px">
+</div>
+
+:::speaker
+
+- task oriented, declarative
+- only writes data from the command
+- is _not_ concerned with any domain other than exactly the command
+
+1. buy clothes
+1. technically you have *JUST ONLY* bought clothes
+
+:::
+
+::::
+
+::::slide
+
+# Read Model(s)
+
+<img src="./images/weird-fashion" style="position: absolute; width: 300px;">
+<img src="./images/accounting" style="position: absolute; width: 500px; left: 400px">
+<img src="./images/full-closet" style="position: absolute; width: 500px; left: 200px; top: 350px;">
+
+:::speaker
+
+- "do people think you look ridiculous"
+- "how much money do you have left"
+- "how full is your closet"
+
+### Read Model answers
+
+- what _results_ from a command
+- multiple read models for each "domain"
+
+:::
+
+::::
+
+::::slide{.no-shell}
+
+<div class="center">
+
+# Wrap-Up
+- strict separation between action and consequence
+- write model only relates to action
+- read model only relates to consequence
+
+</div>
+
+::::
+
+::::slide{.no-shell.bg-black}
+
+<div class="center">
+
+# Adding a counter
+
+1. cd `task-02`
+1. add endpoint that returns number of saved todos
+1. add epic that fetches number of todos
+1. show number of todos in overview
+1. add a todo
+
+</div>
+
+:::speaker
+
+1. contracts
+  - create endpoint
+1. backend
+  - create endpoint
+  - create application function
+  - create repository function
+1. frontend
+  - add async count to todo state
+  - create fetcher
+  - create api
+  - create epic
+  - create useCount hook
+  - create fetchTodoCount{,Success,Failure} actions
+
+:::
+
+::::
+
+:::::::::::::::::::
+
+[//]: <> (END: CQRS)
+
 
 [//]: <> (PRESENTATION ENDS HERE)
 [//]: <> (PRESENTATION ENDS HERE)
