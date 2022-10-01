@@ -20,10 +20,9 @@ export type Application = {
   ) => taskEither.TaskEither<"not found" | "db error", void>;
 };
 
-//////////////////////////////////////////////////////
-// WRITE MODEL
-//////////////////////////////////////////////////////
-
+/**
+ * how should the todo domain react to events
+ */
 const createEventHandler = (repository: Repository) =>
   EventHandler.create(repository, "todoEventHandler", (event) =>
     match(event)
@@ -39,12 +38,16 @@ const createEventHandler = (repository: Repository) =>
       .otherwise(() => taskEither.right(undefined)),
   );
 
-//////////////////////////////////////////////////////
-// READ MODEL
-//////////////////////////////////////////////////////
+type CreateOpts = {
+  repository: Repository;
+  eventHandler: EventHandler.EventHandler;
+};
 
+/**
+ * QUERY a single todo by id
+ */
 const createGetTodo =
-  (repository: Repository): Application["getTodo"] =>
+  ({ repository }: CreateOpts): Application["getTodo"] =>
   (id: string) =>
     pipe(
       repository.todo.getTodo(id),
@@ -58,16 +61,22 @@ const createGetTodo =
       ),
     );
 
+/**
+ * QUERY all todos
+ */
 const createGetTodos =
-  (repository: Repository): Application["getTodos"] =>
+  ({ repository }: CreateOpts): Application["getTodos"] =>
   () =>
     pipe(
       repository.todo.getTodos(),
       taskEither.mapLeft(() => "db error" as const),
     );
 
+/**
+ * COMMAND a todo to be added
+ */
 const createAddTodo =
-  (eventHandler: EventHandler.EventHandler): Application["addTodo"] =>
+  ({ eventHandler }: CreateOpts): Application["addTodo"] =>
   (addTodo) => {
     const todo: Domain.Todo.Todo = {
       ...addTodo,
@@ -84,16 +93,22 @@ const createAddTodo =
     );
   };
 
+/**
+ * COMMAND a todo to be deleted
+ */
 const createDeleteTodo =
-  (eventHandler: EventHandler.EventHandler): Application["deleteTodo"] =>
+  ({ eventHandler }: CreateOpts): Application["deleteTodo"] =>
   (id) =>
     eventHandler({
       type: "delete todo",
       payload: id,
     });
 
+/**
+ * COMMAND a todo to be updated
+ */
 const createUpdateTodo =
-  (eventHandler: EventHandler.EventHandler): Application["updateTodo"] =>
+  ({ eventHandler }: CreateOpts): Application["updateTodo"] =>
   (todo) =>
     pipe(
       eventHandler({
@@ -110,11 +125,13 @@ const createUpdateTodo =
 export const create = (repository: Repository): Application => {
   const eventHandler = createEventHandler(repository);
 
+  const opts = { repository, eventHandler };
+
   return {
-    getTodo: createGetTodo(repository),
-    getTodos: createGetTodos(repository),
-    addTodo: createAddTodo(eventHandler),
-    deleteTodo: createDeleteTodo(eventHandler),
-    updateTodo: createUpdateTodo(eventHandler),
+    getTodo: createGetTodo(opts),
+    getTodos: createGetTodos(opts),
+    addTodo: createAddTodo(opts),
+    deleteTodo: createDeleteTodo(opts),
+    updateTodo: createUpdateTodo(opts),
   };
 };
