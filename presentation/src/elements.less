@@ -50,6 +50,10 @@ body.speaker .speaker-note {
   font-style: italic;
 }
 
+ul, ol {
+  margin-block: 0.25rem 0.5rem;
+}
+
 li {
   line-height: 1.25em;
 }
@@ -68,6 +72,10 @@ code {
   .dim {
     opacity: 0.4;
   }
+
+  &.hljs.hljs {
+    min-height: unset;
+  }
 }
 
 pre > code {
@@ -81,6 +89,9 @@ pre > code {
 img {
   width: 100%;
   object-fit: contain;
-  border-radius: 6px;
-  box-shadow: 0 0 6px;
+
+  &:not(.no-border) {
+    border-radius: 6px;
+    box-shadow: 0 0 6px;
+  }
 }
