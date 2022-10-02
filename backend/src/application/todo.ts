@@ -100,7 +100,13 @@ const createAddTodo =
 const createDeleteTodo =
   ({ repository }: CreateOpts): Application["deleteTodo"] =>
   (id) =>
-    repository.todo.deleteTodo(id);
+    pipe(
+      repository.event.emit({
+        type: "delete todo",
+        payload: id,
+      }),
+      taskEither.chain(() => repository.todo.deleteTodo(id)),
+    );
 /**
  * COMMAND a todo to be updated
  */
