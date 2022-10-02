@@ -2,6 +2,7 @@ import * as Crypto from "crypto";
 import { option, taskEither } from "fp-ts";
 import { pipe } from "fp-ts/lib/function";
 import { match } from "ts-pattern";
+import { ignore } from "utils";
 import * as Domain from "../domain";
 import { Repository } from "../repository";
 import * as EventHandler from "./event-handler";
@@ -99,7 +100,7 @@ const createAddTodo =
 const createDeleteTodo =
   ({ repository }: CreateOpts): Application["deleteTodo"] =>
   (id) =>
-    taskEither.left("not implemented");
+    repository.todo.deleteTodo(id);
 /**
  * COMMAND a todo to be updated
  */
