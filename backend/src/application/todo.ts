@@ -97,13 +97,9 @@ const createAddTodo =
  * COMMAND a todo to be deleted
  */
 const createDeleteTodo =
-  ({ eventHandler }: CreateOpts): Application["deleteTodo"] =>
+  ({ repository }: CreateOpts): Application["deleteTodo"] =>
   (id) =>
-    eventHandler({
-      type: "delete todo",
-      payload: id,
-    });
-
+    taskEither.left("not implemented");
 /**
  * COMMAND a todo to be updated
  */
