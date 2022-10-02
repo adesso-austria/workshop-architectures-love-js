@@ -98,15 +98,12 @@ const createAddTodo =
  * COMMAND a todo to be deleted
  */
 const createDeleteTodo =
-  ({ repository }: CreateOpts): Application["deleteTodo"] =>
+  ({ eventHandler }: CreateOpts): Application["deleteTodo"] =>
   (id) =>
-    pipe(
-      repository.event.emit({
-        type: "delete todo",
-        payload: id,
-      }),
-      taskEither.map(ignore),
-    );
+    eventHandler({
+      type: "delete todo",
+      payload: id,
+    });
 /**
  * COMMAND a todo to be updated
  */
@@ -127,26 +124,6 @@ const createUpdateTodo =
 
 export const create = (repository: Repository): Application => {
   const eventHandler = createEventHandler(repository);
-
-  repository.event.createEventStream(option.none).subscribe((event) => {
-    const processEvent = pipe(
-      repository.event.hasEventBeenAcknowledged("unique id", event.id),
-      taskEither.chain((hasBeenAcknowledged) =>
-        hasBeenAcknowledged
-          ? taskEither.right(undefined)
-          : match(event.domainEvent)
-              .with({ type: "delete todo" }, ({ payload }) =>
-                repository.todo.deleteTodo(payload),
-              )
-              .otherwise(() => taskEither.right(undefined)),
-      ),
-      taskEither.chain(() =>
-        repository.event.acknowledgeEvent("unique id", event.id),
-      ),
-    );
-
-    processEvent();
-  });
 
   const opts = { repository, eventHandler };
 
