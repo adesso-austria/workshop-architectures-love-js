@@ -1,6 +1,6 @@
 :::div{style='display: none;'}
 :define-var[Architectures <3 js]{#title}
-:define-var[some witty subtitle]{#subtitle}
+:define-var["js is only for fancy animations"]{#subtitle}
 :define-var[]{#section}
 :::
 
@@ -46,11 +46,39 @@
 
 :::
 
+::::::::slide{#learnings}
+
+::::slide{.no-shell.bg-black}
+
+<div class="center">
+
+# Keep. It. Simple.
+
+### Simple != Easy
+
+</div>
+
+:::speaker
+
+- write code that is easy to read, not easy to write
+- the best code is no code
+  - libraries are *also* code! Just not under your control
+- architecture tries to solve a lot of problems
+  ... that probably never occur
+
+:::
+
+::::
+
+::::::::
+
 [//]: <> (PRESENTATION STARTS HERE)
 [//]: <> (PRESENTATION STARTS HERE)
 [//]: <> (PRESENTATION STARTS HERE)
 
-:::slide{#agenda}
+:::slide{#agenda.no-shell}
+
+<div class="center">
 
 # Agenda
 
@@ -61,9 +89,10 @@
 - intro
 - ports and adapters
 - cqrs
-- event sourcing
-- lazy loading
 - architectural decision records
+- event sourcing
+
+</div>
 
 :::
 
@@ -260,6 +289,7 @@ const shoutNext = flow(
 
 # Setup
 
+1. `git clone `
 1. `npm ci`
 1. `npm start`
 1. open `localhost:3000`
@@ -315,6 +345,8 @@ const shoutNext = flow(
 </div>
 
 :::speaker
+
+### Separate Business Logic from Application Logic
 
 - reduce degrees of freedom
 - structure increases order
@@ -699,10 +731,9 @@ increasing interaction has proven to...
 
 # When to use CQRS
 
-e.g.
-
-- starting long running tasks
-- ordering stuff
+- _only_ when your write model can't fulfill your query requirements
+- certainly not for a todo list
+- if you need event sourcing
 
 </div>
 
@@ -1024,9 +1055,15 @@ isKnown--no-->updateState>"update State"]-->acknowledgeEvent>"acknowledge Event"
 [//]: <> (PRESENTATION ENDS HERE)
 [//]: <> (PRESENTATION ENDS HERE)
 
+::::slide{#adesso.no-shell}
+
+<img class="no-border relative" style="width: calc(100% + 4rem); height: calc(100% + 4rem); left: -2rem; top: -2rem; object-fit: cover" src="./images/adesso-overview.svg">
+
+::::
+
 :::slide{#qna.no-shell}
 
 <img src="./images/qna-background.png" />
-<h1>Questions & possible Answers</h1>
+<h1>Questions & possibly Answers</h1>
 
 :::
