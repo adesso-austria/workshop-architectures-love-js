@@ -52,6 +52,7 @@
 
 <div class="center">
 
+# Learnings
 # Keep. It. Simple.
 
 ### Simple != Easy
@@ -178,7 +179,7 @@ is the same as this:
 ```typescript
 const getZero = () => 0;
 
-const shoutOne = pipe(getZero, addOne, stringify, uppercase);
+const shoutOne = pipe(getZero(), addOne, stringify, uppercase);
 ```
 
 :::
@@ -289,7 +290,8 @@ const shoutNext = flow(
 
 # Setup
 
-1. `git clone `
+1. `https://github.com/adesso-austria/workshop-architectures-love-js`
+1. `git clone`
 1. `npm ci`
 1. `npm start`
 1. open `localhost:3000`
@@ -419,6 +421,15 @@ const shoutNext = flow(
 <img src="./images/but-why" alt="">
 </div>
 
+:::speaker
+
+* prevent mistakes
+* give guidance
+* make hacks as hard as possible
+  * pits of success
+
+:::
+
 ::::
 
 ::::slide{#task-01.bg-black}
@@ -427,9 +438,9 @@ const shoutNext = flow(
 
 # Defining Dependencies
 
-1. `cd task-01`
+1. `git checkout start-task-01`
 1. define dependencies via `eslint-plugin-import`
-1. try to commit your changes
+1. `npm run lint`
 
 </div>
 
@@ -561,7 +572,7 @@ const { todos } = Store.Todo.useTodos();
 
 # Adding a counter
 
-1. cd `task-02`
+1. `git checkout start-task-02`
 1. add endpoint that returns number of saved todos
 1. add epic that fetches number of todos
 1. show number of todos in overview
@@ -837,7 +848,7 @@ isKnown--no-->updateState>"update State"]-->acknowledgeEvent>"acknowledge Event"
 
 # Deleting Todos
 
-1. `git checkout task-03`
+1. `git checkout start-task-03`
 1. open `backend/src/application/todo.ts`
 1. delete the todo with `repository.todo.deleteTodo`
 
@@ -901,7 +912,8 @@ isKnown--no-->updateState>"update State"]-->acknowledgeEvent>"acknowledge Event"
 # Reacting to events
 
 - only emit event in handler
-- subscribe to event stream when creating application
+  - chain to ignore
+- create and subscribe to event stream when creating application
   - check event acknowledged with `consumer: "unique id"`
   - process event if not acknowledged
   - acknowledge event with `consumer: "unique id"`
